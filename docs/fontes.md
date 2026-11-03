@@ -38,3 +38,6 @@ pre-deploy usa container separado, rede/env disponíveis, sem volumes montados;
 start command Docker substitui ENTRYPOINT. Referências adicionais:
 [Start command](https://docs.railway.com/deployments/start-command) e
 [Serviços](https://docs.railway.com/services).
+
+A [pesquisa web detalhada](web-research.nd), realizada em 2026-11-03, registra
+achados por tema, fontes abertas, limitações de acesso e próximos testes.

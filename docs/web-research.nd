@@ -1,0 +1,353 @@
+# Pesquisa web — Scooby Quant Trading Terminal
+
+Consulta realizada em 2026-11-03 (UTC).
+Arquivo com conteúdo Markdown e extensão `.nd`, conforme solicitado.
+Escopo: fatos técnicos e dependências para o terminal pessoal Brasil/EUA já
+planejado. A pesquisa não ativa integrações, não executa ordens e não transforma
+propostas ainda abertas em decisões aceitas.
+
+## 1. Método e estados da evidência
+
+Foram pesquisadas e abertas fontes primárias: documentação dos fornecedores,
+repositórios oficiais, PostgreSQL e páginas oficiais B3/CVM. Resultados de busca
+serviram para localizar documentos; blogs e agregadores não fundamentam as
+conclusões. Foram consultadas páginas de documentação, não adquiridos datasets.
+
+Neste relatório:
+
+- **Verificado:** a fonte consultada declara a capacidade ou restrição.
+- **Implicação:** interpretação de engenharia para o Scooby, não garantia do fornecedor.
+- **Pendente:** exige decisão, teste com a conta escolhida ou confirmação contratual.
+
+Preços, limites, termos e versões podem mudar. Revalidar antes de contratar ou
+implementar; nenhum acesso autenticado à corretora foi usado nesta pesquisa.
+
+## 2. Base de produto preservada
+
+Confirmado pelo usuário: uso pessoal; Brasil e EUA; backtesting e paper trading;
+Alpaca Paper nos EUA; simulador interno B3; única conta Google autorizada;
+Go/Vukem, Inertia/React, Tailwind/PostgreSQL; dashboard em `/`, sidebar shadcn/ui,
+redirect de visitante para `/login`, apenas Google; deploy Railway.
+
+Continuam pendentes Q7–Q9: ativos/direções, feed IEX + importação CSV B3 e candles
+de cinco minutos/sessão regular. Esta pesquisa informa essas escolhas, sem
+responder por conta do usuário. Ver [grilling](grilling.md).
+
+## 3. Alpaca Paper: capacidades e limites
+
+### 3.1 Ambiente de simulação
+
+**Verificado:** a Alpaca oferece ambiente paper com credenciais e endpoint
+próprios. A documentação informa criação global de conta paper-only; isso não
+comprova elegibilidade para conta real. A simulação não representa integralmente
+impacto de mercado, posição na fila, slippage por latência, taxas regulatórias
+ou dividendos. Sua hipótese de liquidez permite fills que podem ser inviáveis
+no mercado real. Fonte: [Alpaca Paper Trading](https://docs.alpaca.markets/us/docs/paper-trading).
+
+**Implicação:** manter conta, ledger e métricas paper separados de backtest e
+simulação interna. Exibir resultados como simulação. Validar o host paper no
+boot e impedir a troca acidental para live. Não usar paper para demonstrar que
+o motor já modela todos os custos nem como comprovação de retorno futuro.
+
+### 3.2 IEX, mercado consolidado e limites
+
+**Verificado:** a tabela do plano Basic consultada apresenta cobertura em tempo
+real de ações pela IEX, 30 símbolos por WebSocket e 200 consultas históricas por
+minuto. O plano Algo Trader Plus anuncia cobertura de todas as bolsas americanas,
+mais capacidade e preço de US$ 99/mês na data da consulta. A página também
+informa restrição histórica dos 15 minutos mais recentes no plano básico;
+confirmar sua aplicação ao feed e endpoint contratados antes de desenhar ingestão.
+Fonte: [About Market Data API](https://docs.alpaca.markets/us/docs/about-market-data-api).
+
+**Implicação:** configurar o feed explicitamente. Volume e candles IEX não devem
+ser apresentados como volume consolidado de todas as bolsas. Histórico e stream
+precisam da mesma procedência ou ter diferenças identificadas no experimento.
+Limites de market data não são automaticamente limites de envio de ordens.
+
+**Pendente:** Q8 ainda não confirmou IEX. Checar permissões da conta, profundidade
+histórica, limites efetivos e orçamento; não assinar plano automaticamente.
+
+### 3.3 Identificação e acompanhamento das ordens
+
+**Verificado:** a API permite atribuir `client_order_id` e recuperar a ordem por
+esse identificador. Fonte: [Working with orders](https://docs.alpaca.markets/us/docs/working-with-orders).
+O stream `trade_updates` comunica fills, parciais, cancelamentos e rejeições;
+a documentação diferencia frames binários do stream paper e frames de dados.
+Fonte: [Websocket Streaming](https://docs.alpaca.markets/us/docs/websocket-streaming).
+
+**Implicação:** persistir a intenção e o ID antes de enviar. Em timeout, consultar
+o estado e reconciliar, sem gerar nova ordem cegamente. Deduplicar fills antes
+de alterar caixa/posição. Implementar reconexão com recuperação por API.
+
+**Limite da conclusão:** um ID consultável não comprova execução exatamente uma
+vez nem transação distribuída com PostgreSQL. Testar unicidade, reapresentação,
+latência de consulta e eventos fora de ordem no adapter. Uma resposta negativa
+isolada logo após timeout não prova que a ordem nunca existiu.
+
+## 4. B3: API, dados e direitos de uso são problemas distintos
+
+### 4.1 Acesso direto a APIs
+
+**Verificado:** o portal B3 for Developers informa atendimento B2B e ausência de
+acesso direto às suas APIs para pessoas físicas.
+Fonte: [B3 for Developers](https://developers.b3.com.br/).
+
+**Implicação:** o terminal pessoal não deve pressupor uma conexão direta à bolsa
+para enviar ordens. A escolha já aceita de simulador B3 interno evita essa
+dependência no MVP. Uma integração futura precisa ser comprovada junto à
+corretora: autenticação, ordens, cancelamento, fills, posições e contrato.
+Isso não significa que toda corretora ofereça API pública.
+
+### 4.2 Histórico público não comprova histórico intraday adequado
+
+**Verificado:** a página oficial de séries históricas direciona para arquivos
+organizados por períodos anuais, mensais e diários.
+Fontes: [Séries históricas B3](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/)
+e [página de arquivos](https://bvmf.bmfbovespa.com.br/pt-br/cotacoes-historicas/FormSeriesHistoricasArq.asp).
+
+**Implicação:** a existência desses arquivos não comprova candles de cinco
+minutos. Antes da importação, verificar layout, granularidade e ajustes do
+produto escolhido. Não interpolar OHLC diário para fabricar percurso intraday.
+Se o MVP exigir cinco minutos, será necessário histórico com essa resolução ou
+mais fino, com origem e direitos de uso demonstrados.
+
+### 4.3 Política comercial mudou perto da data da pesquisa
+
+**Verificado:** a página oficial distingue política vigente até 31/10/2026 da
+política a partir de 01/11/2026, e separa documentos comerciais de 2026/2027.
+O PDF comercial vinculado para o final de 2026 identifica vigência de novembro
+a dezembro e categorias de aplicações, incluindo display e non-display.
+Fontes: [Políticas e contratos B3](https://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/distribuidores/politica-comercial-e-contratos/)
+e [política comercial publicada para 2026](https://www.b3.com.br/data/files/85/35/A3/7F/5D881A10F75B881AAC094EA8/Politica%20Comercial%20de%20Market%20Data%20B3%202026%20V1.2.1.pdf).
+
+**Implicação:** não reutilizar tabela antiga como orçamento. Confirmar com o
+fornecedor se o contrato cobre armazenamento histórico, replay, cálculo de
+sinais e exibição no dashboard. Uso pessoal não demonstra automaticamente
+isenção de todas as regras de dados. Não concluir enquadramento/licença apenas
+pela possibilidade técnica de obter preços.
+
+**Limitação:** o PDF completo de Política de Consumo vinculado na página não pôde
+ser aberto pelo leitor web por exceder o limite de tamanho. Não foi feita revisão
+integral desse documento nem cálculo de tarifa aplicável ao Scooby.
+
+### 4.4 brapi como candidata de dados, sem escolha de fornecedor
+
+**Verificado:** a FAQ do próprio provedor lista intervalos intraday, incluindo
+`5m`, mas descreve histórico intraday de até sete dias. Uma tabela separada
+apresenta profundidade por plano para histórico em geral; não prova que um plano
+com anos de histórico forneça anos de dados de cinco minutos.
+Fonte: [Timeframes brapi](https://brapi.dev/faq/quais-sao-os-timeframes-disponiveis).
+
+**Implicação:** é candidata a investigação, não integração contratada. Antes de
+selecioná-la, testar os ativos e intervalos necessários e confirmar atraso,
+profundidade, origem, ajuste, disponibilidade, rate limit e permissão de uso
+algorítmico. A documentação de cotações não estabelece API de execução de ordens.
+Uma janela curta pode servir ao teste do pipeline, mas não basta para avaliar
+robustez de estratégias em diversos regimes de mercado.
+
+**Pendente:** Q8 e orçamento. CSV continua proposta, não dado disponível. Cada
+importação precisará de manifesto de fonte/licença, timezone, moeda, timeframe,
+intervalo, hash e regra de ajustes; validação não pode presumir origem confiável.
+
+## 5. Autenticação Google e suporte Vukem
+
+### 5.1 Identidade estável e verificação
+
+**Verificado:** o Google documenta OpenID Connect e validação do ID token; `sub`
+é o identificador estável, enquanto email pode mudar. `email_verified` é uma
+claim distinta. É necessário configurar cliente OAuth, consentimento e callback.
+Fonte: [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect).
+
+**Implicação:** o bootstrap confirmado usa somente o email verificado autorizado,
+e depois vincula ao subject de Google. Validar assinatura, issuer, audience,
+expiração, state e nonce antes de criar sessão. Email fornecido pelo browser não
+é autorização. Escopos mínimos propostos: `openid email profile`. Recuperação do
+vínculo não deve reabrir cadastro público.
+
+### 5.2 Framework fixado no projeto
+
+**Verificado na documentação da tag v0.37.0:** `social.Google` usa OIDC; o fluxo
+inclui PKCE/state e validação de ID token. O armazenamento de states deve ser
+compartilhado em produção. O scaffold retorna por padrão à intenção de navegação
+ou `/dashboard` e possui política de associação de contas por email verificado.
+Fonte: [Vukem social login — tag v0.37.0](https://github.com/AlexGalhardo/vukem/blob/v0.37.0/site/content/docs/security/social-login.mdx).
+
+**Implicação:** adaptar o destino para `/`, registrar exclusivamente Google,
+aplicar a admissão da conta única antes da sessão e revisar fluxos gerados de
+senha/cadastro. Usar cache persistente para states, com migrations. Não aceitar
+sem revisão o linking automático do scaffold como política do proprietário.
+
+**Limitação de acesso:** a URL do site Vukem falhou nesta rodada no leitor web;
+a confirmação veio do documento oficial na tag, obtido pela conexão GitHub.
+Não presumir que exemplos atuais em `main` sejam idênticos à versão instalada.
+
+## 6. shadcn/ui e gráficos
+
+**Verificado:** o guia Vite prevê configuração de Tailwind e alias no TypeScript
+ e Vite; permite aproveitar a configuração existente. A sidebar requer provider
+e oferece componentes de estrutura e controle.
+Fontes: [shadcn/ui Vite](https://ui.shadcn.com/docs/installation/vite)
+e [Sidebar Base UI](https://ui.shadcn.com/docs/components/base/sidebar).
+
+**Implicação:** no Scooby, adaptar caminhos para `resources/js` e
+`resources/css/app.css`, sem criar outro app paralelo. Escolher uma família de
+primitivas e manter consistência. Sidebar é navegação, não guarda de autorização;
+proteger rotas e endpoints no Go. Gráfico e tabela devem mostrar fonte, moeda,
+modo de simulação e idade do último dado.
+
+**Verificado:** Lightweight Charts é disponibilizado sob Apache 2.0 e seu
+repositório pede aviso de atribuição e link ao TradingView. A opção
+`attributionLogo` satisfaz a parte do link, não elimina o restante da obrigação.
+Fonte: [repositório oficial Lightweight Charts](https://github.com/tradingview/lightweight-charts).
+
+**Implicação:** se escolhido, fixar versão, preservar licenças/NOTICE e implementar
+atribuição. A biblioteca de gráficos não substitui contratação de market data.
+Ela permanece candidata; não foi instalada por esta pesquisa.
+
+## 7. PostgreSQL: precisão e concorrência
+
+**Verificado:** PostgreSQL distingue decimais exatos `numeric`/`decimal` de tipos
+float aproximados. `numeric` também admite valores especiais como `NaN`; a
+possibilidade de infinito depende das restrições do tipo.
+Fonte: [PostgreSQL Numeric Types](https://www.postgresql.org/docs/18/datatype-numeric.html).
+
+**Implicação:** dinheiro/quantidade precisam de decimal coerente em Go, banco e
+JSON. Validar valores finitos e limites de domínio na aplicação e no schema;
+usar `NUMERIC` sozinho não valida dado financeiro. Definir arredondamento por
+instrumento e operação. BRL e USD não devem ser somados sem FX e instante/fonte.
+
+**Verificado:** existem locks de linha e advisory locks, com semânticas de
+transação/sessão e possibilidade de deadlock.
+Fonte: [PostgreSQL Explicit Locking](https://www.postgresql.org/docs/18/explicit-locking.html).
+
+**Implicação:** serializar reserva de risco por conta e registrar intenção/outbox
+na mesma transação. Se usar advisory lock de sessão, manter afinidade com a
+conexão dedicada; pool pode invalidar suposições. Prever timeout, ordem de locks
+e recuperação. Lock do banco não impede sozinho um request externo já em voo:
+idempotência e reconciliação continuam necessárias.
+
+**Pendente:** não foi comprovada disponibilidade de TimescaleDB no serviço Railway
+que será criado. PostgreSQL convencional permanece a proposta inicial; extensão,
+Redis e NATS exigem justificativa e verificação próprias antes de virar dependência.
+
+## 8. Railway: execução contínua e deploy
+
+### 8.1 Migrations
+
+**Verificado:** pre-deploy roda em container separado, sem volumes montados;
+alterações ao filesystem não persistem. A configuração permite limitar a duração.
+Fonte: [Railway Pre-deploy](https://docs.railway.com/deployments/pre-deploy-command).
+
+**Implicação:** executar migrations contra banco pela rede, com timeout e
+serialização. Não depender de SQLite/arquivo local nesse passo. Aplicar mudanças
+compatíveis com código antigo durante sobreposição de versões.
+
+### 8.2 Start command
+
+**Verificado:** para imagem Docker, o start command sobrescreve ENTRYPOINT em
+exec form; variáveis de shell exigem shell explícito.
+Fonte: [Railway Start Command](https://docs.railway.com/deployments/start-command).
+
+**Implicação:** informar binários completos. O starter só tem `/app/app`; o
+planejado `/app/engine` precisará ser implementado e incluído no Dockerfile.
+Não configurar serviço para executar um binário que ainda não existe.
+
+### 8.3 Sono, disponibilidade e monitoramento
+
+**Verificado:** Serverless pode colocar serviço inativo para dormir e introduz
+cold start. Healthcheck da Railway condiciona ativação de deploy, mas não faz
+monitoramento contínuo depois da publicação.
+Fontes: [Serverless](https://docs.railway.com/deployments/serverless)
+e [Healthchecks](https://docs.railway.com/deployments/healthchecks).
+
+**Implicação:** desabilitar sleeping na engine e criar heartbeat/alertas externos.
+Não confiar em tráfego incidental ou aba aberta. Separar liveness, readiness e
+estado operacional da conta. Um processo vivo pode estar bloqueado por risco.
+
+### 8.4 Réplicas
+
+**Verificado:** há distribuição de tráfego entre réplicas e não há sticky
+sessions conforme a documentação consultada.
+Fonte: [Railway Scaling](https://docs.railway.com/deployments/scaling).
+
+**Implicação:** compartilhar estado OAuth/sessões quando necessário. Uma réplica
+configurada não dispensa liderança/fencing no worker durante deploy. Testar
+sobreposição, SIGTERM e recuperação antes de permitir ordens paper automáticas.
+
+## 9. Pesquisa quantitativa e limites dos backtests
+
+**Verificado:** o guia QuantConnect descreve overfitting, look-ahead e viés de
+sobrevivência; recomenda avaliação walk-forward e distingue informações
+publicadas posteriormente de dados disponíveis no instante simulado.
+Fonte: [QuantConnect Research Guide](https://www.quantconnect.com/docs/v2/writing-algorithms/key-concepts/research-guide).
+
+**Implicação:** guardar versão de estratégia, dados, ajustes, custos e seed;
+reservar teste temporal intocado; registrar tentativas e resultados descartados;
+usar apenas informação disponível naquele instante. Não selecionar só ações
+vencedoras atuais para alegar resultado generalizável. Separar desempenho
+in-sample, out-of-sample e paper.
+
+Propostas de implementação: candles encerrados geram ordens elegíveis no evento
+seguinte; OHLC não determina a ordem intrabar entre stop e alvo. Usar hipótese
+conservadora explícita ou dados mais finos, custos e sensibilidade à liquidez.
+Essas regras são escolhas do simulador, não propriedades garantidas pelo dado.
+
+## 10. Enquadramento e promessas financeiras
+
+**Verificado:** a CVM diferencia robôs de consultoria, gestão e ordens. A página
+trata de requisitos de prestação de serviços e alerta contra rentabilidade
+prometida. Ela também distingue sistemas que operacionalizam decisões do próprio
+investidor de determinadas ofertas de estratégias padronizadas.
+Fonte: [CVM — robôs de investimentos](https://www.gov.br/investidor/pt-br/investir/como-investir/profissionais-do-mercado/robos-de-investimentos).
+
+**Implicação:** manter no MVP o escopo pessoal confirmado e métricas transparentes,
+sem promessa de ganho. Transformar o terminal em SaaS/sinais/gestão exige outra
+análise do serviço efetivamente ofertado. Esta pesquisa não estabelece isenção,
+registro obrigatório específico ao Scooby, cálculo tributário ou parecer jurídico.
+
+## 11. Matriz de impacto nos documentos
+
+| Achado | Documento afetado | Ação recomendada |
+| --- | --- | --- |
+| IEX difere de cobertura consolidada | SDD-02, SDD-06 | Metadados de feed e validação da conta |
+| Paper tem hipóteses próprias de fill | SDD-03, SDD-04 | Custos/limitações e métricas separadas |
+| Histórico B3 intraday não está adquirido | SDD-02, SDD-06 | Fonte, licença e granularidade antes de validar estratégia |
+| Política B3 atualizada em novembro | Fontes, planejamento | Revalidar contrato e orçamento |
+| State OAuth precisa de store persistente | SDD-01 | Migrations e testes de replay/restart |
+| shadcn precisa adaptar paths Vite | SDD-01 | Alias, CSS e layout existente |
+| NUMERIC aceita valores especiais | Modelo de dados | Validações finitas e constraints |
+| Pre-deploy não monta volume | SDD-05 | Migrations via banco, sem estado em disco |
+| Healthcheck não monitora continuamente | SDD-05 | Heartbeat e alertas independentes |
+| Réplicas não garantem executor único | ADR-0002, SDD-03 | Liderança, fencing e reconciliação |
+
+Os achados são insumos para revisar os documentos; não alteram os estados dos
+ADRs automaticamente. Os detalhes técnicos ainda propostos seguem esse estado.
+
+## 12. Próximas verificações reproduzíveis
+
+1. Obter resposta a Q7–Q9 sem inferir aceite de opção sugerida.
+2. Com conta Alpaca Paper dedicada: validar permissões, dados, envio/cancelamento,
+   consulta por client ID, parciais, reconexão e recuperação após timeout.
+3. Com amostra histórica B3 autorizada: validar timeframe, timestamps, gaps,
+   ajustes e tick/lote; versionar manifesto, não pressupor acesso ao dataset.
+4. Se avaliar brapi/outro provedor: confirmar janela intraday, atraso, licença e
+   política de armazenamento; comparar retorno com amostra conhecida.
+5. Prototipar OAuth e sidebar com versão fixada do projeto e testes de autorização.
+6. Ensaiar migrations, restart/overlap e alerta de worker na Railway de teste.
+7. Definir orçamento, retenção, RPO/RTO e política de recuperação do proprietário.
+
+Esses passos não foram executados nesta pesquisa. Não houve contratação,
+publicação Railway, integração autenticada ou operação financeira.
+
+## 13. Lacunas e validade
+
+- API real/paper externa B3 não foi selecionada ou demonstrada.
+- Não existe neste trabalho dataset B3 intraday validado, licença adquirida ou
+  garantia de anos de histórico em granularidade de cinco minutos.
+- Política de Consumo B3 completa excedeu o leitor; revisão contratual permanece.
+- Não houve benchmark de latência/capacidade nem teste de falhas em broker externo.
+- Valores comerciais observados são referências datadas, não orçamento final.
+- Vukem foi conferido pela tag oficial; charts/primitivas UI continuam propostas.
+
+Revisar fontes quando mudar plano de dados, provedor, versão, mercado ou modo de
+execução. Preservar a data e registrar o que mudou em futuras atualizações.

@@ -17,6 +17,7 @@ Data-base: 2026-11-03. Idioma dos documentos: português.
 | [Operação na Railway](railway.md) | Deploy, variáveis, recuperação e observabilidade |
 | [Validação](validacao.md) | Testes, experimentos quantitativos e liberação |
 | [Fontes](fontes.md) | Documentação primária e limites das verificações |
+| [Pesquisa web](web-research.nd) | Achados, fontes oficiais, limitações e impactos no projeto |
 | [SDDs](sdd/README.md) | Especificações de comportamento e desenho técnico |
 | [ADRs](adrs/README.md) | Decisões arquiteturais e respectivos estados |
 
