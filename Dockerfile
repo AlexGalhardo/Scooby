@@ -3,7 +3,7 @@
 # Railway, Fly, Render and plain Docker build it as is:
 # https://vukem.dev/docs/deployment/docker-and-railway
 
-FROM node:24.22.0-alpine3.24 AS assets
+FROM node:26.13.0-alpine3.24 AS assets
 WORKDIR /src
 COPY package.json package-lock.json* ./
 # The lockfile is a required build input: the image installs exactly the
