@@ -220,27 +220,28 @@ type Fill struct {
 	Time    time.Time `json:"time"`
 }
 type State struct {
-	RiskDecisions []RiskDecision      `json:"risk_decisions"`
-	LeaderEpoch   int64               `json:"leader_epoch"`
-	ID            string              `json:"id"`
-	Mode          string              `json:"mode"`
-	Currency      string              `json:"currency"`
-	Cash          d.Decimal           `json:"cash"`
-	Initial       d.Decimal           `json:"initial"`
-	DayStart      d.Decimal           `json:"day_start"`
-	Day           string              `json:"day"`
-	Realized      d.Decimal           `json:"realized"`
-	Peak          d.Decimal           `json:"peak"`
-	Policy        Policy              `json:"policy"`
-	Halted        bool                `json:"halted"`
-	Reason        string              `json:"reason"`
-	Generation    int64               `json:"generation"`
-	Heartbeat     time.Time           `json:"heartbeat"`
-	ReconciledAt  time.Time           `json:"reconciled_at"`
-	Orders        []Order             `json:"orders"`
-	Positions     map[string]Position `json:"positions"`
-	Fills         []Fill              `json:"fills"`
-	Cursors       map[string]string   `json:"cursors"`
+	BrokerAccountID string              `json:"broker_account_id"`
+	RiskDecisions   []RiskDecision      `json:"risk_decisions"`
+	LeaderEpoch     int64               `json:"leader_epoch"`
+	ID              string              `json:"id"`
+	Mode            string              `json:"mode"`
+	Currency        string              `json:"currency"`
+	Cash            d.Decimal           `json:"cash"`
+	Initial         d.Decimal           `json:"initial"`
+	DayStart        d.Decimal           `json:"day_start"`
+	Day             string              `json:"day"`
+	Realized        d.Decimal           `json:"realized"`
+	Peak            d.Decimal           `json:"peak"`
+	Policy          Policy              `json:"policy"`
+	Halted          bool                `json:"halted"`
+	Reason          string              `json:"reason"`
+	Generation      int64               `json:"generation"`
+	Heartbeat       time.Time           `json:"heartbeat"`
+	ReconciledAt    time.Time           `json:"reconciled_at"`
+	Orders          []Order             `json:"orders"`
+	Positions       map[string]Position `json:"positions"`
+	Fills           []Fill              `json:"fills"`
+	Cursors         map[string]string   `json:"cursors"`
 }
 
 func NewState(id, currency, mode string) State {

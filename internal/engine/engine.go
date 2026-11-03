@@ -318,7 +318,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if account.Currency != "USD" || account.Status != "ACTIVE" || account.TradingBlocked {
+	if account.ID == "" || account.Currency != "USD" || account.Status != "ACTIVE" || account.TradingBlocked {
 		return errors.New("conta paper indisponível")
 	}
 	positions, err := e.Broker.Positions(ctx)
@@ -344,6 +344,11 @@ func (e Engine) Reconcile(ctx context.Context) error {
 		}
 	}
 	return e.mutate(ctx, "us", "engine", "tick", func(a *trading.State) error {
+		if a.BrokerAccountID != "" && a.BrokerAccountID != account.ID {
+			a.Halt("Credenciais apontam para outra conta Alpaca; migração administrativa necessária")
+			return nil
+		}
+		a.BrokerAccountID = account.ID
 		for _, b := range open {
 			found := false
 			for _, o := range a.Orders {

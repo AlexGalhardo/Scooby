@@ -42,6 +42,7 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 		t.Fatal(err)
 	}
 	sends := 0
+	accountID := "paper-account"
 	filled := order.Qty.Div(trading.D("2")).Floor()
 	remote := adapters.BrokerOrder{ID: "broker-order", ClientID: order.ID, Symbol: "AAPL", Side: "buy", Qty: order.Qty, Filled: filled, Average: ptr(trading.D("100")), Status: "partially_filled", Updated: time.Now()}
 	broker := adapters.Alpaca{Key: "test", Secret: "test", Client: &http.Client{Transport: transport(func(r *http.Request) (*http.Response, error) {
@@ -52,7 +53,7 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 		var body any
 		switch r.URL.Path {
 		case "/v2/account":
-			body = map[string]any{"id": "paper-account", "cash": "50000", "equity": "100000", "currency": "USD", "status": "ACTIVE"}
+			body = map[string]any{"id": accountID, "cash": "50000", "equity": "100000", "currency": "USD", "status": "ACTIVE"}
 		case "/v2/positions":
 			body = []map[string]any{{"symbol": "AAPL", "qty": filled.String(), "avg_entry_price": "100", "current_price": "100"}}
 		case "/v2/orders":
@@ -91,6 +92,16 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 	}
 	if len(state.Fills) != 1 || !state.Positions["AAPL"].Qty.Equal(filled) || state.Orders[0].Status != "partially_filled" || !state.Halted {
 		t.Fatal("partial/duplicate reconciliation failed")
+	}
+	accountID = "other-account"
+	if err := e.Reconcile(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Get(t.Context(), "trading_accounts", "us", &state); err != nil {
+		t.Fatal(err)
+	}
+	if state.BrokerAccountID != "paper-account" || !strings.Contains(state.Reason, "outra conta") {
+		t.Fatal("credential switch mixed broker accounts")
 	}
 }
 func ptr(v d.Decimal) *d.Decimal { return &v }

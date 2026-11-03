@@ -101,3 +101,8 @@ Railway, alertas reais, restauração no provedor, histórico B3 licenciado e
 observação de estratégias por período significativo. Testes locais não comprovam
 esses resultados nem desempenho financeiro. P6 permanece acompanhamento, não
 uma caixa marcada por dados sintéticos de teste.
+
+O ID externo da conta Alpaca fica vinculado após a primeira reconciliação. Rotação
+de chaves deve permanecer na mesma conta paper; apontar para outra conta bloqueia
+o executor, sem mesclar saldos, ordens e histórico. Migração de conta exige
+procedimento administrativo próprio.
