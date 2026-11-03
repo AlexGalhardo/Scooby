@@ -1,5 +1,8 @@
 # Scooby
 
+**Comece pelo [ROADMAP.md](ROADMAP.md)**: documento principal para onboarding,
+estado do projeto, decisões pendentes e continuidade entre sessões/agentes.
+
 Projeto web com [Vukem](https://vukem.dev/docs/introduction) (Go), Inertia.js,
 React, TypeScript, Tailwind CSS e PostgreSQL. Criado com o starter oficial
 `vukem new Scooby --module github.com/AlexGalhardo/Scooby --inertia react --pm npm --docker --ci`.

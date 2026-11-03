@@ -1,5 +1,9 @@
 # Scooby — documentação do produto e da arquitetura
 
+O [ROADMAP.md da raiz](../ROADMAP.md) é o documento principal do projeto.
+Leia-o primeiro para onboarding, estado real e próxima ação; este índice reúne
+os documentos de referência.
+
 Data-base: 2026-11-03. Idioma dos documentos: português.
 
 **Estado: planejamento em discussão.** Esta documentação não representa funcionalidades já implementadas. Os requisitos expressos pelo usuário estão confirmados; recomendações e ADRs propostos precisam das respostas ao grilling. Não há autorização de ativação de operações reais implícita neste planejamento.
