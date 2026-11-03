@@ -365,3 +365,20 @@ antes do fechamento contínuo, feriados e abertura especial. Anos ainda não
 revisados são rejeitados na importação, em vez de extrapolar automaticamente a
 grade. EUA obtém calendário/clock pela API Alpaca. Essas verificações não provam
 qualidade ou licença de um dataset intraday específico.
+
+## Adendo — Railway validado durante publicação (2026-11-03)
+
+Fonte primária consultada: https://docs.railway.com/builds/dockerfiles#cache-mounts
+(expansão de https://docs.railway.com/guides/dockerfiles).
+A página exige IDs de cache literais `s/<service id>-<target path>` e informa
+que variáveis não podem ser usadas nesses IDs. O builder real recusou mounts
+sem ID e mounts de tipo secret. O Dockerfile foi simplificado para camadas
+convencionais, compartilhadas entre web e engine, sem vinculação a IDs.
+
+A API autenticada retornou erro ao definir `railwayConfigFile`: Config as Code
+legado foi descontinuado e o fornecedor recomenda IaC. O schema GraphQL atual
+não inclui `DOCKERFILE` em `Builder`, mas `dockerfilePath` faz a detecção funcionar.
+Foi validada a configuração via `serviceInstanceUpdate`, sem esses dois campos,
+com pre-deploy de migrations, readiness e hibernação desabilitada. Ver ADR-0014.
+A web foi publicada e `/login` retornou HTTP 200 no domínio Railway. Isso não
+valida OAuth Google nem corretora, cujas credenciais ainda são placeholders/vazias.

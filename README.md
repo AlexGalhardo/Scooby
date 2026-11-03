@@ -19,7 +19,9 @@ independente da web com liderança/fencing, reservas e intenções transacionais
 reconciliação de ordens ambíguas/parciais e bloqueio de risco durável.
 
 O [checklist Railway](docs/deploy-checklist.md) contém todas as variáveis e o
-procedimento de publicação. Credenciais Google/Alpaca/Railway ainda são externas.
+procedimento de publicação. Web publicada em
+https://scooby-web-production.up.railway.app; credenciais Google/Alpaca/Telegram
+ainda precisam substituir os placeholders. Railway já autorizado via OAuth CLI.
 
 ## Desenvolvimento
 

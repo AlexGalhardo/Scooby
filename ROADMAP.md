@@ -6,8 +6,10 @@ Atualizado: 2026-11-03. Repositório: [AlexGalhardo/Scooby](https://github.com/A
 ## 1. Ponto de retomada
 
 O terminal pessoal **paper-only está implementado**, incluindo web, worker,
-backtesting, risco e adapters. O próximo passo é configurar as credenciais e
-publicar na Railway, conforme [docs/deploy-checklist.md](docs/deploy-checklist.md).
+backtesting, risco e adapters. Projeto e serviços Railway foram provisionados;
+web e engine saudáveis, com web em https://scooby-web-production.up.railway.app. O próximo passo é
+substituir placeholders por credenciais Google/Telegram/Alpaca e validar as
+integrações, conforme [docs/deploy-checklist.md](docs/deploy-checklist.md).
 Não recriar o starter nem repetir a entrevista de decisões já encerradas.
 
 Templates por serviço disponíveis em `.env.railway.web.example` e
@@ -22,7 +24,7 @@ Q7–Q9: defaults foram adotados por delegação e documentados no ADR-0011, sem
 inventar respostas individuais. Estratégias/contas começam desabilitadas/bloqueadas.
 
 **Não concluído por falta de acesso externo:** OAuth Google real, credenciais e
-permissões Alpaca Paper, publicação Railway, dados históricos B3 licenciados,
+permissões Alpaca Paper, dados históricos B3 licenciados,
 alertas reais e acompanhamento quantitativo prolongado. Não confundir testes
 locais com operação/lucratividade comprovada. Capital real permanece fora do MVP.
 
@@ -31,7 +33,7 @@ locais com operação/lucratividade comprovada. Capital real permanece fora do M
 1. Ler `git status --short --branch`, `git log -5 --oneline` e eventuais `AGENTS.md`;
    preservar alterações preexistentes.
 2. Ler este ROADMAP, o [README](README.md) e o [checklist de deploy](docs/deploy-checklist.md).
-3. Conferir os [ADRs](docs/adrs/README.md), especialmente 0011–0013, e o SDD da tarefa.
+3. Conferir os [ADRs](docs/adrs/README.md), especialmente 0011–0014, e o SDD da tarefa.
 4. Revisar o código: checklist/documento não substitui evidência de implementação.
 5. Consultar [pesquisa web](docs/web-research.nd); revalidar políticas, versões e
    calendários antes de ampliar cobertura. Ela contém limitações de acesso.
@@ -156,13 +158,17 @@ Stack fixada: Go 1.27.3; Vukem 0.37.0; driver PostgreSQL 0.6.1; Inertia React
 
 - [x] Dashboard conectado aos snapshots PostgreSQL com polling autenticado.
 - [x] Auditoria de ações/políticas/rejeições, heartbeat e readiness da engine.
-- [x] Dois executáveis e imagem sem root; TOMLs web/engine e Compose atualizados.
+- [x] Dois executáveis e imagem sem root; configuração API web/engine e Compose.
 - [x] Deploy sequencial, healthcheck, migrations e script de backup.
 - [x] Recuperação administrativa de proprietário auditada, com revogação de sessões.
 - [x] Backup/restore ensaiado em PostgreSQL de teste isolado.
-- [x] CLI Railway preparada; tokens ainda não configurados.
-- [ ] Publicar imagem/serviços com credenciais e domínio finais.
-- [ ] Configurar backup agendado, retenção, região/plano e monitoramento externo.
+- [x] CLI Railway autenticada por OAuth; projeto, serviços, variáveis e domínio criados.
+- [x] Web publicada; build, migrations, login HTTP e acesso ao banco confirmados.
+- [x] Configuração pela API atual e Dockerfile portável (ADR-0014), sem TOML legado.
+- [x] Web, engine e PostgreSQL publicados e saudáveis no domínio Railway.
+- [x] Backup diário PostgreSQL agendado; retenção do provedor confirmada em seis dias.
+- [ ] Confirmar orçamento/adequação regional e configurar monitoramento externo.
+- [ ] Validar primeira execução do backup e complementar retenção se exigir sete dias.
 - [ ] Testar Google/broker/Telegram e restore no provedor escolhido.
 
 ### P6 — Validação contínua
@@ -241,6 +247,11 @@ Verificações realizadas durante implementação:
 - Browser: Google fake → dashboard → CSV → estratégia → backtest/relatório →
   navegação de todas as áreas → mobile → logout.
 - Dump/restore em base isolada; readiness worker; compilação Go e frontend.
+- Railway real: web `266b5d5c-d668-4176-9bdc-7748ce9fee58` e engine
+  `80a0f3e2-9559-4269-a83b-facc46502e5c` com status SUCCESS no commit `4337761`.
+  `/` 302, `/login` 200, `/ready` 200 e `/api/snapshot` sem sessão 401.
+- CI do ajuste Docker/API aprovado:
+  https://github.com/AlexGalhardo/Scooby/actions/runs/41655709136.
 - CI e scan de segredos devem ser conferidos no commit final; não inferir estado
   atual apenas de execução antiga. Login/broker reais não foram exercitados.
 
@@ -252,6 +263,8 @@ Ao concluir cada sessão, atualizar checklist e registrar: mudança, teste/evid�
 ADRs afetados, bloqueios externos e primeira próxima ação. Preservar o histórico
 de respostas; nunca marcar feature pronta por haver apenas documentação.
 
-**Próxima ação:** obter/configurar com segurança Railway, Google OAuth e Alpaca
-Paper conforme `docs/deploy-checklist.md`; publicar web, esperar migrations e
-readiness, publicar engine, validar login real e só depois habilitar paper.
+**Próxima ação:** no serviço web, substituir Google OAuth e email autorizado;
+validar callback e login real. No serviço engine, configurar Telegram opcional e
+Alpaca Paper; repetir chaves paper na web se usar importação IEX. Railway já está
+autenticado/provisionado. Contas permanecem bloqueadas até revisão e retomada
+explícita. Conferir [destinos](docs/deploy-checklist.md#destino-provisionado).

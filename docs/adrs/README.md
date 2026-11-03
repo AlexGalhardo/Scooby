@@ -19,6 +19,7 @@ ADRs substituídos permanecem no histórico, com link para o sucessor.
 | [0011](0011-implementacao-autonoma.md) | Defaults e implementação autônoma | Aceito por instrução posterior |
 | [0012](0012-snapshots-transacionais.md) | Persistência efetivamente implementada | Implementado; detalha/atualiza ADR-0004 |
 | [0013](0013-workers-polling-e-deploy.md) | Polling, liderança e standby Railway | Implementado |
+| [0014](0014-railway-api-e-docker-portavel.md) | API Railway atual e Dockerfile portátil | Implementado durante publicação |
 
 Cada ADR deve registrar contexto, decisão, alternativas, consequências e gatilho
 de revisão. Brasil e EUA e uso pessoal estão confirmados; Alpaca Paper, simulador interno B3 e admissão de uma conta também. IEX e CSV B3 foram adotados por delegação; credenciais/datasets continuam externos.

@@ -1,7 +1,33 @@
 # Publicação Railway — configurações e handoff
 
-Estado: código implementado; publicação depende de credenciais do proprietário.
+Estado: projeto provisionado; web, engine e PostgreSQL saudáveis em 2026-11-03; integrações externas
+aguardam credenciais reais. Ver destinos abaixo e confirmar saúde na CLI.
 Não colar tokens ou client secrets na conversa ou em arquivos versionados.
+
+## Destino provisionado
+
+| Recurso | ID/endereço |
+| --- | --- |
+| Projeto Scooby | `706b6cfc-45e2-4bfc-af6b-45a7c401ed37` |
+| Ambiente production | `a0036a02-8b91-4463-96b5-622ed1fe3805` |
+| scooby-web | `4611a2b2-b810-4941-9eb9-279a13bc7982` |
+| scooby-engine | `aa2f67bb-69b5-470f-a676-abbfc9d7a806` |
+| Postgres | `17f09ea5-508e-4e1e-9c3c-40eeed4f3600` |
+| Web | https://scooby-web-production.up.railway.app |
+| Google callback | https://scooby-web-production.up.railway.app/auth/google/callback |
+
+Projeto: https://railway.com/project/706b6cfc-45e2-4bfc-af6b-45a7c401ed37
+
+Web e engine conectadas ao GitHub `AlexGalhardo/Scooby`, branch `main`.
+Banco com referência privada; chave de aplicação gerada e compartilhada; valores
+conferidos sem imprimi-los. Email do proprietário e OAuth permanecem placeholders;
+Alpaca e Telegram estão vazios/desativados. O usuário está criando Google/Telegram.
+Região inicial herdada do provedor: `us-east4-eqdc4a`, sem alteração de plano.
+Deploys iniciais confirmados SUCCESS no commit `4337761`: web
+`266b5d5c-d668-4176-9bdc-7748ce9fee58`; engine
+`80a0f3e2-9559-4269-a83b-facc46502e5c`. Smoke HTTPS: `/` 302; `/login` 200;
+`/ready` 200; `/api/snapshot` sem sessão 401. Engine healthcheck aprovado pelo
+provedor; o contrato de readiness verifica heartbeat das duas contas no banco.
 
 ## Templates de variáveis
 
@@ -30,8 +56,9 @@ plano/orçamento aceito; domínio próprio ou domínio Railway; email Google do
 proprietário. Se não existir projeto, criar um projeto Scooby e emitir um token
 restrito ao ambiente, em vez de fornecer acesso global à conta.
 
-Serviços: `scooby-web`, `scooby-engine`, PostgreSQL. Config File Path de cada
-aplicação: `railway.web.toml` e `railway.engine.toml`. Uma réplica para a engine,
+Serviços: `scooby-web`, `scooby-engine`, PostgreSQL. Configuração via
+`scripts/railway-configure.sh` e API atual; os TOMLs são referências históricas,
+pois a API rejeitou Config as Code legado (ADR-0014). Uma réplica para a engine,
 Serverless/sleeping desabilitado. O worker continua processando sem o navegador.
 Usar URL privada do PostgreSQL entre serviços. Apenas a web precisa de domínio
 público; `/ready` da engine funciona para healthcheck na porta configurada.
@@ -40,7 +67,7 @@ público; `/ready` da engine funciona para healthcheck na porta configurada.
 
 | Variável | Destino | Como obter |
 | --- | --- | --- |
-| `RAILWAY_TOKEN` | Ambiente seguro do Codex/CLI, não app | Token de projeto/ambiente Railway |
+| `RAILWAY_TOKEN` | Ambiente seguro do Codex/CLI, não app | Token de projeto/ambiente; sessão OAuth CLI também é aceita |
 | `APP_KEY` | web e engine | Gerar uma vez com `vukem key:generate`; compartilhar a mesma chave e mantê-la |
 | `DATABASE_URL` | web e engine | Referência ao PostgreSQL do projeto, preferencialmente rede privada |
 | `SOCIAL_GOOGLE_CLIENT_SECRET` | somente web | Credencial OAuth tipo Web no Google Cloud |
@@ -80,7 +107,8 @@ supor que um token precise ser exibido; usar a autorização configurada.
 
 ## Ordem da publicação
 
-1. Provisionar PostgreSQL e backup. Configurar variáveis e caminho do TOML.
+1. Provisionar PostgreSQL e backup. Configurar variáveis e executar
+   `scripts/railway-configure.sh` com IDs explícitos; não definir caminho de TOML.
 2. Publicar web. Pre-deploy executa `/app/app migrate`; Vukem serializa migrations
    PostgreSQL com advisory lock. Configurar timeout do pre-deploy no serviço.
 3. Esperar deploy bem-sucedido e `/ready`. `--ci` sozinho só acompanha build.
@@ -93,14 +121,21 @@ supor que um token precise ser exibido; usar a autorização configurada.
    a conta paper pessoal. Validar alertas se contratados/configurados.
 
 `scripts/railway-deploy.sh` publica sequencialmente serviços já configurados e
-aguarda status de sucesso por deployment ID. Não cria projetos sem informação
-sobre o destino. Não foi executado sem token.
+aguarda status de sucesso por deployment ID. Aceita token seguro ou sessão OAuth
+CLI. Não cria projetos sem informação sobre o destino. A publicação inicial usou
+GitHub source connect e a configuração API equivalente, sem token no chat.
 
 ## Backup e recuperação
 
+Backup diário nativo habilitado e relido pela API para a instância de volume
+`18f653a2-4123-4230-a47a-3d3a57d32ab6`. Agenda retornada: `56 19 * * *`, retenção
+`518400` segundos (seis dias). A API não oferece retenção custom nesse contrato;
+a meta inicial de sete dias exige complemento externo, se mantida. Agendamento
+confirmado não significa que o primeiro backup ou restore já foi validado.
+
 `scripts/backup.sh` produz dump custom, com permissões restritas. Definir
 `BACKUP_FILE` fora do repositório e usar armazenamento privado cifrado. Agendar
-backup diário e retenção inicial de sete dias no provedor, confirmando o plano.
+backup externo quando necessário para complementar a retenção do provedor.
 Meta operacional inicial: RPO 24h, RTO 2h; metas não foram medidas em produção.
 
 Restore em banco isolado: `pg_restore --no-owner --no-acl` para uma base de teste;

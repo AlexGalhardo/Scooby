@@ -1,5 +1,11 @@
 # Operação e deploy na Railway
 
+> Atualização da publicação: projeto provisionado, serviços criados e web online.
+> Destinos, domínio e configuração efetiva estão no
+> [checklist](deploy-checklist.md#destino-provisionado) e
+> [ADR-0014](adrs/0014-railway-api-e-docker-portavel.md). O texto histórico abaixo
+> não descreve o estado atual e não deve orientar configurações de variáveis.
+
 > Atualização de implementação: consulte o [ROADMAP](../ROADMAP.md),
 > [ADR-0011](adrs/0011-implementacao-autonoma.md),
 > [ADR-0012](adrs/0012-snapshots-transacionais.md) e
