@@ -3,6 +3,26 @@
 Estado: código implementado; publicação depende de credenciais do proprietário.
 Não colar tokens ou client secrets na conversa ou em arquivos versionados.
 
+## Templates de variáveis
+
+- `.env.example`: desenvolvimento; credenciais opcionais vazias com placeholders
+  identificados em comentários, evitando chamadas externas com chaves fictícias.
+- `.env.railway.web.example` e `.env.railway.engine.example`: templates por serviço.
+- `.env.railway.web.local` e `.env.railway.engine.local`: cópias privadas ignoradas
+  pelo Git, preparadas no workspace. A chave da aplicação é gerada uma vez e
+  compartilhada entre as duas; não imprimir esses arquivos.
+
+Os arquivos `.example` não são carregados automaticamente pela Railway. Aplicar
+as variáveis no editor de cada serviço ou pela CLI autenticada. Não executar
+`source` nos templates Railway: `${{Postgres.DATABASE_URL}}` é uma referência do
+provedor, não uma expressão de shell. Ajustar `Postgres` ao nome real do serviço.
+O domínio, email e OAuth têm marcadores explícitos que devem ser substituídos;
+Alpaca e Telegram permanecem vazios até obter credenciais reais. O callback
+Google fica no domínio da web, em `/auth/google/callback`.
+
+Preparar arquivos locais não comprova que as variáveis foram aplicadas no provedor;
+registrar projeto, serviços e domínio somente após confirmação da API Railway.
+
 ## Informações não secretas para a publicação
 
 Projeto/workspace Railway e ambiente desejado; nomes/IDs dos serviços; região e

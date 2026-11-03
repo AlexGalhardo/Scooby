@@ -10,6 +10,12 @@ backtesting, risco e adapters. O próximo passo é configurar as credenciais e
 publicar na Railway, conforme [docs/deploy-checklist.md](docs/deploy-checklist.md).
 Não recriar o starter nem repetir a entrevista de decisões já encerradas.
 
+Templates por serviço disponíveis em `.env.railway.web.example` e
+`.env.railway.engine.example`; cópias `.local` são privadas e ignoradas pelo Git.
+O usuário está criando Google OAuth e Telegram. Não substituir credenciais reais
+por placeholders nem considerar autenticação/publicação Railway concluídas sem
+confirmação da CLI/API. Ver [checklist](docs/deploy-checklist.md#templates-de-variáveis).
+
 A última instrução do usuário autorizou implementar todo o roadmap sem interrupções
 e pedir configurações de deploy ao final. Isso substitui o bloqueio anterior de
 Q7–Q9: defaults foram adotados por delegação e documentados no ADR-0011, sem
