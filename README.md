@@ -4,6 +4,14 @@ Projeto web com [Vukem](https://vukem.dev/docs/introduction) (Go), Inertia.js,
 React, TypeScript, Tailwind CSS e PostgreSQL. Criado com o starter oficial
 `vukem new Scooby --module github.com/AlexGalhardo/Scooby --inertia react --pm npm --docker --ci`.
 
+## Planejamento da plataforma de trading
+
+A [documentação de arquitetura e produto](docs/README.md) reúne requisitos,
+planejamento, brainstorming, rodadas de grilling, SDDs e ADRs. Ela descreve a
+evolução planejada para um terminal pessoal de Brasil e EUA, com backtesting e
+paper trading. O código abaixo continua sendo o starter; funcionalidades da
+plataforma ainda não foram implementadas.
+
 ## Desenvolvimento
 
 Requisitos: Go 1.27.3+, Node.js 24+ com npm e Docker Compose.
