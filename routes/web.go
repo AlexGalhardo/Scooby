@@ -1,44 +1,67 @@
 package routes
 
 import (
-	"net/http"
-
-	vukem "github.com/AlexGalhardo/vukem"
+	"context"
+	"github.com/AlexGalhardo/Scooby/app/accounts"
+	"github.com/AlexGalhardo/Scooby/app/controllers/terminal"
+	"github.com/AlexGalhardo/Scooby/resources"
+	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem/auth"
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/middleware"
 	"github.com/AlexGalhardo/vukem/router"
-
-	"github.com/AlexGalhardo/Scooby/app/controllers"
-	"github.com/AlexGalhardo/Scooby/resources"
+	"github.com/AlexGalhardo/vukem/web"
+	"net/http"
 )
 
-// Web registers the browser routes. vukem route:list shows them.
 func Web(r *router.Router, app *vukem.App) error {
 	if err := vukem.DefaultMiddleware(app, r); err != nil {
 		return err
 	}
-
-	r.UseServer(middleware.Gzip()) // proxies in front of the app may not compress
+	r.UseServer(middleware.Gzip())
 	r.UseServer(middleware.StaticFS(resources.Public(), middleware.StaticConfig{Prefix: "/"}))
-	r.Use(app.Inertia.Middleware, shareProps(app))
-
-	db, err := app.DB()
+	r.Use(app.Inertia.Middleware)
+	acc, err := accounts.New(app)
 	if err != nil {
 		return err
 	}
-
-	r.Get("/", controllers.Home).Name("home")
-	r.Resource("posts", controllers.NewPostController(db))
-
-	return nil
-}
-
-// shareProps adds the props every page receives (usePage().props).
-func shareProps(app *vukem.App) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
+	h, err := terminal.New(app)
+	if err != nil {
+		return err
+	}
+	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			inertia.Share(r.Context(), "appName", app.Config.Name)
+			c := web.NewCtx(w, r, web.ServicesFrom(r.Context()))
+			inertia.Share(r.Context(), "appName", "Scooby")
+			inertia.Share(r.Context(), "auth", func(context.Context) (any, error) {
+				u, err := acc.Web.User(c)
+				if err != nil {
+					return map[string]any{"user": nil}, nil
+				}
+				return map[string]any{"user": map[string]any{"id": u.ID, "name": u.Name, "email": u.Email}}, nil
+			})
 			next.ServeHTTP(w, r)
 		})
+	})
+	required := auth.Required(acc.Web)
+	r.Get("/", h.Page("overview")).Name("home").Use(required)
+	for _, section := range []string{"market", "strategies", "backtests", "orders", "positions", "risk", "audit", "settings"} {
+		r.Get("/"+section, h.Page(section)).Use(required)
 	}
+	r.Get("/dashboard", func(c *web.Ctx) error { return c.Redirect("/") }).Use(required)
+	r.Get("/ready", h.Ready)
+	r.Get("/api/snapshot", h.Snapshot).Use(required)
+	r.Get("/api/artifacts/{id}", h.Artifact).Use(required)
+	r.Post("/api/datasets/import", h.Import).Use(required)
+	r.Post("/api/datasets/fetch", h.Fetch).Use(required)
+	r.Get("/api/datasets/{id}", h.Dataset).Use(required)
+	r.Post("/api/strategies", h.Strategy).Use(required)
+	r.Post("/api/strategies/{id}/toggle", h.Toggle).Use(required)
+	r.Post("/api/backtests", h.Backtest).Use(required)
+	r.Get("/api/backtests/{id}", h.Job).Use(required)
+	r.Post("/api/backtests/{id}/cancel", h.CancelJob).Use(required)
+	r.Post("/api/accounts/{id}/policy", h.Policy).Use(required)
+	r.Post("/api/accounts/{id}/control", h.Control).Use(required)
+	r.Post("/api/accounts/{account}/orders/{id}/cancel", h.CancelOrder).Use(required)
+	return nil
 }

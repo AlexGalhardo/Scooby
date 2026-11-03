@@ -125,3 +125,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: go.mod
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

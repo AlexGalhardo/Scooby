@@ -1,27 +1,33 @@
 # Scooby
 
-**Comece pelo [ROADMAP.md](ROADMAP.md)**: documento principal para onboarding,
-estado do projeto, decisões pendentes e continuidade entre sessões/agentes.
+**Comece pelo [ROADMAP.md](ROADMAP.md)**: onboarding, estado real, testes,
+limitações e próxima ação para sessões e agentes.
 
-Projeto web com [Vukem](https://vukem.dev/docs/introduction) (Go), Inertia.js,
-React, TypeScript, Tailwind CSS e PostgreSQL. Criado com o starter oficial
-`vukem new Scooby --module github.com/AlexGalhardo/Scooby --inertia react --pm npm --docker --ci`.
+Terminal pessoal de trading quantitativo em Go/Vukem, Inertia/React/TypeScript,
+Tailwind/shadcn-ui e PostgreSQL. Exclusivamente backtesting e paper trading:
+Alpaca Paper nos EUA e replay interno B3. Sem capital real.
 
-## Planejamento da plataforma de trading
+## Implementado
 
-A [documentação de arquitetura e produto](docs/README.md) reúne requisitos,
-planejamento, brainstorming, rodadas de grilling, SDDs e ADRs. Ela descreve a
-evolução planejada para um terminal pessoal de Brasil e EUA, com backtesting e
-paper trading. O código abaixo continua sendo o starter; funcionalidades da
-plataforma ainda não foram implementadas.
+Login exclusivo Google com conta única e subject persistente; dashboard privado
+com sidebar responsiva, gráficos, dados, estratégias versionadas, laboratório de
+backtests, ordens, posições, risco, auditoria e status de integrações.
+
+Três estratégias (médias, reversão e rompimento), cálculo decimal, datasets
+com hash/procedência, jobs canceláveis e relatórios exportáveis. Worker Go
+independente da web com liderança/fencing, reservas e intenções transacionais,
+reconciliação de ordens ambíguas/parciais e bloqueio de risco durável.
+
+O [checklist Railway](docs/deploy-checklist.md) contém todas as variáveis e o
+procedimento de publicação. Credenciais Google/Alpaca/Railway ainda são externas.
 
 ## Desenvolvimento
 
-Requisitos: Go 1.27.3+, Node.js 24+ com npm e Docker Compose.
-Todas as ferramentas podem rodar no ambiente de nuvem do Codex.
+Requisitos: Go 1.27.3+, Node.js 24+, npm, Docker Compose. Em clone novo, copiar
+`.env.example` para `.env` **somente se não existir**. Nunca sobrescrever chave ou
+configuração existente. Instalar CLI e gerar chave na primeira preparação:
 
 ```sh
-cp .env.example .env
 go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.37.0
 vukem key:generate
 npm ci
@@ -30,32 +36,38 @@ vukem migrate
 vukem serve
 ```
 
-Abra `http://localhost:3000`. O comando `vukem serve` inicia Go e Vite com
-recarga automática. Sem a CLI, execute `npm run dev` e `go run ./cmd/app`
-em terminais separados.
+Configurar `OWNER_GOOGLE_EMAIL` e OAuth Google Web em `.env`; callback local:
+`http://localhost:3000/auth/google/callback`. Google verifica a identidade e o
+servidor admite apenas a conta configurada. Sem OAuth o login informa a pendência.
 
-A página inicial e o CRUD de posts (`/posts`) demonstram a integração Inertia.
-O PostgreSQL é o banco padrão: o driver está registrado em `bootstrap/app.go`
-e `DATABASE_URL` está em `.env`. SQLite em memória é usado apenas pelos testes
-isolados do starter.
-
-O `.env` local já recebe uma chave aleatória na criação e nunca entra no Git.
-As credenciais `scooby:scooby` são exclusivas de desenvolvimento. Em produção,
-configure uma chave própria, `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`
-e uma `DATABASE_URL` segura com TLS conforme seu provedor. O CRUD de exemplo
-é público; adicione autenticação e autorização antes de armazenar dados privados.
-
-## Stack completa em Docker
-
-Após criar `.env`, gerar `APP_KEY` e instalar as dependências:
+Em outro terminal, executar o worker:
 
 ```sh
-docker compose up --build
+ENGINE_HEALTH_PORT=3001 go run ./cmd/engine
 ```
 
-O Compose inicia a aplicação, aplica migrations, sobe PostgreSQL e disponibiliza
-o Mailpit em `http://localhost:8025`. O banco persiste em volume Docker.
-Para parar sem apagar os dados, use `docker compose down`.
+Ou `go run ./cmd/app trading:work`. Para executar tudo em containers:
+`docker compose up --build`. A web aplica migrations antes da engine iniciar.
+A engine não precisa de domínio público. Contas começam bloqueadas e estratégias
+desabilitadas; ative explicitamente depois de revisar os limites.
+
+## Dados e simulações
+
+Watchlist inicial: PETR4, VALE3, ITUB4, AAPL, NVDA, TSLA. CSV B3 2026 com
+`time,open,high,low,close,volume`, timestamps RFC3339 e offset, candles encerrados
+de cinco minutos e origem/licença declaradas. Importações são atômicas e rejeitam
+duplicatas, ordem temporal inválida, decimais inválidos e fora de sessão.
+Calendário B3 2026 inclui feriados/abertura especial e mudança de grade em novembro;
+anos não revisados falham fechados. EUA usa calendário e feed IEX Alpaca.
+
+Amostra de formato em [examples/b3-format.csv](examples/b3-format.csv),
+**sintética e insuficiente para validar estratégia**. Um único replay B3 ativo por
+conta preserva o relógio histórico. EUA permite uma configuração ativa por ativo.
+Não somar BRL/USD nem apresentar replay como execução em corretora.
+
+Backtests usam próximo evento elegível, custos/slippage configurados, participação
+limitada por volume e stop conservador em ambiguidade OHLC. Treino/teste: 70/30;
+benchmark bruto e limitações identificados. Não há promessa de rentabilidade.
 
 ## Verificação
 
@@ -67,55 +79,29 @@ go vet ./...
 go tool govulncheck ./...
 ```
 
-Para testar migrations e o CRUD Inertia no PostgreSQL real, use um banco
-dedicado de testes (nunca produção):
+Para integração PostgreSQL, criar um banco dedicado cujo nome termine em `_test`
+e configurar `TEST_DATABASE_URL`. Nunca usar produção nesses testes. Casos
+incluem concorrência de reservas, rollback e failover de liderança.
 
 ```sh
-docker compose up -d postgres
-docker compose exec postgres createdb -U scooby scooby_test
-TEST_DATABASE_URL='postgres://scooby:scooby@localhost:5432/scooby_test?sslmode=disable' go test -v ./tests -run TestPostgresPosts
+npx playwright install chromium
+npm run test:e2e
 ```
 
-O GitHub Actions verifica Go, tipos TypeScript, build frontend, integração com
-PostgreSQL, vulnerabilidades, segredos e build da imagem. `package-lock.json`
-e `go.sum` fixam as dependências para instalações reproduzíveis.
+E2E usa servidor loopback com fake OAuth **somente** em `KindTest` e build tag
+`e2e`; não é incluído na imagem de produção. Exercita login, importação, criação
+de estratégia, job/relatório de backtest, navegação, mobile e logout.
+No ambiente Codex com Chromium instalado, usar `CHROMIUM_PATH=/usr/bin/chromium`.
+Não rodar `npm run build` ao mesmo tempo que Go compila os assets embutidos.
 
-## Build
+## Build e operação
 
-```sh
-vukem build  # assets e binário em bin/app
-```
+`scripts/build.sh` gera `bin/app` e `bin/engine`, com versão Git nos relatórios.
+O Dockerfile gera ambos os executáveis e assets em imagem sem root. Para Railway,
+configurar `railway.web.toml` e `railway.engine.toml` em serviços separados.
+Scripts de deploy e backup em `scripts/`; detalhes de recuperação e variáveis em
+[docs/deploy-checklist.md](docs/deploy-checklist.md).
 
-O Dockerfile também produz uma imagem com assets embutidos e usuário sem
-privilégios. Para publicar, configure as variáveis de produção e execute
-`/app/app migrate` antes de iniciar `/app/app`.
-
-## Documentation
-
-Every section of <https://vukem.dev/docs>, in the order a new project needs
-them:
-
-| Section | What it covers |
-| --- | --- |
-| [Getting started](https://vukem.dev/docs/introduction) | installation, the starters, `.env` and configuration, the directory structure |
-| [Architecture](https://vukem.dev/docs/architecture/lifecycle) | the application lifecycle, from `cmd/app` to a response |
-| [The basics](https://vukem.dev/docs/basics/routing) | routing, middleware, controllers, requests, validation, errors, sessions, CSRF, views |
-| [APIs](https://vukem.dev/docs/rest-apis/overview) | JSON APIs, pagination, typed handlers, OpenAPI, client generation, idempotency |
-| [Database](https://vukem.dev/docs/database/overview) | the ORM, relations, migrations, factories and seeders, PostgreSQL, Redis, MongoDB |
-| [Security](https://vukem.dev/docs/security/overview) | authentication, API tokens, two-factor, authorization, rate limiting, headers, encryption |
-| [Digging deeper](https://vukem.dev/docs/digging-deeper/mail) | mail, cache, storage, uploads, events, queue, scheduler, broadcasting, billing, admin |
-| [Frontend](https://vukem.dev/docs/frontend/htmx) | HTMX, Vite, Inertia |
-| [Testing](https://vukem.dev/docs/testing/overview) | the fluent HTTP client, the test database, factories |
-| [CLI](https://vukem.dev/docs/cli/overview) | every `vukem` command and flag |
-| [Deployment](https://vukem.dev/docs/deployment/single-binary) | the single binary, Docker and Railway |
-
-## Project standards
-
-| File | What it does |
-| --- | --- |
-| `.editorconfig` | tabs of width 4, spaces where the format needs them (YAML, Markdown, JavaScript) |
-| `.gitattributes` | LF in the repository and in every working copy, Windows included |
-| `.betterleaks.toml` | secret scanning rules (`APP_KEY`, `vk_` API tokens, Stripe keys) on top of Betterleaks' defaults |
-| `.github/workflows/ci.yml` | format, vet, test, `govulncheck`, secret scanning and the image build on every push |
-| `.github/dependabot.yml` | weekly dependency and action updates, with Conventional Commits titles |
-| `compose.yaml` | the local stack: the app, PostgreSQL and a mail catcher (`docker compose up --build`) |
+Histórico/dados externos, integrações autenticadas, deploy real e validação
+quantitativa prolongada dependem da configuração do proprietário. O CI e os
+fixtures comprovam comportamento técnico, não desempenho financeiro.

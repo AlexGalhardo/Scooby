@@ -1,5 +1,9 @@
 # SDD-02 — dados de mercado e estratégias
 
+> Implementação atual e desvios explícitos em [ROADMAP](../../ROADMAP.md)
+> e [ADRs 0011–0013](../adrs/README.md). Aceite técnico local é distinto
+> de OAuth/broker reais, publicação Railway e observação financeira prolongada.
+
 Estado: Brasil + EUA confirmados; contratos propostos. Corretoras, feeds, universo e timeframe pendentes.
 
 ## Entrada e contrato

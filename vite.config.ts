@@ -6,6 +6,7 @@ import { defineConfig } from "vite";
 import vukem from "./resources/vite/vukem.js";
 
 export default defineConfig({
+  resolve: { alias: { "@": new URL("./resources/js", import.meta.url).pathname } },
   plugins: [
     tailwindcss(),
     react(),

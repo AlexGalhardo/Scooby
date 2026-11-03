@@ -11,7 +11,7 @@ COPY package.json package-lock.json* ./
 # and yarn resolve fresh versions and say nothing, so the requirement is
 # stated here and is the same for every package manager. Generate it with
 # "npm install" and commit it; .dockerignore must not exclude it.
-RUN --mount=type=secret,id=proxy_ca \
+RUN --mount=type=cache,target=/src/node_modules,sharing=locked --mount=type=secret,id=proxy_ca \
 	if [ -f /run/secrets/proxy_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/proxy_ca; fi; \
 	if ! ls package-lock.json* >/dev/null 2>&1; then \
 		echo "package-lock.json not found: run 'npm install', commit it, then build again" >&2; \
@@ -19,21 +19,24 @@ RUN --mount=type=secret,id=proxy_ca \
 	fi \
 	&& npm ci --no-audit --no-fund
 COPY . .
-RUN npm run build
+RUN --mount=type=cache,target=/src/node_modules,sharing=locked npm run build
 
 FROM golang:1.27.3-alpine3.24 AS build
 WORKDIR /src
 ENV CGO_ENABLED=0
+ARG RAILWAY_GIT_COMMIT_SHA=unknown
 COPY go.mod go.sum ./
-RUN --mount=type=secret,id=proxy_ca \
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=secret,id=proxy_ca \
 	if [ -f /run/secrets/proxy_ca ]; then export SSL_CERT_FILE=/run/secrets/proxy_ca; fi; \
 	go mod download
 COPY . .
 COPY --from=assets /src/resources/public/build resources/public/build
 # Same tags as vukem build: .buildtags lists them (one per line or
 # comma-separated, "#" comments); --minimal apps put vukem_nosqlite there.
-RUN tags="$(sed 's/#.*//' .buildtags 2>/dev/null | tr -s ', \t\r\n' ',' | sed 's/^,//; s/,$//')" \
-	&& go build -trimpath -ldflags="-s -w" -tags "$tags" -o /out/app ./cmd/app
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+	tags="$(sed 's/#.*//' .buildtags 2>/dev/null | tr -s ', \t\r\n' ',' | sed 's/^,//; s/,$//')" \
+	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/Scooby/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/app ./cmd/app \
+	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/Scooby/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/engine ./cmd/engine
 
 FROM alpine:3.24.2
 RUN --mount=type=secret,id=proxy_ca \
@@ -44,6 +47,7 @@ RUN --mount=type=secret,id=proxy_ca \
 	&& chown app:app /app/storage
 WORKDIR /app
 COPY --from=build /out/app /app/app
+COPY --from=build /out/engine /app/engine
 USER app
 # The platform's PORT overrides this one; HOST=0.0.0.0 makes the server
 # reachable from outside the container. Pass secrets at runtime, never here.

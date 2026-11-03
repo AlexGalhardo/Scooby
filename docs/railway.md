@@ -1,5 +1,12 @@
 # Operação e deploy na Railway
 
+> Atualização de implementação: consulte o [ROADMAP](../ROADMAP.md),
+> [ADR-0011](adrs/0011-implementacao-autonoma.md),
+> [ADR-0012](adrs/0012-snapshots-transacionais.md) e
+> [ADR-0013](adrs/0013-workers-polling-e-deploy.md) para o estado efetivo.
+> O texto abaixo preserva requisitos/desenhos originais, não uma declaração de
+> que todos os detalhes de infraestrutura ou validação externa já ocorreram.
+
 Estado: destino confirmado; topologia e configurações abaixo propostas. Nenhum
 serviço Railway foi criado nesta etapa.
 

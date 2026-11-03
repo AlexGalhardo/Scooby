@@ -1,5 +1,9 @@
 # SDD-04 — backtesting e pesquisa
 
+> Implementação atual e desvios explícitos em [ROADMAP](../../ROADMAP.md)
+> e [ADRs 0011–0013](../adrs/README.md). Aceite técnico local é distinto
+> de OAuth/broker reais, publicação Railway e observação financeira prolongada.
+
 Estado: proposto. Dataset, frequência, benchmark e custos pendentes.
 
 ## Contrato de uma execução

@@ -15,7 +15,10 @@ ADRs substituídos permanecem no histórico, com link para o sucessor.
 | [0007](0007-paper-first.md) | Paper-first e execução determinística | Paper-first aceito; detalhes propostos |
 | [0008](0008-brasil-e-eua.md) | Brasil e EUA no MVP | Aceito; provedores pendentes |
 | [0009](0009-uso-pessoal.md) | Terminal pessoal e conta única | Aceito |
-| [0010](0010-adapters-paper.md) | Alpaca Paper EUA e simulador B3 | Aceito; feeds pendentes |
+| [0010](0010-adapters-paper.md) | Alpaca Paper EUA e simulador B3 | Implementados; validação externa pendente |
+| [0011](0011-implementacao-autonoma.md) | Defaults e implementação autônoma | Aceito por instrução posterior |
+| [0012](0012-snapshots-transacionais.md) | Persistência efetivamente implementada | Implementado; detalha/atualiza ADR-0004 |
+| [0013](0013-workers-polling-e-deploy.md) | Polling, liderança e standby Railway | Implementado |
 
 Cada ADR deve registrar contexto, decisão, alternativas, consequências e gatilho
-de revisão. Brasil e EUA e uso pessoal estão confirmados; Alpaca Paper, simulador interno B3 e admissão de uma conta também. Fontes de dados ainda pendentes.
+de revisão. Brasil e EUA e uso pessoal estão confirmados; Alpaca Paper, simulador interno B3 e admissão de uma conta também. IEX e CSV B3 foram adotados por delegação; credenciais/datasets continuam externos.

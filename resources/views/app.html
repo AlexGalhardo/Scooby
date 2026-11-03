@@ -1,16 +1,17 @@
 {{/* layout: none */}}<!doctype html>
-<html lang="{{or locale "en"}}" data-hydrating>
+<html lang="{{or locale "pt-BR"}}" data-hydrating>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Vukem</title>
+	<title>Scooby</title>
+ <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 	<meta property="csp-nonce" nonce="{{cspNonce}}">
 	{{analytics}}
 	{{viteReactRefresh}}
 	{{vite "resources/css/app.css" "resources/js/app.tsx"}}
 	{{.Head}}
 </head>
-<body class="bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+<body class="bg-background text-foreground antialiased">
 	{{.Inertia}}
 </body>
 </html>

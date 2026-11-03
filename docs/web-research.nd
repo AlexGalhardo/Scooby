@@ -351,3 +351,17 @@ publicação Railway, integração autenticada ou operação financeira.
 
 Revisar fontes quando mudar plano de dados, provedor, versão, mercado ou modo de
 execução. Preservar a data e registrar o que mudou em futuras atualizações.
+
+## 14. Atualização de implementação — calendários (2026-11-03)
+
+A B3 informa feriados de 2026 e abertura às 13h na quarta-feira de Cinzas.
+Fonte: [calendário de negociação B3 2026](https://www.b3.com.br/pt_br/noticias/calendario-de-negociacao-da-b3-confira-o-funcionamento-da-bolsa-em-2026.htm).
+A grade publicada para ações altera o período de negociação a partir de
+03/11/2026. Fontes: [horários e ajuste de novembro](https://b3.com.br/pt_br/noticias/b3-ajusta-horarios-de-negociacao-de-acoes-e-derivativos-acompanhando-fim-do-horario-de-verao-nos-eua.htm)
+e [OC 055/2026, grade de novembro](https://www.b3.com.br/data/files/BE/16/C1/59/2F881A10F75B881AAC094EA8/OC%20055-2026-VNC%20NOVOS%20HORARIOS%20DE%20NEGOCIACAO_PT.pdf).
+
+Implicação implementada: calendário B3 versionado 2026, com interrupção de entradas
+antes do fechamento contínuo, feriados e abertura especial. Anos ainda não
+revisados são rejeitados na importação, em vez de extrapolar automaticamente a
+grade. EUA obtém calendário/clock pela API Alpaca. Essas verificações não provam
+qualidade ou licença de um dataset intraday específico.

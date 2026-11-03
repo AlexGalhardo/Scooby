@@ -1,5 +1,9 @@
 # SDD-06 — adapters confirmados e modalidades de simulação
 
+> Implementação atual e desvios explícitos em [ROADMAP](../../ROADMAP.md)
+> e [ADRs 0011–0013](../adrs/README.md). Aceite técnico local é distinto
+> de OAuth/broker reais, publicação Railway e observação financeira prolongada.
+
 Estado: Alpaca Paper EUA e simulação interna B3 confirmados; dados em Q8.
 
 ## Adapter de corretora

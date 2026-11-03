@@ -1,5 +1,9 @@
 # SDD-01 — identidade Google e dashboard
 
+> Implementação atual e desvios explícitos em [ROADMAP](../../ROADMAP.md)
+> e [ADRs 0011–0013](../adrs/README.md). Aceite técnico local é distinto
+> de OAuth/broker reais, publicação Railway e observação financeira prolongada.
+
 Estado: RF-01–RF-04 e uso pessoal confirmados. Admissão restrita a uma conta confirmada em Q6; recuperação ainda pendente.
 
 ## Contrato de navegação

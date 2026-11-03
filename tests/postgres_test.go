@@ -2,52 +2,135 @@ package tests
 
 import (
 	"context"
-	"crypto/rand"
+	"fmt"
+	"github.com/AlexGalhardo/Scooby/bootstrap"
+	"github.com/AlexGalhardo/Scooby/internal/engine"
+	"github.com/AlexGalhardo/Scooby/internal/trading"
+	"github.com/AlexGalhardo/vukem/vukemtest"
+	"log/slog"
 	"net/url"
 	"os"
-	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
-
-	"github.com/AlexGalhardo/vukem/vukemtest"
-
-	"github.com/AlexGalhardo/Scooby/bootstrap"
+	"time"
 )
 
-// TestPostgresPosts exercises migrations and the Inertia CRUD on a real database.
-// Set TEST_DATABASE_URL to a dedicated test database; never a production database.
-func TestPostgresPosts(t *testing.T) {
+func TestPostgresConcurrencyAndRollback(t *testing.T) {
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set TEST_DATABASE_URL to run the PostgreSQL integration test")
+		t.Skip("set TEST_DATABASE_URL for dedicated PostgreSQL integration")
 	}
-	app := vukemtest.New(t, bootstrap.New, vukemtest.Options{
-		Env: map[string]string{"DATABASE_URL": dsn},
-	})
+	u, err := url.Parse(dsn)
+	if err != nil || !strings.HasSuffix(u.Path, "_test") {
+		t.Fatal("TEST_DATABASE_URL must name a dedicated *_test database")
+	}
+	app := vukemtest.New(t, bootstrap.New, vukemtest.Options{Env: map[string]string{"DATABASE_URL": dsn}})
 	db, err := app.DB()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := db.Dialect().Name(); got != "postgres" {
-		t.Fatalf("expected PostgreSQL, got %s", got)
-	}
-	title := "Integration " + rand.Text()
-	api := app.Client(t).AcceptJSON()
-	api.PostJSON("/posts", map[string]any{"title": title, "body": "PostgreSQL round trip"}).
-		AssertCreated().AssertJSONPath("title", title)
-	t.Cleanup(func() {
-		if _, err := db.ExecContext(context.Background(), "DELETE FROM posts WHERE title = $1", title); err != nil {
-			t.Errorf("clean up integration post: %v", err)
-		}
-	})
-	var id int64
-	if err := db.QueryRowContext(t.Context(), "SELECT id FROM posts WHERE title = $1", title).Scan(&id); err != nil {
+	store := trading.Store{DB: db}
+	id := "test-" + trading.ID()
+	a := trading.NewState(id, "USD", "simulation")
+	a.Halted = false
+	if err := store.Create(t.Context(), "trading_accounts", id, "ready", "test", a); err != nil {
 		t.Fatal(err)
 	}
-	path := "/posts/" + strconv.FormatInt(id, 10)
-	client := app.Client(t).Inertia("")
-	client.Get(path).AssertOK().AssertInertia("Posts/Show").PropEquals("post.title", title)
-	client.PutJSON(path, map[string]any{"title": title, "body": "Updated"}).AssertRedirect(path)
-	api.GetJSON(path).AssertOK().AssertJSONPath("body", "Updated")
-	client.Delete(path).AssertRedirect("/posts")
-	api.GetJSON("/posts?q="+url.QueryEscape(title)).AssertOK().AssertJSONCount("data", 0)
+	t.Cleanup(func() {
+		_, _ = db.ExecContext(context.Background(), "DELETE FROM trading_accounts WHERE id=$1", id)
+		_, _ = db.ExecContext(context.Background(), "DELETE FROM audit_events WHERE account_id=$1", id)
+	})
+	var success atomic.Int64
+	var wg sync.WaitGroup
+	for j := 0; j < 16; j++ {
+		wg.Add(1)
+		go func(j int) {
+			defer wg.Done()
+			err := store.Mutate(t.Context(), id, "test", "reserve", func(a *trading.State) error {
+				_, err := a.Reserve(trading.Strategy{Symbol: "AAPL", StopBPS: 100, TargetBPS: 200}, "buy", fmt.Sprint(j), trading.D("100"), time.Now())
+				return err
+			})
+			if err == nil {
+				success.Add(1)
+			}
+		}(j)
+	}
+	wg.Wait()
+	if success.Load() != 1 {
+		t.Fatalf("expected one reserved intent, got %d", success.Load())
+	}
+	if err := store.Get(t.Context(), "trading_accounts", id, &a); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Orders) != 1 {
+		t.Fatal("lost or duplicated intention")
+	}
+	before := a.Cash
+	err = store.Mutate(t.Context(), id, "test", "rollback", func(a *trading.State) error { a.Cash = trading.Zero; return fmt.Errorf("failure before commit") })
+	if err == nil {
+		t.Fatal("expected rollback")
+	}
+	if err := store.Get(t.Context(), "trading_accounts", id, &a); err != nil || !a.Cash.Equal(before) {
+		t.Fatal("rollback did not preserve cash", err)
+	}
+}
+
+func TestPostgresWorkerFailover(t *testing.T) {
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("dedicated PostgreSQL required")
+	}
+	u, err := url.Parse(dsn)
+	if err != nil || !strings.HasSuffix(u.Path, "_test") {
+		t.Fatal("dedicated *_test database required")
+	}
+	app := vukemtest.New(t, bootstrap.New, vukemtest.Options{Env: map[string]string{"DATABASE_URL": dsn}})
+	db, _ := app.DB()
+	store := trading.Store{DB: db}
+	if err := store.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	var before trading.State
+	if err := store.Get(t.Context(), "trading_accounts", "b3", &before); err != nil {
+		t.Fatal(err)
+	}
+	ctx1, stop1 := context.WithCancel(t.Context())
+	defer stop1()
+	ctx2, stop2 := context.WithCancel(t.Context())
+	defer stop2()
+	r1 := make(chan error, 1)
+	r2 := make(chan error, 1)
+	e := engine.Engine{Store: store, Log: slog.Default()}
+	go func() { r1 <- e.Run(ctx1) }()
+	waitEpoch := func(want int64) {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for time.Now().Before(deadline) {
+			var a trading.State
+			if store.Get(t.Context(), "trading_accounts", "b3", &a) == nil && a.LeaderEpoch == want {
+				return
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		t.Fatalf("epoch %d not reached", want)
+	}
+	waitEpoch(before.LeaderEpoch + 1)
+	go func() { r2 <- e.Run(ctx2) }()
+	time.Sleep(350 * time.Millisecond)
+	var current trading.State
+	_ = store.Get(t.Context(), "trading_accounts", "b3", &current)
+	if current.LeaderEpoch != before.LeaderEpoch+1 {
+		t.Fatal("standby became leader too early")
+	}
+	stop1()
+	if err := <-r1; err != nil {
+		t.Fatal(err)
+	}
+	waitEpoch(before.LeaderEpoch + 2)
+	stop2()
+	if err := <-r2; err != nil {
+		t.Fatal(err)
+	}
 }

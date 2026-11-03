@@ -1,251 +1,208 @@
 # ROADMAP — Scooby
 
-**Documento principal de onboarding e continuidade do projeto.**
-Atualizado em 2026-11-03. Ler antes de planejar ou alterar o código.
-Repositório: [AlexGalhardo/Scooby](https://github.com/AlexGalhardo/Scooby).
+**Documento principal para onboarding e continuidade entre sessões/agentes.**
+Atualizado: 2026-11-03. Repositório: [AlexGalhardo/Scooby](https://github.com/AlexGalhardo/Scooby).
 
 ## 1. Ponto de retomada
 
-O projeto está na **fase de especificação**, com starter funcional e documentação
-versionada. A plataforma de trading ainda não foi implementada. A próxima ação
-é continuar a **rodada 3 de decisões (Q7–Q9)** em [docs/grilling.md](docs/grilling.md),
-registrar as respostas e resolver as dependências necessárias ao primeiro
-incremento. Não interpretar uma recomendação como aceite do proprietário.
+O terminal pessoal **paper-only está implementado**, incluindo web, worker,
+backtesting, risco e adapters. O próximo passo é configurar as credenciais e
+publicar na Railway, conforme [docs/deploy-checklist.md](docs/deploy-checklist.md).
+Não recriar o starter nem repetir a entrevista de decisões já encerradas.
 
-A sessão anterior entregou planejamento, pesquisa web, 6 SDDs e 10 ADRs.
-Não recriar o projeto, não trocar a stack e não repetir perguntas já respondidas.
-Nenhum deploy Railway, projeto OAuth ou integração autenticada com corretora
-foi criado por essas entregas.
+A última instrução do usuário autorizou implementar todo o roadmap sem interrupções
+e pedir configurações de deploy ao final. Isso substitui o bloqueio anterior de
+Q7–Q9: defaults foram adotados por delegação e documentados no ADR-0011, sem
+inventar respostas individuais. Estratégias/contas começam desabilitadas/bloqueadas.
 
-## 2. Onboarding para uma nova sessão ou agente
+**Não concluído por falta de acesso externo:** OAuth Google real, credenciais e
+permissões Alpaca Paper, publicação Railway, dados históricos B3 licenciados,
+alertas reais e acompanhamento quantitativo prolongado. Não confundir testes
+locais com operação/lucratividade comprovada. Capital real permanece fora do MVP.
 
-1. Executar `git status --short --branch` e `git log -5 --oneline`; preservar
-   alterações preexistentes. Ler eventuais `AGENTS.md` aplicáveis no checkout.
-2. Ler este arquivo para entender o estado e o próximo passo.
-3. Ler [produto](docs/produto.md) e [grilling](docs/grilling.md), distinguindo
-   requisitos confirmados, propostas e perguntas pendentes.
-4. Ler os [ADRs](docs/adrs/README.md), a [arquitetura](docs/arquitetura.md) e o
-   SDD da entrega em que vai trabalhar. Não tratar ADR proposto como aceito.
-5. Consultar [pesquisa web](docs/web-research.nd) e [fontes](docs/fontes.md) antes
-   de depender de uma capacidade, tarifa ou contrato externo. Revalidar o que
-   pode ter mudado; o relatório é datado, não garantia permanente.
-6. Conferir o código e as ferramentas realmente disponíveis. Processos, arquivos
-   em `/tmp`, caches e credenciais de uma sessão anterior podem não existir.
-7. Identificar a menor entrega autorizada com critérios de aceite claros. Fazer
-   perguntas sobre decisões do usuário; pesquisar fatos técnicos por conta própria.
-8. Ao concluir, atualizar o checklist, evidências e ponto de retomada neste arquivo,
-   além dos SDDs/ADRs afetados. Deixar a próxima ação concreta e os bloqueios explícitos.
+## 2. Onboarding de uma nova sessão
 
-Instruções atuais do usuário prevalecem sobre recomendações anteriores. Se houver
-contradição entre documentos, conferir decisão original/registro de grilling e
-código; corrigir a divergência, sem inventar uma resposta.
+1. Ler `git status --short --branch`, `git log -5 --oneline` e eventuais `AGENTS.md`;
+   preservar alterações preexistentes.
+2. Ler este ROADMAP, o [README](README.md) e o [checklist de deploy](docs/deploy-checklist.md).
+3. Conferir os [ADRs](docs/adrs/README.md), especialmente 0011–0013, e o SDD da tarefa.
+4. Revisar o código: checklist/documento não substitui evidência de implementação.
+5. Consultar [pesquisa web](docs/web-research.nd); revalidar políticas, versões e
+   calendários antes de ampliar cobertura. Ela contém limitações de acesso.
+6. Inspecionar ferramentas e bindings de segredos sem imprimir valores. Processos,
+   caches, `/tmp` e `/workspace/.tools` não são dependências versionadas garantidas.
+7. Continuar a menor entrega autorizada, executar verificações pertinentes e
+   atualizar este arquivo com evidências, pendências e próxima ação concreta.
 
-## 3. Produto e decisões confirmadas
+Instruções atuais do usuário prevalecem. A skill grilling foi usada na fase de
+planejamento; a ordem posterior de execução autônoma permite escolhas técnicas
+rotineiras sem reabrir aprovação. Novos mercados, SaaS ou capital real exigem novo
+escopo. Não solicitar tokens no chat: usar variáveis seguras do ambiente/provedor.
 
-Scooby é um terminal **pessoal** para criar, testar, comparar e acompanhar
-estratégias quantitativas, com execução simulada e controles de risco.
+## 3. Escopo e escolhas
 
-| Tema | Decisão confirmada |
+| Tema | Estado/decisão |
 | --- | --- |
-| Público | Uso pessoal no MVP; sem SaaS ou cadastro público |
-| Mercados | Brasil/B3 e ações americanas; ambos fazem parte do escopo |
-| Execução | Backtesting e paper trading; capital real fora do MVP |
-| EUA | Primeira integração com Alpaca Paper |
-| B3 | Simulador interno inicialmente; broker externo depende de API comprovada |
-| Identidade | Uma conta Google autorizada; email verificado no bootstrap e vínculo ao subject estável |
-| Entrada | `/` é o dashboard principal autenticado |
-| Visitante | Redirect automático para `/login`; não para o Google diretamente |
-| Login | `/login` oferece somente o botão Google; sucesso retorna a `/` |
-| Interface | Dashboard com sidebar usando shadcn/ui |
-| Stack | Go + Vukem, Inertia.js + React + TypeScript, Tailwind CSS, PostgreSQL |
-| Hospedagem | Railway |
-| Continuidade | Engine deve funcionar sem depender de aba ou sessão do navegador |
+| Público | Pessoal; única conta Google autorizada; sem cadastro público |
+| Mercados | B3 + ações EUA; BRL/USD segregados |
+| Execução | Alpaca Paper EUA; replay interno B3; nenhum adapter live |
+| Login | `/` protegido → visitante vai a `/login`; único botão Google; sucesso em `/` |
+| Interface | React/Inertia, Tailwind, shadcn/ui Radix, sidebar e gráficos |
+| Backend | Go/Vukem, PostgreSQL; web e engine em processos distintos |
+| Estratégias | SMA crossover, reversão Z-score, rompimento; versões imutáveis |
+| Universo inicial | PETR4, VALE3, ITUB4, AAPL, NVDA, TSLA; long-only, sem leverage |
+| Dados | Candles fechados de 5m; IEX EUA e CSV autorizado B3 |
+| B3 | Calendário revisado 2026, feriados/abertura especial e grade por período |
+| EUA | Calendário da API Alpaca + clock antes de operar |
+| Risco inicial | 50 bps/operação; perda diária 100 bps; exposição 5000 bps; 3 posições |
+| Simulação | Custos 5 bps/lado, slippage 5 bps; editáveis com conta bloqueada |
+| Infra | Railway; web/engine/PostgreSQL; sem dependência inicial Redis/NATS/TimescaleDB |
 
-Detalhes de topologia, outbox, cache e mensageria continuam **propostos**, conforme
-os ADRs. TimescaleDB, Redis, NATS, Python de pesquisa e LLM não são dependências
-obrigatórias já aprovadas. Mercado real não é ativado por simples troca de URL.
+Defaults de ativos/feed/timeframe/limites foram adotados na implementação delegada,
+não tratados como recomendações financeiras. B3 começa com patrimônio fictício
+identificado; EUA não mostra patrimônio conhecido antes de reconciliar a conta.
 
-## 4. Estado real do repositório
+## 4. Estado do código e caminhos relevantes
 
-| Componente | Estado observado |
+| Caminho | Implementação |
 | --- | --- |
-| Starter oficial Vukem | Implementado, com home e CRUD público de posts |
-| Go / Vukem | Go 1.27.3; Vukem 0.37.0; driver PostgreSQL 0.6.1 |
-| Frontend | Inertia React 3.9.1; React 19.3.1; Tailwind 4.3.3; Vite/TypeScript |
-| PostgreSQL | Driver registrado, migration de exemplo e Compose |
-| CI | Go/race/vet, tipos/build frontend, vulnerabilidades, segredos e imagem |
-| Documentação | Produto, arquitetura, dados, operação, validação, pesquisa, SDDs e ADRs |
-| Google-only e conta autorizada | Especificados; não implementados |
-| Dashboard financeiro / shadcn/ui | Especificados; não implementados |
-| Feed EUA/B3 e datasets | Não integrados/adquiridos/validados |
-| Estratégias / backtest / risco | Não implementados |
-| Worker / adapters / reconciliação | Não implementados |
-| Deploy Railway | Planejado; não realizado |
+| `cmd/app`, `bootstrap` | Servidor/CLI Vukem; migrations, providers e defaults |
+| `cmd/engine` | Processo contínuo paper; não depende da sessão web |
+| `routes/web.go`, `routes/social.go` | Rotas privadas, Google-only e APIs |
+| `app/accounts` | Gate de email verificado, vínculo por subject e sessões |
+| `app/controllers/terminal` | Snapshots, importação, estratégias, jobs e controles |
+| `app/commands` | Worker/readiness e recuperação de proprietário por CLI |
+| `internal/trading/domain.go` | Decimais, sizing, reservas, fills, ledger e políticas |
+| `internal/trading/calendar.go` | Calendário B3 e limites de sessão |
+| `internal/trading/data.go` | CSV estrito, validação, hashes e gaps |
+| `internal/trading/backtest.go` | Replay determinístico, custos, curvas e métricas |
+| `internal/trading/store.go` | Transações, audit, versões, jobs, artefatos e snapshots |
+| `internal/adapters` | Alpaca paper/data/calendar e alertas Telegram opcionais |
+| `internal/engine` | Liderança, fencing, replay, dispatch e reconciliação |
+| `database/migrations` | Identidade, sessão/cache, contas, datasets, estratégias/jobs/audit |
+| `resources/js/pages/Terminal.tsx` | Visão geral, mercado, estratégias, backtests, ordens, posições, risco, auditoria, settings |
+| `resources/js/components/ui` | Componentes gerados shadcn/ui |
+| `resources/js/pages/Auth/Login.tsx` | Login Google exclusivo |
+| `tests`, `internal/*/*_test.go` | Auth, domínio, adapters, falhas, concorrência e failover |
+| `cmd/e2e`, `e2e` | Fake OAuth apenas KindTest/build tag e teste browser |
+| `Dockerfile`, `railway.*.toml`, `scripts` | Dois binários, deploy sequencial e backup |
 
-`routes/web.go` ainda publica `/` e `/posts`. A home atual não é o dashboard
-protegido descrito no produto. Arquivo de design ou ADR aceito não é evidência
-de feature pronta. Não preencher o dashboard com números inventados apresentados
-como posições ou lucros reais.
+Stack fixada: Go 1.27.3; Vukem 0.37.0; driver PostgreSQL 0.6.1; Inertia React
+3.9.1; React 19.3.1; Tailwind 4.3.3; Vite/TypeScript e dependências no lockfile.
+`/posts`, cadastro local, senha e reset de senha não estão publicados.
 
-### Mapa do código existente
+## 5. Checklist de entregas
 
-| Caminho | Uso |
-| --- | --- |
-| `cmd/app/main.go` | Entrada do servidor/CLI da aplicação |
-| `bootstrap/app.go` | Providers, banco, migrations, Inertia e composição |
-| `routes/web.go` | Rotas atuais e middleware |
-| `app/controllers/` | Controllers do starter |
-| `database/migrations/` | Schema existente; atualmente exemplo de posts |
-| `resources/js/pages/` | Páginas React/Inertia |
-| `resources/js/layouts/` | Layout atual a adaptar |
-| `resources/css/app.css` | Estilos Tailwind |
-| `resources/views/app.html` | Documento HTML e bootstrap Inertia |
-| `tests/` | Testes do starter e integração PostgreSQL |
-| `Dockerfile`, `compose.yaml` | Build e ambiente de desenvolvimento |
-| `.github/workflows/ci.yml` | Verificações automatizadas |
+`[x]` significa código/artefato entregue. Validação externa permanece separada.
 
-`cmd/engine` e `internal/trading` são diretórios **futuros propostos**, não
-componentes executáveis existentes. O Dockerfile atual só produz `/app/app`.
+### P0 — Fundação e especificação
 
-## 5. Decisões abertas e bloqueios
+- [x] Starter oficial, PostgreSQL, Compose, Git e CI.
+- [x] Produto, arquitetura, modelo lógico, planejamento, pesquisa web e onboarding.
+- [x] 6 SDDs, ADRs originais e ADRs 0011–0013 de implementação.
+- [x] Q1–Q6 registradas; defaults Q7–Q9 adotados sob autorização posterior.
+- [x] Regras/limites/configuração e procedimento de recuperação definidos.
 
-| Prioridade | Pendência | Impacto |
-| --- | --- | --- |
-| Agora | Q7: ações à vista, long-only, sem alavancagem e watchlist proposta | Instrumentos, precisão e tipos de operação |
-| Agora | Q8: IEX EUA e CSV histórico B3/replay, ou dados B3 em tempo real | Feed, licença, histórico e orçamento |
-| Agora | Q9: candles fechados de 5 minutos e sessão regular | Calendário, warmup, execução e encerramento |
-| Depois do universo | Regras exatas das três estratégias candidatas | Indicadores, sinais e versões |
-| Depois das estratégias | Limites numéricos, stops, sizing, perda diária e emergência | Motor de risco e critérios de aceite |
-| Antes da autenticação/deploy | Recuperação do proprietário e vínculo Google | Evitar perda de acesso e cadastro indevido |
-| Antes das integrações | Contas, permissões e segredos por ambiente | OAuth, Alpaca Paper, Railway e dados B3 |
-| Antes de operar continuamente | RPO/RTO, retenção, alertas, responsável e orçamento | Recuperação e monitoramento |
-| Antes de implementar arquitetura proposta | Revisar/aceitar ADRs necessários à entrega | Worker, persistência, eventos e extensões |
+### P1 — Identidade e dashboard
 
-PETR4, VALE3, ITUB4, AAPL, NVDA e TSLA, IEX/CSV e cinco minutos são **propostas
-sem resposta**, não configuração final. Não repetir Q1–Q6: suas respostas já
-estão registradas. Nunca pedir valores de segredos no chat ou escrevê-los no Git.
+- [x] Login Google-only; conta única; subject persistente; state/nonce/PKCE nativos.
+- [x] Sessões e cache compartilhados; rotação/revogação; CSRF e throttle OAuth.
+- [x] `/` privado, `/login`, logout; sem superfícies locais de senha/cadastro.
+- [x] Sidebar shadcn/ui, tema, mobile, gráficos e estados vazios/erro/loading.
+- [x] Guards de servidor em páginas e APIs; nenhuma credencial nas props/bundle.
+- [ ] Exercitar OAuth Google real com domínio/callback finais.
 
-## 6. Roadmap com critérios de conclusão
+### P2 — Dados financeiros
 
-Legenda: `[x]` artefato entregue; `[ ]` trabalho ainda pendente. Uma etapa só
-muda para concluída com evidência de código/verificação, não porque foi descrita.
+- [x] Contas/modos/moedas segregados e instrumentos com tick/lote.
+- [x] CSV atômico com procedência/licença/hash, OHLCV, offsets e grade de 5m.
+- [x] Rejeição de entradas inválidas/duplicadas/fora de ordem; gaps identificados.
+- [x] Histórico IEX via adapter e calendário/clock Alpaca.
+- [x] B3 2026: feriados, Cinzas 13h, grade março/novembro; anos não revisados rejeitados.
+- [ ] Receber e validar dataset B3 intraday efetivamente licenciado.
+- [ ] Validar IEX com permissões e limites da conta escolhida.
 
-### P0 — Fundação e especificação — em andamento
+### P3 — Estratégias e backtesting
 
-- [x] Gerar starter oficial e configurar origin `AlexGalhardo/Scooby`.
-- [x] Configurar PostgreSQL, Docker Compose, lockfiles e CI inicial.
-- [x] Criar produto, brainstorming, arquitetura, modelo de dados e plano.
-- [x] Criar 6 SDDs e 10 ADRs com estados explícitos.
-- [x] Registrar respostas das rodadas 1 e 2.
-- [x] Pesquisar fontes oficiais e documentar em `docs/web-research.nd`.
-- [x] Criar este documento principal de onboarding e continuidade.
-- [ ] Obter respostas Q7–Q9 e continuar somente pelas decisões desbloqueadas.
-- [ ] Definir regras, limites e dependências externas necessárias ao primeiro incremento.
-- [ ] Registrar revisão conjunta e aceite do desenho necessário à implementação.
+- [x] Médias móveis, reversão à média e rompimento determinísticos, com warmup.
+- [x] Configurações imutáveis; nova versão numerada; ativação separada da conta.
+- [x] Jobs persistentes, cancelamento, recuperação e timeout de processamento.
+- [x] Próxima barra elegível, custos, slippage, participação máxima por volume/lote.
+- [x] Stop conservador e gap-through; relatório identifica hipóteses e limitações.
+- [x] Dataset/config/código identificados; curva, benchmark bruto e artefato JSON.
+- [x] Métricas de retorno, custos, drawdown/duração, turnover, trades e ganhos/perdas.
+- [x] Partições temporais 70/30 e modo exploratório explicitamente identificado.
+- [ ] Avaliar estratégias em amostras licenciadas/out-of-sample significativas.
 
-**Saída:** escopo acionável, decisões necessárias resolvidas e critérios de aceite
-revisáveis. Não esperar adquirir todos os serviços para fazer trabalho independente.
+### P4 — Risco, paper e recuperação
 
-### P1 — Identidade e shell do dashboard — não iniciado
+- [x] Decimal, sizing, limites de caixa/exposição/perda diária e posições.
+- [x] Reserva + intenção/outbox no mesmo snapshot/transação e lock por conta.
+- [x] Fills deduplicados, parciais, custos, ledger e P&L de posições.
+- [x] Worker independente; advisory lock dedicado, standby e leader_epoch.
+- [x] Reconciliação antes de novas entradas; timeout sem retry cego; estado unknown.
+- [x] Bloquear, cancelar e solicitar zeragem são ações distintas e auditadas.
+- [x] Proteção ao desabilitar estratégia com risco pendente; B3 usa um replay ativo por conta.
+- [x] Testes de reservas concorrentes, rollback, timeout/partial/dedupe e failover.
+- [ ] Exercitar contratos/cancelamentos/fills na conta Alpaca Paper dedicada real.
 
-- [ ] Implementar Google OIDC e gate da conta única antes de criar sessão.
-- [ ] Persistir vínculo por subject, sessão e proteção contra replay OAuth.
-- [ ] Tornar `/` protegido; `/login` com único botão Google; logout com CSRF.
-- [ ] Desativar rotas de senha/cadastro/reset e remover/proteger exemplos públicos.
-- [ ] Instalar shadcn/ui, alias para `resources/js` e sidebar responsiva.
-- [ ] Implementar estados vazios, carregamento, erro e ausência de dados.
+### P5 — Railway e operação
 
-**Aceite:** [SDD-01](docs/sdd/01-identidade-dashboard.md); visitante não recebe
-dados privados, outro Google não entra, callback inválido falha, logout revoga
-sessão e navegação/teclado/mobile funcionam. Não depende de inventar dados de mercado.
+- [x] Dashboard conectado aos snapshots PostgreSQL com polling autenticado.
+- [x] Auditoria de ações/políticas/rejeições, heartbeat e readiness da engine.
+- [x] Dois executáveis e imagem sem root; TOMLs web/engine e Compose atualizados.
+- [x] Deploy sequencial, healthcheck, migrations e script de backup.
+- [x] Recuperação administrativa de proprietário auditada, com revogação de sessões.
+- [x] Backup/restore ensaiado em PostgreSQL de teste isolado.
+- [x] CLI Railway preparada; tokens ainda não configurados.
+- [ ] Publicar imagem/serviços com credenciais e domínio finais.
+- [ ] Configurar backup agendado, retenção, região/plano e monitoramento externo.
+- [ ] Testar Google/broker/Telegram e restore no provedor escolhido.
 
-### P2 — Dados financeiros e ingestão — não iniciado
+### P6 — Validação contínua
 
-- [ ] Criar instrumentos, contas/modos, candles, procedência e versões do schema.
-- [ ] Definir decimal, tick/lote, moedas, UTC e calendários por mercado.
-- [ ] Implementar adapter de dados EUA com feed autorizado e histórico coerente.
-- [ ] Implementar entrada B3 conforme Q8; validar granularidade/licença e manifesto.
-- [ ] Detectar dados duplicados, gaps, revisões, outliers e atraso.
+- [x] Instrumentação e relatórios para acompanhamento e revisão de drawdown/custos.
+- [ ] Observar paper ao longo dos períodos/cenários acordados; registrar divergências.
+- [ ] Comparar resultados fora da amostra sem otimizar no teste final.
+- [ ] Medir latência, capacidade, RPO/RTO e revisar políticas com evidências externas.
+- [ ] Registrar decisão de manutenção/desativação por estratégia.
 
-**Aceite:** [SDD-02](docs/sdd/02-dados-estrategias.md),
-[SDD-06](docs/sdd/06-adapters-simulacao.md) e
-[modelo de dados](docs/modelo-de-dados.md). Não fabricar candles intraday de OHLC
-diário; dados sem fonte validada não demonstram robustez de estratégia.
+P6 depende de passagem do tempo, dados e contas configuradas; não marcar como
+concluído por fixtures sintéticos. P7/live, SaaS, derivados, ML e apuração fiscal
+não foram adicionados ao escopo.
 
-### P3 — Estratégias e backtesting — não iniciado
+## 6. Contratos e limitações importantes
 
-- [ ] Especificar regras e parâmetros das estratégias aceitas pelo proprietário.
-- [ ] Implementar funções determinísticas, warmup e configuração versionada.
-- [ ] Criar replay e broker simulado com hipóteses explícitas de fill/custos.
-- [ ] Versionar dataset, código, parâmetros e relatórios.
-- [ ] Separar desenvolvimento, validação e teste temporal intocado.
+- Persistência financeira usa JSON decimal versionado em conta PostgreSQL, com
+  lock/CAS e audit no mesmo commit; não alegar tabelas NUMERIC normalizadas onde
+  não existem. ADR-0012 explica tradeoffs e migração futura para volume alto.
+- Outbox é a lista durável de ordens aprovadas no snapshot. Não há exactly-once
+  externo; request já em voo exige reconciliação mesmo com geração/fencing.
+- Polling web 10s; loop de execução 15s; candles 5m. Não é HFT ou stop nativo
+  garantido na corretora. Alertas opcionais precisam de token/chat configurados.
+- Calendário B3 suporta 2026. Ampliar anos somente com calendário revisado e testes.
+  IEX não equivale ao mercado consolidado; CSV público diário não fabrica intraday.
+- Snapshot financeiro cresce com o histórico. Não truncar ledger para economizar
+  espaço; normalizar/arquivar com trilha antes de volume elevado.
+- Somente uma configuração por ativo EUA e um replay B3 por conta ficam ativos.
+  Desligar proteção com posição/ordem pendente é rejeitado; primeiro reduzir risco.
+- B3 é replay histórico interno, não corretora B3 nem feed ao vivo. Os stops/alvos
+  são executados pelo simulador/engine, com limites explícitos de liquidez/latência.
+- A web pode usar chaves paper para importar IEX; todos os valores ficam no servidor.
+  Não colocar credenciais em variáveis `VITE_*`, props, logs ou arquivos Git.
 
-**Aceite:** [SDD-04](docs/sdd/04-backtesting.md); resultado reproduzível,
-sem look-ahead, custo/liquidez documentados e métricas líquidas com limitações.
+## 7. Executar e verificar
 
-### P4 — Risco, execução paper e recuperação — não iniciado
-
-- [ ] Implementar política de risco e reservas transacionais por conta.
-- [ ] Persistir sinais, intenções, outbox, ordens, fills e ledger idempotentes.
-- [ ] Criar worker independente da web, liderança e fencing conforme desenho aceito.
-- [ ] Implementar Alpaca Paper EUA e simulador B3 com modos claramente separados.
-- [ ] Implementar reconciliação no boot/periódica e tratamento de `unknown`.
-- [ ] Persistir bloqueio de emergência; distinguir bloquear, cancelar e zerar.
-
-**Aceite:** [SDD-03](docs/sdd/03-risco-execucao.md), SDD-06 e matriz de falhas em
-[validacao.md](docs/validacao.md). Testar timeout após aceite externo, fills
-parciais/duplicados, crash, feed vencido, deploy sobreposto e posições divergentes.
-Fechar navegador não interrompe a engine.
-
-### P5 — Operação e publicação Railway — não iniciado
-
-- [ ] Alimentar dashboard com snapshots autorizados, modo, moeda e idade dos dados.
-- [ ] Implementar auditoria e atualização autenticada sem expor segredos.
-- [ ] Preparar binários/imagens e configuração de serviços web/engine/PostgreSQL.
-- [ ] Configurar migrations serializadas, readiness, heartbeat e alertas.
-- [ ] Ensaiar restore, restart, SIGTERM e incidentes em ambiente de teste.
-- [ ] Publicar na Railway quando essa etapa estiver autorizada, com dependências prontas.
-
-**Aceite:** [SDD-05](docs/sdd/05-operacao-railway.md) e
-[runbook Railway](docs/railway.md). Engine sem sleeping; healthcheck de deploy não
-substitui monitoramento contínuo. Nenhum binário futuro é configurado antes de existir.
-
-### P6 — Validação contínua — não iniciado
-
-- [ ] Observar paper/backtest nos cenários e períodos acordados.
-- [ ] Comparar desempenho e custos sem ajustar sobre o conjunto final.
-- [ ] Revisar drawdown, divergências, alertas, dados e limites operacionais.
-- [ ] Registrar evidências, falhas e decisão de manutenção/desativação de estratégia.
-
-**Aceite:** critérios numéricos e amostrais definidos com o proprietário;
-[plano de validação](docs/validacao.md). Paper não comprova lucro futuro.
-
-**Fora do MVP:** P7/live, SaaS, sinais pagos, derivativos, ML e apuração fiscal.
-Uma fase futura exige novo escopo e critérios próprios; este roadmap não autoriza
-ordens com capital real.
-
-## 7. Executar e verificar a base
-
-Requisitos: Go 1.27.3+, Node.js 24+, npm e Docker Compose. Confirmar versões
-fixadas em `go.mod`, `package.json` e lockfile antes de instalar. Não substituir
-um `.env` existente nem regenerar `APP_KEY` de uma instalação em uso.
-
-Em um clone novo, criar `.env` a partir de `.env.example` somente se ausente;
-instalar a CLI Vukem 0.37.0 e gerar a chave inicial. Instruções completas no
-[README](README.md). Depois:
+Instruções completas no README; não sobrescrever `.env` nem regenerar chave em uso.
 
 ```sh
 npm ci
 docker compose up -d postgres
 vukem migrate
 vukem serve
+# Outro terminal:
+ENGINE_HEALTH_PORT=3001 go run ./cmd/engine
 ```
-
-Sem CLI, `go run ./cmd/app migrate` e `go run ./cmd/app` executam os comandos
-Go; `npm run dev` precisa de outro terminal para Vite. Porta padrão `3000` no
-ambiente de execução não é um endereço público de deploy.
-
-Verificações conforme a alteração:
 
 ```sh
 npm run typecheck
@@ -253,79 +210,42 @@ npm run build
 go test -race ./...
 go vet ./...
 go tool govulncheck ./...
+npm run test:e2e
 git diff --check
 ```
 
-Para integração PostgreSQL, usar banco dedicado e `TEST_DATABASE_URL`, conforme
-README. A suíte isolada do starter usa SQLite em memória; isso não muda o banco
-principal PostgreSQL. Para documentação apenas, checar links locais, consistência,
-whitespace e segredos; não exigir todos os testes de runtime sem mudança de código.
+PostgreSQL integration requer `TEST_DATABASE_URL` para banco dedicado `*_test`.
+E2E requer Chromium/Playwright e Go no PATH; usa fake OAuth apenas em KindTest,
+build tag `e2e` e endereço loopback. Em Codex, `CHROMIUM_PATH=/usr/bin/chromium`.
+Não compilar Go simultaneamente com Vite apagando/recriando assets embutidos.
 
-Em ambiente gerenciado, ler as instruções/skill de cloud disponíveis antes de
-rede ou Docker. Respeitar proxy/CA e permissões. Ferramentas instaladas em
-`/workspace/.tools` são auxiliares desta sessão, não dependências versionadas.
-Não usar o eventual `/usr/bin/go` sem conferir `go version`: nesta preparação
-ele não era o compilador Go. Não despejar variáveis de ambiente ou arquivos secretos.
+O ambiente inicial tem Go válido em `/workspace/.tools/go/bin`; verificar antes
+de reutilizar. Seguir instruções de cloud/proxy/CA disponíveis. O disco do executor
+é limitado: build Docker local pode esgotar espaço; usar CI para validar a imagem,
+sem alterar storage driver/proxy nem desabilitar TLS.
 
-## 8. Invariantes que as implementações devem preservar
+## 8. Evidências e continuidade
 
-- Autenticação Google não dá permissão de operar uma corretora; autorização é local.
-- Conta única não elimina guards de servidor em páginas, JSON, streams e comandos.
-- Separar BRL/USD, papel/simulação/replay/backtest e suas fontes/contas/ledgers.
-- Toda intenção passa pelo risco; reserva inclui ordens abertas, parciais e ambíguas.
-- Timeout não prova rejeição; persistir ID, consultar e reconciliar antes de retry.
-- Fill duplicado não pode alterar saldo duas vezes. Cancelamento pendente não é flat.
-- Falha de banco/feed ou divergência bloqueia novas exposições conforme política.
-- Lock/fencing não desfaz request externo já em voo; tratar recuperação explicitamente.
-- Fechar sessão/browser não controla o ciclo de vida da engine.
-- Logs, props Inertia e bundles nunca contêm credenciais de broker/OAuth.
-- Revisão de código ou deploy não reverte operações; ledger preserva ajustes/auditoria.
+Verificações realizadas durante implementação:
 
-## 9. Mapa documental e fonte de cada tipo de verdade
+- Auth/gate/replay de callback/logout, rotas privadas e validações de API.
+- Domínio: decimal, sizing, perda diária, duplicatas, fills parciais, CSV e calendários.
+- Adapter/engine: timeout após envio sem reenvio, partial/dedup e reconciliação.
+- PostgreSQL real: concorrência de 16 reservas, rollback e troca de liderança.
+- Browser: Google fake → dashboard → CSV → estratégia → backtest/relatório →
+  navegação de todas as áreas → mobile → logout.
+- Dump/restore em base isolada; readiness worker; compilação Go e frontend.
+- CI e scan de segredos devem ser conferidos no commit final; não inferir estado
+  atual apenas de execução antiga. Login/broker reais não foram exercitados.
 
-| Documento | Quando consultar/manter |
-| --- | --- |
-| **Este ROADMAP.md** | Onboarding, checklist, estado e próxima ação |
-| [docs/README.md](docs/README.md) | Catálogo dos documentos e estados |
-| [docs/produto.md](docs/produto.md) | Requisitos RF/RP e escopo |
-| [docs/grilling.md](docs/grilling.md) | Respostas do proprietário e fronteira de perguntas |
-| [docs/brainstorming.md](docs/brainstorming.md) | Alternativas e hipóteses, não aceites |
-| [docs/arquitetura.md](docs/arquitetura.md) | Fluxo e responsabilidades propostos |
-| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Precisão, integridade e entidades |
-| [docs/planejamento.md](docs/planejamento.md) | Dependências e rastreabilidade detalhadas |
-| [docs/sdd/README.md](docs/sdd/README.md) | Contratos e critérios de aceite por módulo |
-| [docs/adrs/README.md](docs/adrs/README.md) | Decisões aceitas/propostas e consequências |
-| [docs/web-research.nd](docs/web-research.nd) | Pesquisa datada, fontes e limitações verificadas |
-| [docs/railway.md](docs/railway.md) | Configurações e runbooks de operação |
-| [docs/validacao.md](docs/validacao.md) | Testes técnicos, quantitativos e de falha |
+Histórico: `205f7a3`/`9e21d88` fundação; `4e2adde` especificações;
+`4664823` pesquisa; `daeed47` onboarding inicial. O commit de implementação será
+localizado por `git log`; não registrar um hash futuro antes do commit existir.
 
-## 10. Registro de continuidade e evidências
+Ao concluir cada sessão, atualizar checklist e registrar: mudança, teste/evidência,
+ADRs afetados, bloqueios externos e primeira próxima ação. Preservar o histórico
+de respostas; nunca marcar feature pronta por haver apenas documentação.
 
-| Marco | Referência | Evidência e limite |
-| --- | --- | --- |
-| Fundação | `205f7a3`, `9e21d88` | Starter; testes/typecheck/build e integração PostgreSQL passaram na sessão de criação; imagem passou no Actions; não são evidência da futura engine |
-| Especificações | `4e2adde` | 28 documentos, 6 SDDs, 10 ADRs; decisões Q1–Q6 registradas |
-| Pesquisa web | `4664823` | 24 URLs, links internos e scan de segredos verificados; sem integração autenticada externa |
-| Onboarding | Esta alteração | ROADMAP principal e links de entrada; links locais, whitespace e scan de segredos verificados |
-
-Não afirmar que CI continua verde com base em execução antiga. Reexecutar checks
-pertinentes ou consultar a execução correspondente ao commit em questão.
-Não registrar o próprio hash antecipadamente; usar o histórico Git para localizá-lo.
-
-### Atualização obrigatória ao encerrar trabalho
-
-Registrar neste arquivo, de forma curta:
-
-- entrega concluída e evidência (arquivo, teste, commit/PR ou resultado verificável);
-- escolhas novas e quais SDDs/ADRs foram atualizados;
-- limitações/bloqueios que continuam abertos;
-- primeira próxima ação e seus pré-requisitos;
-- se houve mudança de estado operacional ou dependência externa.
-
-Não marcar `[x]` para trabalho parcial. Não apagar decisões antigas para esconder
-mudança de escopo. Usar commits revisáveis, sem segredos nem caches/builds gerados.
-
-**Próxima ação ao retomar:** continuar Q7–Q9 em `docs/grilling.md`. As respostas
-não foram recebidas até esta atualização. Depois, atualizar requisitos e SDDs e
-resolver a próxima fronteira; iniciar P1 quando o incremento estiver autorizado
-com suas decisões necessárias resolvidas.
+**Próxima ação:** obter/configurar com segurança Railway, Google OAuth e Alpaca
+Paper conforme `docs/deploy-checklist.md`; publicar web, esperar migrations e
+readiness, publicar engine, validar login real e só depois habilitar paper.

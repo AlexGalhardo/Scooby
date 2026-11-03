@@ -1,5 +1,9 @@
 # SDD-03 — risco, execução e reconciliação
 
+> Implementação atual e desvios explícitos em [ROADMAP](../../ROADMAP.md)
+> e [ADRs 0011–0013](../adrs/README.md). Aceite técnico local é distinto
+> de OAuth/broker reais, publicação Railway e observação financeira prolongada.
+
 Estado: execução apenas paper confirmada; desenho proposto, limites numéricos e tipos de ordem pendentes.
 
 ## Invariantes

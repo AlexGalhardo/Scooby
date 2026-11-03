@@ -1,6 +1,9 @@
 # Grilling — árvore de decisões
 
-Estado: rodadas 1 e 2 respondidas; rodada 3 enviada. Nenhuma opção pré-selecionada é aceite. O documento continua em rascunho até haver entendimento compartilhado.
+Estado: rodadas 1 e 2 respondidas; Q7–Q9 não foram respondidas individualmente.
+A instrução posterior de implementar tudo sem interrupções delegou escolhas de
+implementação. Defaults adotados estão no ADR-0011 e no ROADMAP; não são respostas
+inventadas do proprietário. A implementação começou com essa autorização. Nenhuma opção pré-selecionada é aceite. O documento continua em rascunho até haver entendimento compartilhado.
 
 ## Método
 
@@ -59,7 +62,7 @@ sem cadastro público. Alternativa: outras contas por convite. Resposta: **uma c
 
 Simulador interno usa dinheiro fictício e modelo próprio de fills; não pode ser
 rotulado como execução em corretora. Fonte de dados B3 continua em aberto mesmo
-mesmo com o simulador interno já aceito em Q5.
+com o simulador interno já aceito em Q5.
 
 ## Rodada 3 — fronteira atual
 

@@ -17,3 +17,8 @@ node_modules/
 /resources/public/hot
 /resources/public/build/
 /bootstrap/ssr/
+
+/test-results/
+/playwright-report/
+*.dump
+*.backup

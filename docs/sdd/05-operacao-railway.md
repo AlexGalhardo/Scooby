@@ -1,5 +1,9 @@
 # SDD-05 — entrega e operação na Railway
 
+> Implementação atual e desvios explícitos em [ROADMAP](../../ROADMAP.md)
+> e [ADRs 0011–0013](../adrs/README.md). Aceite técnico local é distinto
+> de OAuth/broker reais, publicação Railway e observação financeira prolongada.
+
 Estado: Railway confirmado; desenho e metas propostos.
 
 ## Contrato de publicação
