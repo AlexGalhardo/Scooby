@@ -1,0 +1,46 @@
+// Package bootstrap wires the application together. There is no hidden
+// registration: everything the app uses is listed here.
+package bootstrap
+
+import (
+	vukem "github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem/drivers/postgres"
+	"github.com/AlexGalhardo/vukem/inertia"
+
+	"github.com/AlexGalhardo/Scooby/app/jobs"
+	"github.com/AlexGalhardo/Scooby/app/listeners"
+	"github.com/AlexGalhardo/Scooby/database/migrations"
+	"github.com/AlexGalhardo/Scooby/database/seeders"
+	"github.com/AlexGalhardo/Scooby/resources"
+	"github.com/AlexGalhardo/Scooby/routes"
+)
+
+// New builds the application; cmd/app and the tests call it.
+func New(opts ...vukem.Option) (*vukem.App, error) {
+	base := []vukem.Option{
+		vukem.WithName("Scooby"),
+		vukem.WithDatabaseDrivers(postgres.Driver()),
+		vukem.WithProviders(Providers()...),
+		vukem.WithMigrations(migrations.All()),
+		vukem.WithSeeders(seeders.All()...),
+		vukem.WithListeners(listeners.All()...),
+		vukem.WithJobsFunc(jobs.All),
+		vukem.WithSchedule(routes.Schedule),
+		vukem.WithViews(resources.Views()),
+		vukem.WithVite(resources.Public()),
+		vukem.WithInertia(inertia.Config{}),
+	}
+
+	for _, fn := range routes.All() {
+		base = append(base, vukem.WithRoutes(fn))
+	}
+
+	app, err := vukem.New(append(base, opts...)...)
+	if err != nil {
+		return nil, err
+	}
+
+	app.AddCommand(Commands()...)
+
+	return app, nil
+}
