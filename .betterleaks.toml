@@ -42,3 +42,12 @@ regexes = [
 	'''_FAKE_|(?i)placeholder|changeme|example''',
 	'''(?i)x{8,}|\.\.\.$''',
 ]
+
+# Public local-only PostgreSQL credentials used by Compose and CI fixtures.
+# Only this exact value in these files is allowed; other secrets still fail.
+[[allowlists]]
+description = "local PostgreSQL fixture password"
+condition = "AND"
+paths = ['''^(?:\.env\.example|compose\.yaml|README\.md|\.github/workflows/ci\.yml)$''']
+regexTarget = "secret"
+regexes = ['''^scooby$''']
