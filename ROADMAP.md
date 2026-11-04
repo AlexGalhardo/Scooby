@@ -235,16 +235,16 @@ Reference: [docs/trading/terminal-and-agents.md](docs/trading/terminal-and-agent
 
 ### Phase 14: Observability and operations
 
-- [ ] **14.1 Metrics:** heartbeat age, feed staleness, reconciliation drift, rejected-order rate, slippage versus expectation. Assert: exposed on an authenticated endpoint.
-- [ ] **14.2 External uptime check** on `/up` and the site. Assert: alert fires on a forced failure.
-- [ ] **14.3 Runbooks** for incident, restore and key rotation in `docs/`. Assert: restore rehearsal log committed.
-- [ ] **14.4 Dependency policy:** Dependabot, `govulncheck`, OSV-Scanner on the site, betterleaks. Assert: all jobs green on `main`.
+- [x] **14.1 Metrics:** `GET /api/metrics` (owner session) with heartbeat age, reconciliation age, orders in `unknown`, risk rejection rate and observed against expected slippage per account. Assert: `TestOperationalMetricsReportAgesRatesAndSlippage`, `TestMetricsEndpointIsAuthenticated`.
+- [x] **14.2 External uptime check:** the `Uptime` workflow checks the site and the web readiness endpoint every 30 minutes and notifies through GitHub and, when its secrets exist, Telegram. Assert: a manual run with a broken URL fails (see the run recorded in [ADR-0020](docs/adrs/0020-operations-metrics-mcp-and-drafts.md) follow-up).
+- [x] **14.3 Runbooks** for incident, restore and key rotation in [docs/runbooks/](docs/runbooks/README.md), plus `scripts/restore-rehearsal.sh`. Assert: the rehearsal log [restore-rehearsal-2026-11-04.md](docs/runbooks/restore-rehearsal-2026-11-04.md) shows 17 tables restored with identical row counts.
+- [x] **14.4 Dependency policy:** [docs/dependency-policy.md](docs/dependency-policy.md); Dependabot covers `gomod`, `github-actions`, `docker` and `bun` for the app and `site/`; `bun audit --audit-level=high` runs in CI for both; `govulncheck`, CodeQL, betterleaks and Scorecard already run. Assert: CI green on `main`.
 
 ### Phase 15: Agents and MCP (read-only)
 
-- [ ] **15.1 Read-only MCP server** for market data and reports with a bearer token and a tool allowlist. Assert: a request without a token is rejected.
-- [ ] **15.2 No order tools** are exposed to any agent. Assert: tool list test.
-- [ ] **15.3 LLM-assisted strategy drafting** produces a validated configuration for human review only. Assert: the draft cannot be activated without an owner action.
+- [x] **15.1 Read-only MCP server** (`POST /mcp`, JSON-RPC 2.0) behind a Bearer token (`MCP_TOKEN`; off when unset) with a fixed six-tool allowlist, documented in [docs/mcp.md](docs/mcp.md). Assert: `TestMCPIsOffWithoutAToken`, `TestMCPRejectsMissingOrWrongTokens`.
+- [x] **15.2 No order tools** are exposed to any agent. Assert: `TestMCPOffersOnlyReadOnlyTools` pins the tool list, rejects state-changing names and checks that order and control tool names are refused.
+- [x] **15.3 Strategy drafts:** a configuration written outside the owner's session goes through `POST /api/strategies/draft`, is validated like any strategy and stays a draft that cannot be enabled until the owner approves it (audited as `strategy.draft.approved`). No language model is called by the server. Assert: `TestDraftStrategyNeedsExplicitApprovalToEnable`.
 
 ### Phase 16: Multi-user (explicitly out of scope)
 

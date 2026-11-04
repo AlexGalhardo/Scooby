@@ -700,6 +700,11 @@ export default function Terminal({ section }: { section: string }) {
                       </Badge>
                       <Status value={status} />
                     </div>
+                    {s.draft && (
+                      <p className="pt-2 text-xs text-amber-500">
+                        Draft: review the parameters, then approve it to enable.
+                      </p>
+                    )}
                     <CardTitle className="pt-3">{s.name}</CardTitle>
                     <CardDescription>
                       {kindName[s.kind]} · version {s.version}
@@ -725,10 +730,15 @@ export default function Terminal({ section }: { section: string }) {
                       onClick={() =>
                         void act(`/api/strategies/${s.id}/toggle`, {
                           enabled: status !== "enabled",
+                          approve_draft: s.draft && status !== "enabled",
                         })
                       }
                     >
-                      {status === "enabled" ? "Disable" : "Enable strategy"}
+                      {status === "enabled"
+                        ? "Disable"
+                        : s.draft
+                          ? "Approve and enable"
+                          : "Enable strategy"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1455,6 +1465,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
     stop_bps: 100,
     target_bps: 200,
     enabled: false,
+    draft: false,
   });
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);

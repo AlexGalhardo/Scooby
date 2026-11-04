@@ -1,0 +1,50 @@
+name: Uptime
+
+# Checks the public documentation site and the web readiness endpoint every 30 minutes. A failing run
+# notifies the repository owner through GitHub; when TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets exist,
+# it also sends a Telegram message. Dispatch it with an extra URL that does not answer to rehearse the alert.
+on:
+  schedule:
+    - cron: "11,41 * * * *"
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Extra URL that must answer 200 (use a broken one to force a failure)
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check the endpoints
+        env:
+          EXTRA_URL: ${{ inputs.url }}
+        run: |
+          set -u
+          failed=0
+          for url in \
+            https://trading.vukem.dev/docs/introduction \
+            https://scooby-web-production.up.railway.app/ready \
+            ${EXTRA_URL:+"$EXTRA_URL"}; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 --retry 2 --retry-delay 5 "$url" || echo 000)
+            echo "$url -> $code"
+            if [ "$code" != "200" ]; then failed=1; fi
+          done
+          exit "$failed"
+      - name: Notify through Telegram
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl -sS --max-time 20 -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "text=vukem-trading uptime check failed: ${RUN_URL}"
+          fi

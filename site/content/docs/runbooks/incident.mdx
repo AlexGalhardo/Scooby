@@ -1,0 +1,44 @@
+---
+title: "Runbook: incident response"
+description: "Use this when the terminal blocked an account, an alert arrived, or something looks wrong. Everything is paper trading, so the first goal is to understand, not to hurry."
+---
+Use this when the terminal blocked an account, an alert arrived, or something looks wrong. Everything is
+paper trading, so the first goal is to understand, not to hurry.
+
+## 1. Stop new risk
+
+Entries are already blocked when an account is halted. If it is not, press **Kill switch** in the safety
+strip (or `POST /api/accounts/{id}/control` with `{"action":"halt"}`). Exits stay allowed. Do not resume
+until step 4 is done.
+
+## 2. Read the signals
+
+- Safety strip: the state and the reason (for example `Daily loss limit`, `Stale quote`,
+  `Order diverged`).
+- `GET /api/metrics`: heartbeat age (a worker is alive when it is under 45 seconds), reconciliation age,
+  orders in `unknown`, risk rejection rate, observed against expected slippage.
+- Audit page: `risk.halt` and `risk.resume` entries show who or what changed the state and when.
+- Railway: `railway logs` for the engine service, and the deployment status of web, worker and site.
+
+## 3. Act by cause
+
+| Reason | Meaning | Action |
+| --- | --- | --- |
+| `Daily loss limit` | The kill switch fired | Nothing to fix; it lifts at the next market day. Review the day in Audit first. |
+| `Equity drawdown limit` | Equity fell from its peak by the configured amount | Stays until you clear it. Review the strategies before resuming. |
+| `Stale quote` or `IEX feed unavailable` | The feed is late or the broker data failed | Check the Alpaca status page and the keys; wait for a fresh candle. |
+| `Order diverged`, `External position diverged`, `Local position missing at broker` | The ledger and the broker disagree | Do not resume. Compare the broker's paper account with the Orders and Positions pages, then reconcile (see below). |
+| `Order without confirmation; reconciliation required` | A send timed out | The order stays `unknown`. Never resend; reconcile. |
+| Worker not healthy | No heartbeat | Check the worker deployment and logs; restart the service once. |
+
+## 4. Reconcile and resume
+
+1. Confirm the worker heartbeat is fresh and the account has no order in `unknown`, `dispatching` or
+   `cancel_pending`.
+2. For the US account, wait for a reconciliation newer than 30 seconds.
+3. Resume from Risk control with the `PAPER` confirmation. The audit trail records `risk.resume`.
+
+## 5. After the incident
+
+Write the cause and the fix in the pull request or in [ROADMAP.md](https://github.com/AlexGalhardo/vukem-trading/blob/main/ROADMAP.md). If a risk rule
+failed to protect the account, add a test for it before closing the incident.

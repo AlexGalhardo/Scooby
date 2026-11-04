@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Operations: `GET /api/metrics`, an `Uptime` workflow, runbooks (incident, restore, key rotation), a restore rehearsal script with its recorded run, a dependency policy and `bun audit` in CI.
+- A read-only MCP endpoint behind `MCP_TOKEN` with a fixed tool list, and strategy drafts that need explicit owner approval; ADR-0020.
 - Terminal: an always-visible safety strip, a command palette with Alt+digit page shortcuts, a server-side workspace (watchlist, price alerts, order templates), one-key paper order tickets sized by cash share and risk budget, and a canvas tape and ladder.
 - Engine: price alerts evaluated on every tick and sent once through Telegram.
 - TypeScript wire types generated from the Go structs, with a test that fails on drift; ADR-0019.

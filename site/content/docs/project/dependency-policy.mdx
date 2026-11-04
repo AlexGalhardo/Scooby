@@ -1,0 +1,35 @@
+---
+title: "Dependency policy"
+description: "How dependencies enter, stay current and get checked."
+---
+How dependencies enter, stay current and get checked.
+
+## Adding a dependency
+
+- Ask first. A new Go module or JavaScript package needs the owner's approval and an ADR.
+- Use the latest stable release. Never `latest`, `next`, `canary`, release candidates, betas or alphas.
+- Pin exact versions: no `^` or `~` ranges in `package.json`, an exact image tag in Dockerfiles and Compose
+  files, and a full commit SHA with a version comment for GitHub Actions.
+- Prefer the standard library, then an installed dependency, then a new one for more than a few lines of code.
+
+## Keeping current
+
+Dependabot watches `gomod`, `github-actions`, `docker`, and the `bun` ecosystem for the application and for
+`site/`, weekly. Review its pull requests like any other: the CI checks below must be green.
+
+## Checks
+
+| Check | Where | What it catches |
+| --- | --- | --- |
+| `go tool govulncheck ./...` | CI job `Vulnerabilities`, weekly workflow `Vulnerabilities (weekly)` | Known vulnerabilities in reachable Go code |
+| `bun audit --audit-level=high` | CI jobs `Frontend` and `Documentation site` | High and critical advisories in JavaScript dependencies |
+| betterleaks | CI job `Secret scanning` | Secrets in the history; reviewed findings are listed in `.betterleaksignore` |
+| CodeQL | Workflow `CodeQL` | Static analysis of the Go code |
+| OpenSSF Scorecard | Workflow `Scorecard` | Supply-chain posture: pinned actions, permissions, branch protection |
+
+## Overrides
+
+When an advisory sits in a transitive dependency of a development tool and the parent has no fix yet,
+pin the patched version with an `overrides` entry in `package.json` and note it in the changelog. Remove
+the override when the parent catches up. Moderate and low advisories in development tooling are tracked in
+the ROADMAP rather than blocking CI.

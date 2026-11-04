@@ -115,6 +115,9 @@ type Strategy struct {
 	StopBPS   int     `json:"stop_bps"`
 	TargetBPS int     `json:"target_bps"`
 	Enabled   bool    `json:"enabled"`
+	// Draft marks a configuration proposed from outside the owner's session, for example by an assistant.
+	// It cannot be enabled until the owner approves it explicitly.
+	Draft bool `json:"draft"`
 }
 
 func (s Strategy) Validate() error {

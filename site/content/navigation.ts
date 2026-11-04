@@ -34,7 +34,7 @@ export const navigation: NavCategory[] = [
   {
     title: "Decisions",
     dir: "adrs",
-    pages: ["index", "0001-stack-and-dashboard", "0002-modular-monolith-worker", "0003-google-only", "0004-postgres-outbox", "0005-railway", "0006-data-and-events", "0007-paper-first", "0008-brazil-and-us", "0009-personal-use", "0010-paper-adapters", "0011-autonomous-implementation", "0012-transactional-snapshots", "0013-polling-workers-and-deploy", "0014-railway-api-and-portable-docker", "0015-bun-biome-and-bun-check", "0016-fill-rules-and-validation-protocol", "0017-documentation-site", "0018-data-providers-and-research-account", "0019-workspace-ticket-and-wire-types"],
+    pages: ["index", "0001-stack-and-dashboard", "0002-modular-monolith-worker", "0003-google-only", "0004-postgres-outbox", "0005-railway", "0006-data-and-events", "0007-paper-first", "0008-brazil-and-us", "0009-personal-use", "0010-paper-adapters", "0011-autonomous-implementation", "0012-transactional-snapshots", "0013-polling-workers-and-deploy", "0014-railway-api-and-portable-docker", "0015-bun-biome-and-bun-check", "0016-fill-rules-and-validation-protocol", "0017-documentation-site", "0018-data-providers-and-research-account", "0019-workspace-ticket-and-wire-types", "0020-operations-metrics-mcp-and-drafts"],
   },
   {
     title: "Specifications",
@@ -47,8 +47,13 @@ export const navigation: NavCategory[] = [
     pages: ["deploy-checklist", "railway"],
   },
   {
+    title: "Runbooks",
+    dir: "runbooks",
+    pages: ["index", "incident", "restore", "restore-rehearsal", "key-rotation"],
+  },
+  {
     title: "Project",
     dir: "project",
-    pages: ["brainstorming", "planning", "grilling", "web-research", "contributing", "security", "code-of-conduct"],
+    pages: ["brainstorming", "planning", "grilling", "web-research", "dependency-policy", "mcp", "contributing", "security", "code-of-conduct"],
   },
 ];

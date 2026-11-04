@@ -100,6 +100,17 @@ const categories: Category[] = [
 		],
 	},
 	{
+		title: "Runbooks",
+		dir: "runbooks",
+		pages: [
+			{ src: "docs/runbooks/README.md", slug: "index", title: "Runbooks" },
+			{ src: "docs/runbooks/incident.md", slug: "incident" },
+			{ src: "docs/runbooks/restore.md", slug: "restore" },
+			{ src: "docs/runbooks/restore-rehearsal-2026-11-04.md", slug: "restore-rehearsal" },
+			{ src: "docs/runbooks/key-rotation.md", slug: "key-rotation" },
+		],
+	},
+	{
 		title: "Project",
 		dir: "project",
 		pages: [
@@ -107,6 +118,8 @@ const categories: Category[] = [
 			{ src: "docs/planning.md", slug: "planning" },
 			{ src: "docs/grilling.md", slug: "grilling" },
 			{ src: "docs/web-research.md", slug: "web-research" },
+			{ src: "docs/dependency-policy.md", slug: "dependency-policy" },
+			{ src: "docs/mcp.md", slug: "mcp" },
 			{ src: "CONTRIBUTING.md", slug: "contributing" },
 			{ src: "SECURITY.md", slug: "security" },
 			{ src: "CODE_OF_CONDUCT.md", slug: "code-of-conduct" },

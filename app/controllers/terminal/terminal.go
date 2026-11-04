@@ -353,16 +353,41 @@ func (h *Controller) Ticket(c *web.Ctx) error {
 	return c.JSON(201, placed)
 }
 
+// Metrics returns the operational signals of every account.
+func (h *Controller) Metrics(c *web.Ctx) error {
+	records, err := h.Store.List(c.Context(), "trading_accounts", 10)
+	if err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	out := make([]trading.OpsMetrics, 0, len(records))
+	for _, r := range records {
+		var a trading.State
+		if err := json.Unmarshal(r.Payload, &a); err != nil {
+			return err
+		}
+		out = append(out, trading.OperationalMetrics(a, now))
+	}
+	return c.JSON(200, map[string]any{"time": now, "accounts": out})
+}
+
 // Kinds serves the strategy kinds and their parameter schema, the single source for forms and validation.
 func (h *Controller) Kinds(c *web.Ctx) error {
 	return c.JSON(200, trading.Kinds())
 }
 
-func (h *Controller) Strategy(c *web.Ctx) error {
+func (h *Controller) Strategy(c *web.Ctx) error { return h.createStrategy(c, false) }
+
+// StrategyDraft stores a proposed configuration, validated like any other, as a draft that stays disabled
+// until the owner approves it. Use it for configurations written outside the owner's session.
+func (h *Controller) StrategyDraft(c *web.Ctx) error { return h.createStrategy(c, true) }
+
+func (h *Controller) createStrategy(c *web.Ctx, draft bool) error {
 	var s trading.Strategy
 	if err := decode(c, &s); err != nil {
 		return err
 	}
+	s.Draft = draft
 	if err := s.Validate(); err != nil {
 		return bad(err)
 	}
@@ -396,7 +421,8 @@ func (h *Controller) Strategy(c *web.Ctx) error {
 
 func (h *Controller) Toggle(c *web.Ctx) error {
 	var in struct {
-		Enabled bool `json:"enabled"`
+		Enabled      bool `json:"enabled"`
+		ApproveDraft bool `json:"approve_draft"`
 	}
 	if err := decode(c, &in); err != nil {
 		return err
@@ -404,6 +430,14 @@ func (h *Controller) Toggle(c *web.Ctx) error {
 	var s trading.Strategy
 	if err := h.Store.Get(c.Context(), "strategies", c.Param("id"), &s); err != nil {
 		return errs.New(404, "Strategy not found")
+	}
+	if in.Enabled && s.Draft {
+		if !in.ApproveDraft {
+			return errs.New(422, "This strategy is a draft: review it, then approve it explicitly")
+		}
+		if err := h.Store.ApproveDraft(c.Context(), s.ID); err != nil {
+			return err
+		}
 	}
 	if in.Enabled && s.AccountID == "research" {
 		return errs.New(422, "Research strategies run in backtests only")

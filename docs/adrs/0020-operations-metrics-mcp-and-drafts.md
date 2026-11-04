@@ -1,0 +1,46 @@
+# ADR-0020: operational metrics, read-only MCP and strategy drafts
+
+State: implemented on 2026-11-04. Background: [docs/trading/quantdinger.md](../trading/quantdinger.md),
+[docs/trading/openbb.md](../trading/openbb.md).
+
+## Context
+
+The owner needs to see whether the worker and the feed are healthy, may want an assistant to read reports,
+and may paste configurations written elsewhere. Reference projects show the safe shape: agents get scoped,
+paper-only, read-mostly access; deterministic risk runs before any model; live trading needs a separate,
+server-side switch.
+
+## Decision
+
+- **Metrics.** `GET /api/metrics` (owner session) returns, per account, the heartbeat age, the
+  reconciliation age, orders in `unknown`, the risk rejection rate and the observed slippage against the
+  policy's expected slippage (`trading.OperationalMetrics`).
+- **Uptime.** A scheduled workflow checks the documentation site and the web readiness endpoint every 30
+  minutes; a failing run notifies the owner through GitHub and, when the secrets exist, Telegram.
+- **MCP.** `POST /mcp` serves a read-only Model Context Protocol endpoint behind a Bearer token
+  (`MCP_TOKEN`, off when unset). The tool list is fixed in code and tested: market coverage, instruments,
+  strategy kinds, dataset metadata, a backtest summary and operational metrics. No tool can place, change
+  or cancel an order, change a policy or control an account.
+- **Drafts.** A configuration written outside the owner's session is stored with `POST
+  /api/strategies/draft` as a draft that cannot be enabled until the owner approves it explicitly. The
+  approval is audited.
+- **Operations.** Runbooks for incidents, restore and key rotation live in `docs/runbooks/`; a script
+  rehearses a restore on a throwaway database and its output is committed. `bun audit` gates high and
+  critical advisories in CI, and Dependabot covers the site.
+
+## Alternatives
+
+- Let the MCP server create drafts: it would be a write tool on a credential that does not identify the
+  owner. Drafts go through the owner's session instead.
+- A separate metrics server (Prometheus): more to run for one owner; JSON on an authenticated endpoint is
+  enough, and can be scraped later.
+
+## Consequences
+
+An assistant with the token can read reports but never act. Any future write tool needs a new ADR, a
+separate scope and the live-readiness gates of the ROADMAP.
+
+## Review trigger
+
+A second consumer of the metrics, an MCP client that needs write access, or an uptime need finer than 30
+minutes.

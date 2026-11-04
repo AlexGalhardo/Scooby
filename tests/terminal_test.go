@@ -379,3 +379,47 @@ func TestTicketPlacesAPaperOrderThroughTheRiskEngine(t *testing.T) {
 		t.Fatalf("exactly one reserved order expected, got %d", len(state.Orders))
 	}
 }
+
+func TestMetricsEndpointIsAuthenticated(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	anonymous := app.Client(t)
+	anonymous.GetJSON("/api/metrics").AssertUnauthorized()
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	c.GetJSON("/api/metrics").AssertOK().AssertJSONCount("accounts", 3).AssertJSONPath("accounts.0.halted", true)
+}
+
+func TestDraftStrategyNeedsExplicitApprovalToEnable(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	proposal := map[string]any{
+		"name": "Proposed by an assistant", "kind": "opening_range", "symbol": "AAPL", "account_id": "us",
+		"fast": 6, "slow": 12, "threshold": 2, "stop_bps": 100, "target_bps": 200, "draft": false,
+	}
+	invalid := maps.Clone(proposal)
+	invalid["stop_bps"] = 1
+	c.PostJSON("/api/strategies/draft", invalid).AssertUnprocessable()
+	created := c.PostJSON("/api/strategies/draft", proposal).AssertCreated().AssertJSONPath("draft", true)
+	id, _ := created.JSONPath("id")
+	toggle := "/api/strategies/" + id.(string) + "/toggle"
+	c.PostJSON(toggle, map[string]any{"enabled": true}).AssertUnprocessable()
+	c.PostJSON(toggle, map[string]any{"enabled": true, "approve_draft": false}).AssertUnprocessable()
+	c.PostJSON(toggle, map[string]any{"enabled": true, "approve_draft": true}).AssertOK()
+	db, err := app.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var st trading.Strategy
+	if err := (trading.Store{DB: db}).Get(t.Context(), "strategies", id.(string), &st); err != nil {
+		t.Fatal(err)
+	}
+	if st.Draft {
+		t.Fatal("approval must clear the draft flag")
+	}
+	// A strategy created normally is never a draft, whatever the request says.
+	normal := maps.Clone(proposal)
+	normal["name"] = "Created by the owner"
+	normal["draft"] = true
+	c.PostJSON("/api/strategies", normal).AssertCreated().AssertJSONPath("draft", false)
+}

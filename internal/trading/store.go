@@ -468,6 +468,31 @@ func (s Store) ToggleStrategy(ctx context.Context, id string, enabled bool) erro
 	})
 }
 
+// ApproveDraft clears the draft flag of a strategy. It is the owner's explicit review of a configuration
+// that came from outside the owner's session, and it is audited.
+func (s Store) ApproveDraft(ctx context.Context, id string) error {
+	return s.DB.Tx(ctx, func(tx *database.Tx) error {
+		var raw string
+		if err := tx.QueryRowContext(ctx, s.q("SELECT payload FROM strategies WHERE id=?"), id).Scan(&raw); err != nil {
+			return err
+		}
+		var st Strategy
+		if err := json.Unmarshal([]byte(raw), &st); err != nil {
+			return err
+		}
+		st.Draft = false
+		b, err := json.Marshal(st)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, s.q("UPDATE strategies SET payload=?,updated_at=? WHERE id=?"),
+			string(b), time.Now().UTC().Format(time.RFC3339), id); err != nil {
+			return err
+		}
+		return audit(ctx, tx, "owner", "strategy.draft.approved", st.AccountID, id)
+	})
+}
+
 func (s Store) CreateStrategy(ctx context.Context, st *Strategy) error {
 	return s.DB.Tx(ctx, func(tx *database.Tx) error {
 		var account string

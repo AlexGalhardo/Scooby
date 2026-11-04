@@ -33,6 +33,7 @@ export interface Strategy {
   stop_bps: number;
   target_bps: number;
   enabled: boolean;
+  draft: boolean;
 }
 
 export interface Policy {
