@@ -17,3 +17,6 @@ storage/
 
 /test-results/
 /playwright-report/
+
+# The documentation site has its own image (site/Dockerfile)
+/site/

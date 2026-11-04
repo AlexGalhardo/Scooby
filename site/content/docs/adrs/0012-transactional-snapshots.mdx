@@ -1,0 +1,44 @@
+---
+title: "ADR-0012 — transactional financial snapshots and immutable artifacts"
+description: "Date: 2026-11-03. State: implemented in the delegated personal scope."
+---
+Date: 2026-11-03. State: implemented in the delegated personal scope.
+
+## Context
+
+The previous logical model enumerated several tables. In the single-account MVP, the
+fundamental invariant is to persist the reservation and intent atomically and preserve
+idempotent fills. Separating each entity into a table would add coordination.
+
+## Decision
+
+`trading_accounts` stores a versioned JSON snapshot per account with orders/intents,
+reservations, positions, fills, decisions, policies, heartbeat, cursors and generations.
+Every mutation uses a transaction, a PostgreSQL row lock and an expected version. The outbox
+is the durable list of orders approved within the snapshot itself; external sending occurs
+after the commit. Decimals from shopspring/decimal are serialized as strings,
+with no floats for cash, limits or fills. JSON is kept in a portable TEXT column for
+the SQLite test database; do not claim normalized NUMERIC where it was not used.
+
+`datasets` and `strategies` store immutable configurations; `backtests` keeps
+job/state/summary and `artifacts` preserves the full curve/fills outside polling.
+`audit_events` records actions and policy changes before/after in the same
+transaction, including risk rejections. Actor is owner/engine/operator.
+
+## Tradeoffs
+
+It simplifies invariants and replay, but the snapshot grows with history and is
+rewritten on mutations. This is a personal terminal design, not HFT/SaaS.
+Do not truncate the ledger to gain space. Before high volumes, migrate fills,
+orders and decisions to normalized tables with reconciliation and balance
+comparison. No benchmark was made for millions of events.
+
+## Recovery and ambiguity
+
+A send timeout keeps the intent `unknown`; there is no blind retry. Cumulative fills
+are reconciled by the difference in quantity and notional, with deduplication.
+The PostgreSQL snapshot does not offer an atomic transaction with the broker.
+
+A new B3 replay requires a block and no exposure/orders; the previous snapshot
+is archived in full in `artifacts`, in the same transaction as the reset, with a link
+in the audit. No previous fill is deleted.

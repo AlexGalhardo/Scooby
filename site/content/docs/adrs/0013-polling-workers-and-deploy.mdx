@@ -1,0 +1,32 @@
+---
+title: "ADR-0013 — polling, leadership and deploy with standby"
+description: "Date: 2026-11-03. State: implemented in the delegated scope."
+---
+Date: 2026-11-03. State: implemented in the delegated scope.
+
+## Decision
+
+The dashboard polls authenticated snapshots every 10 seconds. The worker queries the broker/feed and performs reconciliation via REST, in a 15-second loop;
+WebSocket/SSE are not needed for this MVP of 5m candles. Historical processing
+runs in a goroutine separate from execution, with timeout/cancellation.
+
+The worker holds a PostgreSQL advisory lock on a dedicated connection. Another process
+remains on standby until release; it does not execute jobs or orders. On takeover,
+it increments leader_epoch and generation, recovers interrupted sends as unknown and
+reconciles before new entries. Each operational mutation checks the epoch.
+
+## Consequences
+
+The engine's readiness checks the shared heartbeat: it allows promotion of the new
+container on standby while the old one is healthy. After the old one stops,
+leadership changes without two active executors. If there is no healthy leadership,
+readiness fails. An external request already in flight remains subject to reconciliation.
+
+The engine's closing and stop policies are observed, not native stop orders guaranteed at the broker. Unavailability may prevent an exit; the UI and
+runbook explain this. Only paper is implemented.
+
+## Review
+
+Extract the backtest into a separate service if the load compromises the heartbeat.
+Add streams if the observed latency justifies it; keep REST reconciliation.
+Test takeover, cancellation and restarts after any leadership change.

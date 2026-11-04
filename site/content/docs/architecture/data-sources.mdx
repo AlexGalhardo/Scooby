@@ -1,0 +1,45 @@
+---
+title: "Sources and verifications"
+description: "Consultation date: 2026-11-03. Preference for primary documentation. URLs support technical capabilities; this project's architecture choices are our own proposals."
+---
+Consultation date: 2026-11-03. Preference for primary documentation. URLs support
+technical capabilities; this project's architecture choices are our own proposals.
+
+| Source | Use |
+| --- | --- |
+| [Vukem — introduction](https://vukem.dev/docs/introduction) | Existing framework |
+| [Vukem — social login](https://vukem.dev/docs/security/social-login) | Google, OIDC, PKCE, state, scaffold and variables |
+| [Vukem — Inertia](https://vukem.dev/docs/frontend/inertia) | React pages and props from the backend |
+| [shadcn/ui — Vite](https://ui.shadcn.com/docs/installation/vite) | Planned integration with the current frontend |
+| [shadcn/ui — Sidebar](https://ui.shadcn.com/docs/components/base/sidebar) | Required component |
+| [Google — OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect) | Identity and login validation |
+| [Railway — pre-deploy](https://docs.railway.com/deployments/pre-deploy-command) | Migrations before serving the version |
+| [Railway — healthchecks](https://docs.railway.com/deployments/healthchecks) | Verification at publication |
+| [Railway — scaling](https://docs.railway.com/deployments/scaling) | Replicas and infrastructure |
+| [Railway — serverless](https://docs.railway.com/deployments/serverless) | Verification of the hibernation policy |
+| [Alpaca — paper trading](https://docs.alpaca.markets/us/docs/paper-trading) | Candidate environment and simulation limits |
+| [Alpaca — orders](https://docs.alpaca.markets/us/docs/working-with-orders) | Client order ID and order query |
+
+Alpaca paper uses its own endpoint/credentials; paper does not replace validation in
+the real market. Paper-only accounts have feed limitations; validate the chosen plan.
+The documentation describes querying by `client_order_id`, but this alone does not
+guarantee exactly-once execution. Do not assume B3 support.
+
+Local code consulted: `bootstrap/app.go`, `routes/web.go`, `go.mod`,
+`package.json`, `Dockerfile`, CI and the upstream Vukem scaffold at `/tmp/vukem`.
+The upstream copy serves for investigation; when implementing, verify the same
+APIs in the 0.37.0 module pinned in `go.mod`, since `main` may evolve.
+
+The context text contains cost values, deadlines and regulatory claims.
+They were not adopted as verified quotes or opinions. For SaaS/live,
+record specific research and review of jurisdiction and service before the offer.
+
+Additional verification confirmed social login and middleware also in the Vukem
+0.37.0 module installed in `GOPATH/pkg/mod`, not only in upstream main. Railway
+pre-deploy uses a separate container, with network/env available and no mounted volumes;
+a Docker start command replaces ENTRYPOINT. Additional references:
+[Start command](https://docs.railway.com/deployments/start-command) and
+[Services](https://docs.railway.com/services).
+
+The [detailed web research](/docs/project/web-research), carried out on 2026-11-03, records
+findings by topic, open sources, access limitations and next tests.

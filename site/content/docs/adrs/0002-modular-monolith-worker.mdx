@@ -1,0 +1,25 @@
+---
+title: "ADR-0002 — modular domain and continuous worker"
+description: "Date: 2026-11-03. State: Proposed."
+---
+Date: 2026-11-03. State: **Proposed**.
+
+## Context
+
+Strategy execution must survive the dashboard being closed; early microservices raise the cost of consistency.
+
+## Decision
+
+Propose shared Go domain code and separate web/engine processes. The worker holds per-account leadership, generation and reconciliation on boot.
+
+## Alternatives
+
+Engine inside requests/browser; a single coupled process; several microservices. The first does not meet continuity; the others change isolation/cost.
+
+## Consequences
+
+Same repository and database simplify transactions; deploying two processes requires compatible contracts and fencing. Lock does not cancel external requests in flight.
+
+## Review trigger
+
+Volume, failure isolation or team size justifying extraction of modules into services.

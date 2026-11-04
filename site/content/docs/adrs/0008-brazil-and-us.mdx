@@ -1,0 +1,25 @@
+---
+title: "ADR-0008 — Brazil and US in the MVP"
+description: "Date: 2026-11-03. State: Accepted by user answer; implementation pending."
+---
+Date: 2026-11-03. State: **Accepted by user answer; implementation pending**.
+
+## Context
+
+In round 1, Q2, the user chose both markets.
+
+## Decision
+
+Cover B3 and US stocks, with instrument, calendar, currency and adapter contracts per market. The broker and data source have not been chosen.
+
+## Alternatives
+
+One market only was recommended and not chosen. Do not silently reduce the MVP to the US.
+
+## Consequences
+
+More integrations and datasets; BRL and USD separated; backtest/paper may have incremental implementations, with explicit modes. B3 data access still needs to be resolved.
+
+## Review trigger
+
+Explicit scope change or proven infeasibility discussed with the user.

@@ -1,0 +1,25 @@
+---
+title: "ADR-0001 — stack and dashboard"
+description: "Date: 2026-11-03. State: Accepted by requirement; partial implementation."
+---
+Date: 2026-11-03. State: **Accepted by requirement; partial implementation**.
+
+## Context
+
+The repository already uses Vukem/React/Inertia/Tailwind/PostgreSQL. The user requires a dashboard at `/` with a shadcn/ui sidebar.
+
+## Decision
+
+Keep the stack; adapt the starter to the authenticated dashboard and install shadcn/ui components in the Vite frontend. `/` is the canonical route, not a public landing page.
+
+## Alternatives
+
+Separate API SPA; another framework; `/dashboard` as the main destination. They do not better meet the requirements already fixed.
+
+## Consequences
+
+Share types/props between Go and React; preserve the Inertia integration and CSP. shadcn/ui requires configuration and components that do not yet exist in the code.
+
+## Review trigger
+
+Explicit change of requirements or incompatibility reproduced in the integration.

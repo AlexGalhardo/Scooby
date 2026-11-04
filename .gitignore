@@ -25,3 +25,8 @@ node_modules/
 
 # Framework feedback notes (local only)
 /vukem-feedback.md
+
+# Documentation site
+/site/.next/
+/site/out/
+/site/next-env.d.ts

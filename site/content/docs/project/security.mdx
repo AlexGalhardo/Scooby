@@ -1,0 +1,58 @@
+---
+title: "Security policy"
+description: "This file covers reporting vulnerabilities in vukem-trading. The design of the protections (single-owner login, secrets only in the worker, risk gates, audit trail) lives in docs/arquitetura.md and..."
+---
+This file covers reporting vulnerabilities in vukem-trading. The design of the protections (single-owner login, secrets only in the worker, risk gates, audit trail) lives in [docs/arquitetura.md](https://github.com/AlexGalhardo/vukem-trading/blob/main/docs/arquitetura.md) and the [ADRs](/docs/adrs/index).
+
+## Scope and limits
+
+vukem-trading is a **personal paper-trading and backtesting terminal**. It does not hold real capital and has no live broker adapter. Reports about the following are in scope:
+
+- Authentication or authorization bypass (Google login, owner allowlist, sessions, CSRF).
+- Leaks of broker, Google, Telegram or database credentials (logs, props, bundles, Git history).
+- Bypass of risk controls: stop-loss enforcement, daily-loss kill switch, exposure limits, reservations.
+- Order intents duplicated or sent without a persisted decision (outbox, leader fencing, reconciliation).
+- Injection, SSRF or unsafe file import in the CSV and dataset pipeline.
+- Supply-chain issues in the build, release or deployment workflows.
+
+Trading losses, strategy quality and market-data licensing are not vulnerabilities.
+
+## Supported versions
+
+| Version | Supported |
+| --- | --- |
+| Latest `v0` minor (pre-1.0) | Security fixes ship as the next `v0` patch or minor |
+| Older `v0` minors | Upgrade to the latest `v0` minor |
+
+## Reporting a vulnerability
+
+**Do not open a public issue.**
+
+Report privately through GitHub: **Security → Report a vulnerability** at [https://github.com/AlexGalhardo/vukem-trading/security/advisories/new](https://github.com/AlexGalhardo/vukem-trading/security/advisories/new).
+
+Please include:
+
+- Affected version or commit
+- A description of the issue and its impact
+- Steps or code to reproduce
+- Any suggested fix
+
+Never include real credentials, account numbers or personal financial data in a report.
+
+## What to expect
+
+| Step | Target time |
+| --- | --- |
+| Acknowledgement | 3 business days |
+| Initial assessment | 7 days |
+| Fix released for confirmed issues | 30 days, faster for critical issues |
+
+The project has a single maintainer, so these targets are best effort; a confirmed critical issue takes priority over all other work.
+
+## Disclosure policy
+
+The project follows coordinated vulnerability disclosure: the issue is confirmed, a timeline is agreed with the reporter (90 days at most from the report), the fix is prepared privately, and the advisory and the patched release are published together. Please keep the vulnerability private until the advisory is public. Reporters are credited unless they prefer otherwise.
+
+## Supply chain
+
+Workflows pin every action by full commit SHA and request minimal permissions. [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/AlexGalhardo/vukem-trading) runs on every push to `main`, dependencies are scanned with `govulncheck` and OSV-Scanner, and secrets are scanned with betterleaks.

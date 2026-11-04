@@ -1,0 +1,61 @@
+---
+title: "Freqtrade: patterns for vukem-trading"
+description: "Source: freqtrade/freqtrade and the stable docs (release 2026.10, strategy interface v3). Researched 2026-11-04. Items marked unverified were not confirmed in the docs."
+---
+Source: [freqtrade/freqtrade](https://github.com/freqtrade/freqtrade) and the [stable docs](https://www.freqtrade.io/en/stable/) (release 2026.10, strategy interface v3). Researched 2026-11-04. Items marked *unverified* were not confirmed in the docs.
+
+## Main loop and strategy interface
+
+The bot loops every `internals.process_throttle_secs`. Each pass reads open trades from persistence, builds the pairlist, runs the strategy, updates open orders, checks timeouts, exits, position adjustments and `max_open_trades` slots, then opens new entries. OHLCV is downloaded once per candle; most callbacks run per loop live and once per candle in backtests.
+
+- Pure functions over a candle frame: `populate_indicators`, `populate_entry_trend`, `populate_exit_trend`. Signals are columns (`enter_long`, `exit_long`, `enter_short`, `exit_short`, optional tags). Conflicting signals block entries.
+- `startup_candle_count` declares warm-up; `can_short` is off by default.
+- Informative pairs and `merge_informative_pair` merge higher timeframes without look-ahead.
+- Hooks: `custom_stake_amount`, `confirm_trade_entry/exit`, `custom_stoploss`, `custom_roi`, `custom_exit`, `custom_entry_price/exit_price`, `check_entry/exit_timeout`, `adjust_trade_position`, `adjust_order_price`, `order_filled`, `leverage`.
+- Caveats: use the callback's `current_time`, never the wall clock; `custom_exit` and `confirm_trade_exit` can block stop exits and cause losses; a loose `adjust_trade_position` re-triggers every loop.
+
+## Backtest fill model
+
+- Entries fill at the candle open; signal exits fill at the next open.
+- A stop-loss exits at the stop price with the loss increased by two times the fee.
+- Inside a candle the stop is checked before ROI and the low is assumed before the high. `--timeframe-detail` resolves intra-candle order with a lower timeframe.
+- Orders fill at the requested price if it lies within the candle range. **Slippage is not modeled.**
+- Fees apply on both sides; `--fee` overrides the exchange default.
+- Rejected entry signals (no free slot) are reported.
+- Metrics: Sharpe, Sortino, Calmar, SQN, profit factor, expectancy, CAGR, max drawdown, win/draw/loss counts, and a mean-profit p-value that the docs flag as optimistic.
+
+## Bias detection
+
+`lookahead-analysis` backtests all candles at once, then perturbs indicators and shifts entries and exits to detect future leakage. It reports biased signals and indicators. It forces static stakes, no protections and a large wallet. Known limits: it only checks signals that actually trigger (false negatives), and limit orders with custom prices can give false positives. Fix entry bias before exit bias. The recursive-analysis page is *unverified*.
+
+## Hyperopt
+
+Loss functions include OnlyProfit, Sharpe, Sortino, Calmar, MaxDrawDown variants, ProfitDrawDown and MultiMetric. Search spaces are selectable (entry, exit, roi, stoploss, trailing, trades, protection). Overfitting controls: decimals capped at three places, `--min-trades`, `--early-stop`, `--random-state`. Edge (position sizing) was removed in 2025.6; do not model sizing on it.
+
+## Protections
+
+Declared as a strategy property. Each locks trading for a duration, rounded up to the next candle.
+
+- **StoplossGuard:** counts stop-loss exits with negative profit; global, per pair or per side.
+- **MaxDrawdown:** global; `ratios` or `equity` calculation (`equity` recommended).
+- **LowProfitPairs:** per pair; locks pairs whose combined profit ratio is below a threshold.
+- **CooldownPeriod:** per pair only, never locks everything.
+
+They are off in backtests unless `--enable-protections` is passed.
+
+## Stop-loss and leverage
+
+Static, trailing (with a positive offset) and custom stops. `stoploss_on_exchange` places the stop right after the entry fills and recreates it if cancelled; `emergency_exit` handles failed placement. A stop-limit can miss a gap. With leverage, the stop applies to capital (10% at 10x triggers on a 1% move). Liquidation fees are not tracked, which distorts P&L.
+
+## Configuration and secrets
+
+JSON with merge and an effective-config dump. Environment overrides use `FREQTRADE__section__key`; the CLI overrides the environment. Secrets belong in the environment or a private second file. `dry_run` defaults to true and `force_entry_enable` is off. Dry-run fill details, restart reconciliation and the DB default are *unverified*.
+
+## Recommendations for vukem-trading
+
+1. Keep strategies as pure functions over candle frames with a signal-column contract plus a few hooks (stake, entry/exit confirm, custom stop, adjust position), each with a timeout.
+2. Make fill rules explicit and configurable: entry at open, exit at next open, stop before target, low before high, fees on both sides. Add slippage, which Freqtrade lacks.
+3. Ship a look-ahead check that perturbs inputs and compares signals, and publish its false-positive caveats.
+4. Port protections as a risk layer: stop-loss streak lock, drawdown lock (equity mode), per-pair cooldown.
+5. Use an environment override scheme with a startup dump of the effective config that never prints secrets.
+6. Design reconciliation yourself; the docs do not describe Freqtrade's restart behavior.

@@ -1,0 +1,15 @@
+.env
+.env.*
+.git/
+node_modules/
+**/node_modules/
+site/.next/
+site/node_modules/
+/bin/
+/resources/
+/internal/
+/app/
+/cmd/
+/database/
+/e2e/
+/storage/

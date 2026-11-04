@@ -1,0 +1,25 @@
+---
+title: "ADR-0006 — initial PostgreSQL without mandatory extensions"
+description: "Date: 2026-11-03. State: Proposed."
+---
+Date: 2026-11-03. State: **Proposed**.
+
+## Context
+
+The conversation mentions TimescaleDB, Redis and NATS, but volume, market and budget are not defined.
+
+## Decision
+
+Propose conventional PostgreSQL and outbox first; add TimescaleDB, Redis or NATS only on demonstrated need and validated support. Keep versioned event contracts.
+
+## Alternatives
+
+Operate all of them from day one; depend on an unverified extension; events only in memory. They add cost or loss of durability.
+
+## Consequences
+
+Initial polling adds latency and requires limits; performance will be measured. Tick/book data or high fan-out may change the decision.
+
+## Review trigger
+
+Measured throughput, retention, latency or consumers justifying a service/extension and an approved budget.

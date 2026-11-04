@@ -1,0 +1,27 @@
+---
+title: "Architecture decision records"
+description: "States: accepted when derived from an explicit requirement; proposed when it needs the user's acceptance. Accepting an ADR does not mean implementing it. Superseded ADRs remain in the history, with..."
+---
+States: **accepted** when derived from an explicit requirement; **proposed** when
+it needs the user's acceptance. Accepting an ADR does not mean implementing it.
+Superseded ADRs remain in the history, with a link to the successor.
+
+| ADR | Topic | State |
+| --- | --- | --- |
+| [0001](/docs/adrs/0001-stack-and-dashboard) | Stack, dashboard and shadcn/ui | Accepted by requirement; partially implemented |
+| [0002](/docs/adrs/0002-modular-monolith-worker) | Modular monolith with separate worker | Proposed |
+| [0003](/docs/adrs/0003-google-only) | Google-only login | Accepted by requirement; implementation pending |
+| [0004](/docs/adrs/0004-postgres-outbox) | PostgreSQL, outbox and financial precision | Proposed; PostgreSQL already confirmed |
+| [0005](/docs/adrs/0005-railway) | Railway deploy | Accepted by requirement; proposed topology |
+| [0006](/docs/adrs/0006-data-and-events) | Data, extensions and messaging | Proposed |
+| [0007](/docs/adrs/0007-paper-first) | Paper-first and deterministic execution | Paper-first accepted; details proposed |
+| [0008](/docs/adrs/0008-brazil-and-us) | Brazil and US in the MVP | Accepted; providers pending |
+| [0009](/docs/adrs/0009-personal-use) | Personal terminal and single account | Accepted |
+| [0010](/docs/adrs/0010-paper-adapters) | Alpaca Paper US and B3 simulator | Implemented; external validation pending |
+| [0011](/docs/adrs/0011-autonomous-implementation) | Defaults and autonomous implementation | Accepted by later instruction |
+| [0012](/docs/adrs/0012-transactional-snapshots) | Persistence effectively implemented | Implemented; details/updates ADR-0004 |
+| [0013](/docs/adrs/0013-polling-workers-and-deploy) | Polling, leadership and Railway standby | Implemented |
+| [0014](/docs/adrs/0014-railway-api-and-portable-docker) | Current Railway API and portable Dockerfile | Implemented during publication |
+
+Each ADR must record context, decision, alternatives, consequences and review
+trigger. Brazil and US and personal use are confirmed; Alpaca Paper, the internal B3 simulator and admission of one account are also. IEX and B3 CSV were adopted by delegation; credentials/datasets remain external.

@@ -1,0 +1,40 @@
+---
+title: "ADR-0014 — current Railway: configuration API and portable Dockerfile"
+description: "State: implemented on 2026-11-03, during publication authorized by the user. Updates the operational instructions of ADR-0005 and ADR-0013."
+---
+State: implemented on 2026-11-03, during publication authorized by the user.
+Updates the operational instructions of ADR-0005 and ADR-0013.
+
+## Context
+
+The authenticated Railway API rejected `railwayConfigFile` with the message that
+Config as Code (`railway.json`/`railway.toml`) was discontinued in favor of IaC.
+The public `Builder` enum does not include `DOCKERFILE`, although the builder detects a
+Dockerfile automatically when the path is configured.
+
+The first build also rejected mounts without an ID and secret-type mounts. The
+current Docker documentation requires literal cache IDs in the format
+`s/<service id>-<target path>` and does not allow variables in those IDs.
+Source: [https://docs.railway.com/builds/dockerfiles#cache-mounts](https://docs.railway.com/builds/dockerfiles#cache-mounts).
+
+## Decision
+
+- Configure start command, web migrations, readiness, one replica and
+  `sleepApplication=false` via `serviceInstanceUpdate` of the current API.
+- Version the operation in `scripts/railway-configure.sh`, invoked by the deploy
+  script. Do not pass `railwayConfigFile` nor the non-existent `DOCKERFILE` enum.
+- Keep `railway.web.toml` and `railway.engine.toml` only as historical references
+  for the values; do not guide agents to select these paths.
+- Use conventional Docker layers, without cache/secret mounts. This allows sharing the Dockerfile among web, engine and CI without embedded service IDs.
+- Keep validated TLS and CA/tzdata in the final image. Do not send certificates
+  or secrets from the Codex executor to the Railway builder.
+
+## Alternatives and consequences
+
+Two Dockerfiles with literal IDs would duplicate the definition and bind it to the current
+services. IaC `.railway/railway.ts` is a possible evolution, but it is not necessary to adopt an additional authoring runtime for this small configuration.
+The cost of removing mounts is less fine-grained cache reuse; the dependency layers
+remain reusable when their manifests do not change.
+
+Reassess when additional environments, drift or frequent builds are needed.
+A new API change must be inspected in the schema before altering services.

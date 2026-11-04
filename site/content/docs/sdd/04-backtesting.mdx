@@ -1,0 +1,38 @@
+---
+title: "SDD-04 — backtesting and research"
+description: "Status: proposed. Dataset, frequency, benchmark and costs pending."
+---
+> Current implementation and explicit deviations are in the [ROADMAP](https://github.com/AlexGalhardo/vukem-trading/blob/main/ROADMAP.md)
+> and [ADRs 0011–0013](/docs/adrs/index). Local technical acceptance is distinct
+> from real OAuth/broker, Railway publication and prolonged financial observation.
+
+Status: proposed. Dataset, frequency, benchmark and costs pending.
+
+## Contract of one run
+
+Input: strategy version, instruments, interval and calendar, immutable dataset/hash, seed when applicable, capital and currency, fill model, fees,
+spread, slippage, latency and risk policy. Store the code commit/hash and
+runtime version. Output: signals, risk decisions, simulated orders/fills,
+equity curve, metrics and a limitations report.
+
+Use the same strategy/risk contract as the worker, with simulated clock and broker. Replay runs isolated from execution and has no live credentials. Durable asynchronous job, states queued/running/completed/failed/canceled, CPU/memory budget and
+the ability to cancel. Do not block the HTTP request while testing.
+
+## Simulation
+
+In the proposed default, a closed candle generates an executable signal only at the next eligible event. Fills respect order type, tick, lot, costs and modeled liquidity.
+OHLC does not reveal the intrabar path: if stop and target fit in the same bar, use an
+explicit conservative rule or finer data; never silently choose the best result. Gaps may execute beyond the stop, with the assumption recorded.
+
+Costs and taxes are not a universal constant. Parameterize operational costs; the tax estimate is separate, if implemented, with reviewed rules.
+Compare slippage/liquidity scenarios and report sensitivity. Failure or absence
+of history makes the run fail or explicitly marks the interval as incomplete.
+
+## Report and acceptance
+
+Reproduce the same curve/fills within a documented tolerance with the same inputs.
+Identify before/after costs, benchmark, drawdown, sample size and temporal
+partitions. No tuning on the final test. Compare with simple manual fixtures and test zero trades, consecutive losses and insufficient equity.
+Internal paper and broker paper are separate results, with their own assumptions.
+Go is the initially recommended runtime; optional Python exchanges versioned artifacts,
+without changing the production strategy without a new equivalence test.

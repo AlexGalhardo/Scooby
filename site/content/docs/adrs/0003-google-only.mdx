@@ -1,0 +1,25 @@
+---
+title: "ADR-0003 — Google-exclusive authentication"
+description: "Date: 2026-11-03. State: Accepted by requirement; one authorized account confirmed."
+---
+Date: 2026-11-03. State: **Accepted by requirement; one authorized account confirmed**.
+
+## Context
+
+The user requires `/login` with Google only and a redirect of visitors from the dashboard to that page.
+
+## Decision
+
+Use Google OAuth/OIDC on the server with Vukem support; local sessions. Remove the scaffold's local password/sign-up/reset routes. Successful login ends at `/`.
+
+## Alternatives
+
+Local passwords, multiple providers and login directly at the broker. They do not match the requested flow.
+
+## Consequences
+
+Depends on an OAuth project, callback and shared storage for states/sessions. Authentication does not replace authorization; personal use is confirmed, Q6 confirmed one account, authorized by verified email at bootstrap and then bound to the Google subject.
+
+## Review trigger
+
+New identity or recovery requirement. Do not add a provider without a recorded decision.
