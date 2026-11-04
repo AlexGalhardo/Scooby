@@ -95,7 +95,11 @@ jobs:
       # The whole history, with the rules in .betterleaks.toml. Validation
       # against provider APIs stays off (it would need --validation).
       - name: betterleaks
-        run: betterleaks git . --no-banner --redact
+        run: betterleaks git . --no-banner --redact --report-format json --report-path "$RUNNER_TEMP/betterleaks.json"
+      # Rule, file and line only: the matched value is never printed.
+      - name: Summarize findings
+        if: failure()
+        run: jq -r '.[] | "\(.RuleID) \(.File):\(.StartLine) \(.Commit[0:7])"' "$RUNNER_TEMP/betterleaks.json" | sort | uniq -c
 
   image:
     name: Build the production image
