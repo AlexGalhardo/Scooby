@@ -126,6 +126,7 @@ export interface Snapshot {
     google_configured: boolean;
     owner_configured: boolean;
     alpaca_configured: boolean;
+    live_trading: boolean;
     mode: string;
     feed: string;
     timeframe: number;

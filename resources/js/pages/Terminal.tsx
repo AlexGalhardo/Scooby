@@ -266,6 +266,12 @@ export default function Terminal({ section }: { section: string }) {
     return () => clearInterval(timer);
   }, [refresh]);
   useEffect(() => {
+    if (typeof EventSource === "undefined") return;
+    const source = new EventSource("/api/stream");
+    source.addEventListener("changed", () => void refresh());
+    return () => source.close();
+  }, [refresh]);
+  useEffect(() => {
     let active = true;
     api<Preferences>("/api/preferences")
       .then((p) => {
@@ -322,19 +328,24 @@ export default function Terminal({ section }: { section: string }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+  const datasetStamp = snapshot?.datasets.find((d) => d.id === datasetId)?.last ?? "";
   useEffect(() => {
     if (!datasetId) {
       setCandles([]);
       return;
     }
     const controller = new AbortController();
-    api<Dataset>(`/api/datasets/${datasetId}`, undefined, controller.signal)
+    api<Dataset>(
+      `/api/datasets/${datasetId}?v=${encodeURIComponent(datasetStamp)}`,
+      undefined,
+      controller.signal,
+    )
       .then((ds) => setCandles(ds.candles ?? []))
       .catch((e) => {
         if (!controller.signal.aborted) setError(String(e));
       });
     return () => controller.abort();
-  }, [datasetId]);
+  }, [datasetId, datasetStamp]);
   const account = snapshot?.accounts.find((a) => a.id === accountId);
   const [title, description] = titles[section] ?? titles.overview;
   if (!snapshot)
@@ -1139,6 +1150,11 @@ export default function Terminal({ section }: { section: string }) {
                 headers={["Setting", "Value"]}
                 rows={[
                   row("mode", "Mode", "Paper only"),
+                  row(
+                    "live",
+                    "Live trading",
+                    snapshot.settings.live_trading ? "Enabled" : "Off: no live adapter exists",
+                  ),
                   row("feed", "US feed", "IEX"),
                   row("timeframe", "Timeframe", "5 minutes"),
                   row("engine", "Engine", snapshot.settings.engine_version),

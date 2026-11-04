@@ -143,8 +143,8 @@ Do not ask for tokens in chat; use secure provider variables. Never print secret
 - [x] Instrumentation and reports for drawdown and cost review.
 - [ ] Observe paper trading across the agreed periods; log divergences from the backtest.
 - [ ] Compare out-of-sample results without optimizing on the final test set.
-- [ ] Measure latency, capacity, RPO and RTO.
-- [ ] Record a keep-or-disable decision per strategy.
+- [x] Measure latency, capacity, RPO and RTO: benchmarks in `internal/trading/bench_test.go`, restore timing in `scripts/restore-rehearsal.sh`, results in [docs/runbooks/capacity.md](docs/runbooks/capacity.md). Repeat on the Railway plan in use.
+- [~] Record a keep-or-disable decision per strategy: `POST /api/strategies/{id}/decision` stores the verdict and reason in the audit trail (`TestStrategyDecisionIsRecordedInTheAuditTrail`). **Open:** the decisions themselves, which need the observation period above.
 
 Phase 6 depends on time, data and configured accounts; do not check it from synthetic fixtures.
 
@@ -215,7 +215,7 @@ Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/st
 
 - [x] **11.1 Provider interface** (`internal/providers`: `Provider`, `Registry`, credentials resolved as `<PROVIDER>_<NAME>`); a missing credential fails before any network call. Assert: `TestMissingCredentialFailsBeforeAnyCall`. See [ADR-0018](docs/adrs/0018-data-providers-and-research-account.md).
 - [x] **11.2 Coverage matrix** per market (data mode, execution, source, notes) in the snapshot and in Settings. Assert: `TestCoverageMatrixNamesEveryMarket` and the snapshot test (`coverage` has four rows).
-- [~] **11.3 Crypto:** Binance public klines (paged, closed candles only), 24/7 UTC sessions, BTCUSDT and ETHUSDT, CSV import, and a reproducible backtest. Assert: `TestBinanceParsesPagesAndKeepsOnlyClosedCandles`, `TestCryptoCSVImportsAcrossWeekendsAndBacktestsReproducibly`. **Not done:** a testnet paper adapter, which needs a Binance testnet account to validate.
+- [~] **11.3 Crypto:** Binance public klines (paged, closed candles only), 24/7 UTC sessions, BTCUSDT and ETHUSDT, CSV import, and a reproducible backtest. Assert: `TestBinanceParsesPagesAndKeepsOnlyClosedCandles`, `TestCryptoCSVImportsAcrossWeekendsAndBacktestsReproducibly`. `adapters.BinanceTestnet` (HMAC-signed, idempotent by client order id, testnet host only) is built and tested against a fake server. **Not done:** wiring it into the engine and validating it against a real testnet account.
 - [x] **11.4 Forex import** (EURUSD, USDBRL; backtest only; Monday to Friday UTC sessions; tick-accurate rounding). Assert: `TestFXCSVImportRespectsTheWeekend`, `TestTickRoundingFollowsTheInstrument`.
 - [x] **11.5 Source terms** recorded per provider in [docs/sources.md](docs/sources.md). Assert: `TestEveryProviderIsDocumentedWithItsTerms`.
 
@@ -225,7 +225,7 @@ Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/st
 - [x] **12.2 VWAP reversion** (`vwap_reversion`: buys a close `threshold`% below the session VWAP, exits at the VWAP). Assert: `TestVWAPReversion`.
 - [x] **12.3 ADX-filtered trend** (`adx_trend`: Wilder +DI/-DI crossover while ADX is at least `threshold`). Assert: `TestADXTrendNeedsAStrongTrend`.
 - [x] **12.4 DCA grid (spot) with capped inventory** (`dca_grid`: buys dips in tranches spaced by `threshold`%, at most `fast` tranches, each sized at 1/`fast` of the risk budget, stop and target measured from the average cost). Assert: `TestDCAGridKeepsInventoryWithinTheCap`. The risk engine enforces the tranche cap and spacing, not the strategy.
-- [ ] **12.5 Market making** (deferred by decision, see [ADR-0016](docs/adrs/0016-fill-rules-and-validation-protocol.md)): needs order-book data and a validated queue model, neither of which exists.
+- [ ] **12.5 Market making** (deferred by decision, see [ADR-0016](docs/adrs/0016-fill-rules-and-validation-protocol.md)): the Avellaneda-Stoikov quote math exists (`trading.AvellanedaStoikov`, tested). Running it needs order-book data and a validated queue model, neither of which exists.
 
 ### Phase 13: Terminal UX
 
@@ -236,7 +236,7 @@ Reference: [docs/trading/terminal-and-agents.md](docs/trading/terminal-and-agent
 - [x] **13.3 Saved workspace** per owner on the server (account, ticket symbol, watchlist, alerts, order templates), see [ADR-0019](docs/adrs/0019-workspace-ticket-and-wire-types.md). The terminal is page-based, so the workspace holds what the owner changes rather than a widget grid. Assert: the e2e test `the workspace is saved on the server and survives a reload`, `TestPreferencesPersistAndAreValidated`.
 - [x] **13.4 Watchlist** capped at 20 symbols, with the last close and the data mode of each market from the coverage matrix. Assert: `TestPreferencesRejectBadWorkspaces` (the cap) and the Market data page.
 - [x] **13.5 Paper hotkey order templates** (`b`, `shift+b`, `x` by default) sized by a share of cash and still capped by the risk budget. Assert: `TestTicketNeverExceedsTheCashShareOrTheRiskBudget`, `TestTicketPlacesAPaperOrderThroughTheRiskEngine`; the e2e hotkey test stubs the ticket request, because the e2e server has no engine worker to arm an account.
-- [~] **13.6 Canvas tape and ladder** (`components/TapeLadder.tsx`): drawn from an effect, never from React state. Missing: a push channel (SSE or WebSocket); data still arrives by the ten-second poll, so the tape repaints at that rate.
+- [~] **13.6 Canvas tape and ladder** (`components/TapeLadder.tsx`): drawn from an effect, never from React state. `GET /api/stream` (SSE, [ADR-0022](docs/adrs/0022-stream-testnet-adapter-and-quotes.md)) now tells the page when anything changed, so it refetches at once; the poll stays as fallback. Tick-level repaint still needs a live feed.
 - [x] **13.7 Generated TypeScript wire types** from the Go structs (`internal/trading/wire.go` to `resources/js/gen/wire.ts`). Assert: `TestWireTypesAreCurrent` fails when the file is stale; regenerate with `go test ./internal/trading -run Wire -update`. A Go change that breaks the UI also fails `bun check`.
 - [x] **13.8 Alerts:** price thresholds stored in the workspace, checked by the engine on every tick (15 seconds) and delivered through the Telegram path, each exactly once. Assert: `TestAlertsFireOnceWhenThePriceCrosses`, `TestEngineFiresAPriceAlertOnceAndPersistsIt`.
 
@@ -263,10 +263,10 @@ No live adapter is built in this roadmap. Writing an ADR is the only allowed wor
 
 - [ ] Paper results over an agreed period match backtest expectations within a stated tolerance.
 - [x] Risk gate, kill switch and reconciliation have failure-path tests in CI: default deny, mandatory stop, daily-loss kill switch, protections, concurrent reservations, rollback, timeouts, partial fills and leader failover (`internal/trading`, `internal/engine`, `tests`). This item alone does not open the gate.
-- [ ] Live is enabled by a server-side flag separate from any agent or UI setting.
-- [ ] Credentials encrypted at rest and present only in the worker.
-- [ ] First-period limits (order size, daily loss) set deliberately low.
-- [ ] Owner sign-off recorded in an ADR.
+- [x] Live is enabled by a server-side flag separate from any agent or UI setting: `trading.EvaluateLiveGate` reads only the environment (`TestLiveNeedsEveryCondition`, `TestLiveGateReadsNothingButTheEnvironment`).
+- [~] Credentials encrypted at rest and present only in the worker: the gate refuses any role but `worker` (`TestOnlyTheWorkerCanEnableLive`). **Open:** secret storage is Railway variables; no live credentials exist.
+- [x] First-period limits (order size, daily loss) set deliberately low: ceilings of 100 per order and 25 bps per day in code, enforced by the gate.
+- [ ] Owner sign-off recorded in an ADR: [ADR-0021](docs/adrs/0021-live-readiness-gate.md) is proposed and awaits the owner.
 
 ## 6. Contracts and limitations
 

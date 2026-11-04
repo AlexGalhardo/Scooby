@@ -14,6 +14,7 @@ import (
 	"github.com/AlexGalhardo/vukem"
 	"github.com/AlexGalhardo/vukem/errs"
 	"github.com/AlexGalhardo/vukem/inertia"
+	"github.com/AlexGalhardo/vukem/sse"
 	"github.com/AlexGalhardo/vukem/web"
 
 	"github.com/AlexGalhardo/vukem-trading/internal/providers"
@@ -197,6 +198,7 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 				"owner_configured":  h.App.Source.Get("OWNER_GOOGLE_EMAIL") != "",
 				"alpaca_configured": h.App.Source.Get("ALPACA_API_KEY") != "" &&
 					h.App.Source.Get("ALPACA_API_SECRET") != "",
+				"live_trading":   trading.EvaluateLiveGate(h.App.Source.Get, "web").Enabled,
 				"mode":           "paper_only",
 				"feed":           "IEX",
 				"timeframe":      5,
@@ -369,6 +371,45 @@ func (h *Controller) Metrics(c *web.Ctx) error {
 		out = append(out, trading.OperationalMetrics(a, now))
 	}
 	return c.JSON(200, map[string]any{"time": now, "accounts": out})
+}
+
+// Stream pushes a "changed" event whenever the data behind the terminal changes, so the page refetches
+// at once instead of waiting for its next poll. Polling stays as the fallback.
+func (h *Controller) Stream(c *web.Ctx) error {
+	return sse.Serve(c.Writer(), c.Request(), func(s *sse.Stream) error {
+		last := ""
+		tick := time.NewTicker(2 * time.Second)
+		defer tick.Stop()
+		for {
+			signature, err := h.Store.ChangeSignature(s.Context())
+			if err == nil && signature != last {
+				last = signature
+				if err := s.SendJSON("changed", map[string]string{"signature": signature}); err != nil {
+					return nil // a write error means the client left
+				}
+			}
+			select {
+			case <-s.Context().Done():
+				return nil
+			case <-tick.C:
+			}
+		}
+	})
+}
+
+// Decision records the owner's keep-or-disable verdict on a strategy, with the reason, in the audit trail.
+func (h *Controller) Decision(c *web.Ctx) error {
+	var in struct {
+		Decision string `json:"decision"`
+		Note     string `json:"note"`
+	}
+	if err := decode(c, &in); err != nil {
+		return err
+	}
+	if err := h.Store.RecordStrategyDecision(c.Context(), c.Param("id"), in.Decision, in.Note); err != nil {
+		return bad(err)
+	}
+	return c.JSON(201, map[string]string{"status": "recorded"})
 }
 
 // Kinds serves the strategy kinds and their parameter schema, the single source for forms and validation.

@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `GET /api/stream`: Server-Sent Events channel that tells the terminal when data changed (ADR-0022).
+- `adapters.BinanceTestnet`: signed, idempotent testnet-only order adapter, not wired into the engine.
+- `trading.AvellanedaStoikov`: market-making quote math, not connected to any venue.
+- `trading.EvaluateLiveGate`: environment-only live switch with first-period ceilings; the web service never enables live (ADR-0021, proposed).
+- `POST /api/strategies/{id}/decision`: keep-or-disable verdict with a reason in the audit trail.
+- Benchmarks, restore timing and `docs/runbooks/capacity.md`.
+
 - Fuzz tests for the CSV importer and the strategy signals, run briefly in CI.
 - Operations: `GET /api/metrics`, an `Uptime` workflow, runbooks (incident, restore, key rotation), a restore rehearsal script with its recorded run, a dependency policy and `bun audit` in CI.
 - A read-only MCP endpoint behind `MCP_TOKEN` with a fixed tool list, and strategy drafts that need explicit owner approval; ADR-0020.

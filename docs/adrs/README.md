@@ -26,6 +26,8 @@ Superseded ADRs remain in the history, with a link to the successor.
 | [0018](0018-data-providers-and-research-account.md) | Data-provider interface and the research account | Implemented |
 | [0019](0019-workspace-ticket-and-wire-types.md) | Server-side workspace, order ticket and generated wire types | Implemented |
 | [0020](0020-operations-metrics-mcp-and-drafts.md) | Operational metrics, read-only MCP and strategy drafts | Implemented |
+| [0021](0021-live-readiness-gate.md) | Live-readiness gate | Proposed |
+| [0022](0022-stream-testnet-adapter-and-quotes.md) | Change stream, Binance testnet adapter and quote engine | Implemented |
 
 Each ADR must record context, decision, alternatives, consequences and review
 trigger. Brazil and US and personal use are confirmed; Alpaca Paper, the internal B3 simulator and admission of one account are also. IEX and B3 CSV were adopted by delegation; credentials/datasets remain external.

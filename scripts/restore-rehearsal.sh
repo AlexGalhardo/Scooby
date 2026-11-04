@@ -35,8 +35,12 @@ INSERT INTO audit_events (actor, action, account_id, details, created_at)
 VALUES ('rehearsal', 'backup.test', 'b3', 'row that must survive the restore', now()::text);
 SQL
 
+start=$(date +%s%N)
 docker exec "$name" pg_dump -U rehearsal -Fc -d source -f /tmp/source.dump
+mid=$(date +%s%N)
 docker exec "$name" pg_restore -U rehearsal -d restored --no-owner /tmp/source.dump
+end=$(date +%s%N)
+echo "dump: $(( (mid - start) / 1000000 )) ms, restore: $(( (end - mid) / 1000000 )) ms (includes the docker exec overhead)"
 
 counts() {
 	local db="$1"

@@ -423,3 +423,49 @@ func TestDraftStrategyNeedsExplicitApprovalToEnable(t *testing.T) {
 	normal["draft"] = true
 	c.PostJSON("/api/strategies", normal).AssertCreated().AssertJSONPath("draft", false)
 }
+
+func TestChangeSignatureMovesWhenSomethingIsWritten(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	db, err := app.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := trading.Store{DB: db}
+	before, err := store.ChangeSignature(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, _ := store.ChangeSignature(t.Context())
+	if before != again {
+		t.Fatal("the signature must be stable while nothing changes")
+	}
+	c.PostJSON("/api/datasets/import", map[string]any{
+		"symbol": "PETR4", "source": "fixture", "license": "internal test", "csv": trading.SampleCSV(),
+	}).AssertCreated()
+	after, _ := store.ChangeSignature(t.Context())
+	if after == before {
+		t.Fatal("importing a dataset must change the signature")
+	}
+	app.Client(t).GetJSON("/api/stream").AssertUnauthorized()
+}
+
+func TestStrategyDecisionIsRecordedInTheAuditTrail(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	created := c.PostJSON("/api/strategies", map[string]any{
+		"name": "Decision test", "kind": "ma_cross", "symbol": "AAPL", "account_id": "us",
+		"fast": 2, "slow": 4, "threshold": 2, "stop_bps": 100, "target_bps": 200,
+	}).AssertCreated()
+	id, _ := created.JSONPath("id")
+	path := "/api/strategies/" + id.(string) + "/decision"
+	c.PostJSON(path, map[string]any{"decision": "maybe", "note": "not a verdict at all"}).AssertUnprocessable()
+	c.PostJSON(path, map[string]any{"decision": "keep", "note": "short"}).AssertUnprocessable()
+	c.PostJSON("/api/strategies/missing/decision", map[string]any{"decision": "keep", "note": "a long enough reason"}).
+		AssertUnprocessable()
+	c.PostJSON(path, map[string]any{"decision": "disable", "note": "paper drawdown exceeded the backtest's worst case"}).
+		AssertCreated()
+	c.GetJSON("/api/snapshot").AssertOK().AssertJSONPath("audit.0.action", "strategy.decision")
+}

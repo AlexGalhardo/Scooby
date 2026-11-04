@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AlexGalhardo/vukem/database"
@@ -653,4 +654,52 @@ func (s Store) Trials(ctx context.Context, st Strategy) (int, error) {
 		}
 	}
 	return max(n, 1), rows.Err()
+}
+
+// ChangeSignature is a cheap fingerprint of everything the terminal shows: it changes whenever an
+// account, dataset, strategy, backtest, artifact or the workspace is written. The stream endpoint sends
+// it so clients refetch only when something changed.
+func (s Store) ChangeSignature(ctx context.Context) (string, error) {
+	var out strings.Builder
+	for _, table := range []string{"trading_accounts", "datasets", "strategies", "backtests", "artifacts", "preferences", "audit_events"} {
+		column := "updated_at"
+		if table == "audit_events" {
+			column = "created_at"
+		}
+		var count int
+		var latest sql.NullString
+		query := "SELECT COUNT(*), MAX(" + column + ") FROM " + table
+		if err := s.DB.QueryRowContext(ctx, query).Scan(&count, &latest); err != nil {
+			return "", err
+		}
+		out.WriteString(table + ":" + strconv.Itoa(count) + ":" + latest.String + ";")
+	}
+	return out.String(), nil
+}
+
+// RecordStrategyDecision stores the owner's keep-or-disable verdict on a strategy, with a note, in the
+// audit trail. A "disable" verdict is recorded here; disabling itself goes through ToggleStrategy so the
+// position and order safeguards still apply.
+func (s Store) RecordStrategyDecision(ctx context.Context, id, decision, note string) error {
+	if decision != "keep" && decision != "disable" {
+		return errors.New("decision must be keep or disable")
+	}
+	note = strings.TrimSpace(note)
+	if len(note) < 10 || len(note) > 1000 {
+		return errors.New("write a note of 10 to 1000 characters: the reason is the point of the record")
+	}
+	return s.DB.Tx(ctx, func(tx *database.Tx) error {
+		var raw string
+		if err := tx.QueryRowContext(ctx, s.q("SELECT payload FROM strategies WHERE id=?"), id).Scan(&raw); err != nil {
+			return err
+		}
+		var st Strategy
+		if err := json.Unmarshal([]byte(raw), &st); err != nil {
+			return err
+		}
+		details, _ := json.Marshal(
+			map[string]string{"strategy": id, "name": st.Name, "decision": decision, "note": note},
+		)
+		return audit(ctx, tx, "owner", "strategy.decision", st.AccountID, string(details))
+	})
 }
