@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-04
+
 ### Added
 
 - Repository standards: `.markdownlint*.jsonc`, `.githooks/commit-msg`, `.config/cliff.toml`, `biome.json`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE.md`, issue and pull request templates, `CODEOWNERS`.
@@ -21,5 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The git remote points to `AlexGalhardo/vukem-trading`.
 - Frontend tooling moved to Bun 1.4.4: `bun check` replaces `tsc`, Biome 2 lints and formats, the Dockerfile builds assets on `oven/bun:1.4.4-alpine`.
 - Documentation, UI text, messages and comments translated to English; documentation files renamed to English names.
+- `golangci-lint` 2.15.0 config and CI job; Go module path and project references renamed from Scooby to `vukem-trading`.
+- `main` ruleset (`.config/ruleset-protect-main.json`): no deletion or force-push, linear history, required CI checks, admin bypass.
 - Release workflow publishes the matching CHANGELOG section, a GHCR image and build provenance.
 - `Terminal` tables use stable row keys.
+
+[Unreleased]: https://github.com/AlexGalhardo/vukem-trading/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/AlexGalhardo/vukem-trading/releases/tag/v0.1.0
