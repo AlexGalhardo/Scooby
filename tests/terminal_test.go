@@ -84,7 +84,11 @@ func TestGoogleGateAndReplay(t *testing.T) {
 func TestTerminalPersistenceAndValidation(t *testing.T) {
 	a := terminalApp(t, "owner", "owner@example.com", true)
 	c := signIn(t, a).AcceptJSON()
-	c.GetJSON("/api/snapshot").AssertOK().AssertJSONCount("accounts", 2).AssertJSONPath("settings.mode", "paper_only")
+	c.GetJSON("/api/snapshot").
+		AssertOK().
+		AssertJSONCount("accounts", 3).
+		AssertJSONCount("coverage", 4).
+		AssertJSONPath("settings.mode", "paper_only")
 	db, err := a.DB()
 	if err != nil {
 		t.Fatal(err)
@@ -216,4 +220,49 @@ func TestValidationPartitionIsUsedOncePerStrategyVersion(t *testing.T) {
 	run("validation", map[string]any{"repeat_validation": true}).AssertStatus(202)
 	run("walkforward", nil).AssertStatus(202)
 	run("holdout", nil).AssertUnprocessable()
+}
+
+func TestResearchStrategiesNeverGoLive(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	var rows strings.Builder
+	rows.WriteString("time,open,high,low,close,volume\n")
+	start := time.Date(2026, 11, 6, 20, 0, 0, 0, time.UTC)
+	for i := range 40 {
+		p := 60000 + float64(i%5)*10
+		fmt.Fprintf(
+			&rows,
+			"%s,%.2f,%.2f,%.2f,%.2f,250\n",
+			start.Add(time.Duration(i)*5*time.Minute).Format(time.RFC3339),
+			p,
+			p+20,
+			p-20,
+			p+5,
+		)
+	}
+	imported := c.PostJSON("/api/datasets/import", map[string]any{
+		"symbol": "BTCUSDT", "source": "fixture", "license": "internal test", "csv": rows.String(),
+	}).AssertCreated()
+	datasetID, _ := imported.JSONPath("id")
+	strategy := map[string]any{
+		"name": "Crypto research", "kind": "ma_cross", "symbol": "BTCUSDT", "account_id": "research",
+		"dataset_id": datasetID, "fast": 2, "slow": 5, "threshold": 2, "stop_bps": 100, "target_bps": 200,
+	}
+	wrong := maps.Clone(strategy)
+	wrong["account_id"] = "b3"
+	c.PostJSON("/api/strategies", wrong).AssertUnprocessable()
+	created := c.PostJSON("/api/strategies", strategy).AssertCreated()
+	id, _ := created.JSONPath("id")
+	c.PostJSON("/api/strategies/"+id.(string)+"/toggle", map[string]any{"enabled": true}).AssertUnprocessable()
+	c.PostJSON("/api/backtests", map[string]any{"strategy_id": id, "dataset_id": datasetID, "partition": "all"}).
+		AssertStatus(202)
+}
+
+func TestFetchRefusesMarketsWithoutAProvider(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	c.PostJSON("/api/datasets/fetch", map[string]any{"symbol": "PETR4", "days": 5}).AssertUnprocessable()
+	c.PostJSON("/api/datasets/fetch", map[string]any{"symbol": "AAPL", "days": 5}).AssertUnprocessable()
 }

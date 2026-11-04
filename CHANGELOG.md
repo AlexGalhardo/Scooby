@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Data providers: a `Provider` interface and registry with fail-fast credentials, a Binance adapter for crypto candles and the Alpaca IEX adapter behind the same interface.
+- Crypto (BTCUSDT, ETHUSDT) and spot forex (EURUSD, USDBRL) for backtests under a `research` account, with 24/7 and Monday-to-Friday sessions and tick-accurate price rounding.
+- A market coverage matrix in the snapshot and Settings; ADR-0018.
 - Strategies: opening-range breakout, VWAP reversion, ADX-filtered trend and a DCA grid with capped inventory, declared in the parameter schema.
 - Backtests: resting limit orders and partial fills over several bars, train/test/validation partitions (validation once per strategy version), walk-forward windows, Sharpe, Sortino, Calmar, SQN, block bootstrap, cost stress and deflated Sharpe, shown in the report.
 - Strategy parameters declared as data and served by `GET /api/strategy-kinds`; the strategy form renders from it.

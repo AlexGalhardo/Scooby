@@ -74,6 +74,9 @@ const titles: Record<string, [string, string]> = {
   audit: ["Audit", "A persistent trail of decisions and actions."],
   settings: ["Settings", "Status of integrations and the execution environment."],
 };
+const accountOf = (market: string) =>
+  market === "B3" ? "b3" : market === "US" ? "us" : "research";
+const firstSymbol: Record<string, string> = { b3: "PETR4", us: "AAPL", research: "BTCUSDT" };
 const fallbackParams: ParamSpec[] = [
   { name: "fast", label: "Fast window", type: "int", min: 2, max: 499, step: 1, default: 9 },
   {
@@ -369,6 +372,7 @@ export default function Terminal({ section }: { section: string }) {
           <Select value={accountId} onChange={setAccount}>
             <option value="b3">Brazil · BRL · Replay</option>
             <option value="us">US · USD · Alpaca Paper</option>
+            <option value="research">Research · crypto and FX · backtests only</option>
           </Select>
           <Button size="icon" variant="outline" onClick={() => void refresh()} aria-label="Refresh">
             <RefreshCw className="size-4" />
@@ -752,7 +756,8 @@ export default function Terminal({ section }: { section: string }) {
                       label="Simulated costs"
                       value={money(
                         report.result.metrics.costs,
-                        report.strategy.account_id === "b3" ? "BRL" : "USD",
+                        snapshot.instruments.find((i) => i.symbol === report.strategy.symbol)
+                          ?.currency ?? "USD",
                       )}
                       detail="Fees configured in bps"
                     />
@@ -1061,6 +1066,22 @@ export default function Terminal({ section }: { section: string }) {
               </div>
             </CardContent>
           </Card>
+          <Card className="xl:col-span-2">
+            <CardHeader>
+              <CardTitle>Market coverage</CardTitle>
+              <CardDescription>
+                What each market offers, so no market implies more than it has
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GridTable
+                headers={["Market", "Data", "Execution", "Source", "Notes"]}
+                rows={snapshot.coverage.map((c) =>
+                  row(c.market, c.label, c.data, c.execution, c.source, c.notes),
+                )}
+              />
+            </CardContent>
+          </Card>
         </div>
       )}
       <p className="mt-6 flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -1307,6 +1328,7 @@ function FetchForm({
 }) {
   const [symbol, setSymbol] = useState("AAPL");
   const [days, setDays] = useState(7);
+  const needsAlpaca = !symbol.endsWith("USDT");
   return (
     <form
       className="grid gap-4"
@@ -1317,7 +1339,7 @@ function FetchForm({
     >
       <Field label="Symbol">
         <Select value={symbol} onChange={setSymbol}>
-          {["AAPL", "NVDA", "TSLA"].map((s) => (
+          {["AAPL", "NVDA", "TSLA", "BTCUSDT", "ETHUSDT"].map((s) => (
             <option key={s}>{s}</option>
           ))}
         </Select>
@@ -1331,11 +1353,11 @@ function FetchForm({
           onChange={(e) => setDays(Number(e.target.value))}
         />
       </Field>
-      <Button disabled={!configured || busy}>
+      <Button disabled={(needsAlpaca && !configured) || busy}>
         <RefreshCw />
-        Fetch IEX candles
+        {needsAlpaca ? "Fetch IEX candles" : "Fetch Binance candles"}
       </Button>
-      {!configured && (
+      {needsAlpaca && !configured && (
         <p className="text-xs text-amber-500">Alpaca Paper is not yet configured on the server.</p>
       )}
     </form>
@@ -1418,24 +1440,25 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
           <Select
             value={s.account_id}
             onChange={(v) =>
-              setS({ ...s, account_id: v, symbol: v === "b3" ? "PETR4" : "AAPL", dataset_id: "" })
+              setS({ ...s, account_id: v, symbol: firstSymbol[v] ?? "AAPL", dataset_id: "" })
             }
           >
             <option value="b3">B3 replay</option>
             <option value="us">Alpaca Paper</option>
+            <option value="research">Research (backtests only)</option>
           </Select>
         </Field>
         <Field label="Symbol">
           <Select value={s.symbol} onChange={(v) => setS({ ...s, symbol: v, dataset_id: "" })}>
             {snapshot.instruments
-              .filter((i) => (i.market === "B3") === (s.account_id === "b3"))
+              .filter((i) => accountOf(i.market) === s.account_id)
               .map((i) => (
                 <option key={i.symbol}>{i.symbol}</option>
               ))}
           </Select>
         </Field>
       </div>
-      {s.account_id === "b3" && (
+      {s.account_id !== "us" && (
         <Field label="Dataset for replay">
           <DatasetSelect
             snapshot={{

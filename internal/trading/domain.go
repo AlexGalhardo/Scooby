@@ -40,7 +40,17 @@ var Instruments = []Instrument{
 	{"AAPL", "US", "USD", D("1"), D("0.01")},
 	{"NVDA", "US", "USD", D("1"), D("0.01")},
 	{"TSLA", "US", "USD", D("1"), D("0.01")},
+	{"BTCUSDT", "CRYPTO", "USDT", D("0.0001"), D("0.01")},
+	{"ETHUSDT", "CRYPTO", "USDT", D("0.001"), D("0.01")},
+	{"EURUSD", "FX", "USD", D("1000"), D("0.00001")},
+	{"USDBRL", "FX", "BRL", D("1000"), D("0.0001")},
 }
+
+// Floor rounds v down to the instrument tick.
+func (i Instrument) Floor(v d.Decimal) d.Decimal { return v.Div(i.Tick).Floor().Mul(i.Tick) }
+
+// Ceil rounds v up to the instrument tick.
+func (i Instrument) Ceil(v d.Decimal) d.Decimal { return v.Div(i.Tick).Ceil().Mul(i.Tick) }
 
 func FindInstrument(symbol string) (Instrument, error) {
 	for _, i := range Instruments {
@@ -368,8 +378,8 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 	}
 	var qty d.Decimal
 	limit := price
-	stop := price.Mul(D("1").Sub(Fraction(s.StopBPS))).RoundFloor(2)
-	target := price.Mul(D("1").Add(Fraction(s.TargetBPS))).RoundFloor(2)
+	stop := i.Floor(price.Mul(D("1").Sub(Fraction(s.StopBPS))))
+	target := i.Floor(price.Mul(D("1").Add(Fraction(s.TargetBPS))))
 	reserve := Zero
 	switch side {
 	case "buy":
@@ -404,7 +414,7 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		if spec.Scales {
 			riskShare = d.NewFromInt(int64(max(s.Fast, 1)))
 		}
-		limit = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS))).RoundCeil(2)
+		limit = i.Ceil(price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS))))
 		if s.StopBPS < MinStopBPS || !stop.IsPositive() || !stop.LessThan(limit) {
 			return nil, errors.New("stop required")
 		}
@@ -418,7 +428,7 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		reserve = qty.Mul(limit).Mul(D("1").Add(Fraction(a.Policy.CostBPS)))
 	case "sell":
 		qty = a.Positions[s.Symbol].Qty
-		limit = price.Mul(D("1").Sub(Fraction(a.Policy.SlippageBPS))).RoundFloor(2)
+		limit = i.Floor(price.Mul(D("1").Sub(Fraction(a.Policy.SlippageBPS))))
 	default:
 		return nil, errors.New("invalid side")
 	}
@@ -485,8 +495,9 @@ func (a *State) ApplyFill(f Fill) error {
 		p.Target = o.Target
 		if scaling && o.StopBPS > 0 {
 			// Adding to a position moves the exit levels to the new average cost.
-			p.Stop = p.Average.Mul(D("1").Sub(Fraction(o.StopBPS))).RoundFloor(2)
-			p.Target = p.Average.Mul(D("1").Add(Fraction(o.TargetBPS))).RoundFloor(2)
+			inst, _ := FindInstrument(f.Symbol)
+			p.Stop = inst.Floor(p.Average.Mul(D("1").Sub(Fraction(o.StopBPS))))
+			p.Target = inst.Floor(p.Average.Mul(D("1").Add(Fraction(o.TargetBPS))))
 		}
 		if o.Filled.IsZero() {
 			p.Tranches++
@@ -546,8 +557,11 @@ var marketZones sync.Map // zone name to *time.Location; loading a zone reads th
 // MarketDay returns the calendar date of t in the market's time zone.
 func MarketDay(market string, t time.Time) string {
 	zone := "America/New_York"
-	if market == "B3" {
+	switch market {
+	case "B3":
 		zone = "America/Sao_Paulo"
+	case "CRYPTO", "FX":
+		zone = "UTC"
 	}
 	if cached, ok := marketZones.Load(zone); ok {
 		if loc, ok := cached.(*time.Location); ok {

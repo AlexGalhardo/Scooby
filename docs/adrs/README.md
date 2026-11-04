@@ -23,6 +23,7 @@ Superseded ADRs remain in the history, with a link to the successor.
 | [0015](0015-bun-biome-and-bun-check.md) | Bun 1.4.4, Biome 2 and `bun check` | Implemented |
 | [0016](0016-fill-rules-and-validation-protocol.md) | Fill rules, resting orders and the validation protocol | Implemented |
 | [0017](0017-documentation-site.md) | Documentation site generated from `docs/` | Implemented |
+| [0018](0018-data-providers-and-research-account.md) | Data-provider interface and the research account | Implemented |
 
 Each ADR must record context, decision, alternatives, consequences and review
 trigger. Brazil and US and personal use are confirmed; Alpaca Paper, the internal B3 simulator and admission of one account are also. IEX and B3 CSV were adopted by delegation; credentials/datasets remain external.

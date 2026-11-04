@@ -43,3 +43,16 @@ a Docker start command replaces ENTRYPOINT. Additional references:
 
 The [detailed web research](/docs/project/web-research), carried out on 2026-11-03, records
 findings by topic, open sources, access limitations and next tests.
+
+## Market-data providers
+
+One row per provider in `internal/providers` and per import path. Record a provider's terms here before
+relying on it; public endpoints used by hobby tools are often limited to personal or research use.
+
+| Provider | Markets | Credentials | Terms and notes |
+| --- | --- | --- | --- |
+| Alpaca IEX (`alpaca`) | US equities and ETFs | `ALPACA_API_KEY`, `ALPACA_API_SECRET` (paper) | Free IEX feed, delayed about 16 minutes and not the consolidated market. Alpaca's data and paper-trading terms apply. See [Alpaca paper trading](https://docs.alpaca.markets/us/docs/paper-trading). |
+| Binance (`binance`) | Crypto spot (BTCUSDT, ETHUSDT) | none | Public klines endpoint; closed 5-minute candles only. Binance market-data terms apply: personal, non-commercial use. Rate limits apply; the adapter pages 1000 candles per request and limits a request to 30 days. |
+| B3 CSV import | B3 equities | none | Licensed intraday data supplied by the owner. The importer stores source, license and SHA-256 and rejects anything outside the reviewed 2026 calendar. No public intraday source is assumed. |
+| FX CSV import | Spot forex | none | Owner-supplied data with a stated source and license. There is no central tape for spot FX, so spreads and prices differ by venue; results are indicative. |
+| Crypto CSV import | Crypto spot | none | Owner-supplied or exported data, 24/7 UTC sessions. |

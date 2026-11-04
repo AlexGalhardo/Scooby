@@ -16,7 +16,7 @@ import (
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/web"
 
-	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
+	"github.com/AlexGalhardo/vukem-trading/internal/providers"
 	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
@@ -49,7 +49,20 @@ func bad(err error) error {
 	}
 	return nil
 }
-func accountID(id string) bool { return id == "b3" || id == "us" }
+func accountID(id string) bool { return id == "b3" || id == "us" || id == "research" }
+
+// accountFor names the account a market belongs to: replay, paper broker, or the research account for
+// markets that only run backtests.
+func accountFor(market string) string {
+	switch market {
+	case "B3":
+		return "b3"
+	case "US":
+		return "us"
+	}
+	return "research"
+}
+
 func (h *Controller) Page(section string) func(*web.Ctx) error {
 	return func(c *web.Ctx) error { return inertia.Render(c, "Terminal", inertia.Props{"section": section}) }
 }
@@ -173,6 +186,7 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 			"backtests":   jobs,
 			"audit":       audit,
 			"instruments": trading.Instruments,
+			"coverage":    trading.CoverageMatrix(),
 			"settings": map[string]any{
 				"google_configured": h.App.Source.Get("SOCIAL_GOOGLE_CLIENT_ID") != "",
 				"owner_configured":  h.App.Source.Get("OWNER_GOOGLE_EMAIL") != "",
@@ -219,17 +233,29 @@ func (h *Controller) Fetch(c *web.Ctx) error {
 	if in.Days < 1 || in.Days > 30 {
 		return errs.New(422, "period must be between 1 and 30 days")
 	}
-	broker := adapters.Alpaca{Key: h.App.Source.Get("ALPACA_API_KEY"), Secret: h.App.Source.Get("ALPACA_API_SECRET")}
+	inst, err := trading.FindInstrument(in.Symbol)
+	if err != nil {
+		return errs.New(422, "Symbol outside the watchlist")
+	}
+	registry := providers.NewRegistry(h.App.Source.Get, providers.AlpacaIEX{}, providers.Binance{})
+	provider, ok := registry.For(inst.Market)
+	if !ok {
+		return errs.New(422, "This market has no data provider; import a CSV instead")
+	}
 	ctx, cancel := context.WithTimeout(c.Context(), 45*time.Second)
 	defer cancel()
-	ds, err := broker.Bars(
-		ctx,
-		in.Symbol,
-		time.Now().Add(-time.Duration(in.Days)*24*time.Hour),
-		time.Now().Add(-16*time.Minute),
-	)
+	to := time.Now()
+	if inst.Market == "US" {
+		to = to.Add(-16 * time.Minute) // the free IEX feed lags by about 16 minutes
+	}
+	ds, err := registry.Fetch(ctx, provider.Name(), providers.Query{
+		Symbol: in.Symbol, From: to.Add(-time.Duration(in.Days) * 24 * time.Hour), To: to,
+	})
+	if errors.Is(err, providers.ErrMissingCredential) {
+		return errs.New(422, "Provider credentials are not configured on the server")
+	}
 	if err != nil {
-		return errs.New(502, "Failed to fetch IEX history; check credentials, permissions and period")
+		return errs.New(502, "Failed to fetch history; check the provider, its credentials and the period")
 	}
 	if err := h.Store.Create(c.Context(), "datasets", ds.ID, "ready", "owner", ds); err != nil {
 		return err
@@ -265,10 +291,10 @@ func (h *Controller) Strategy(c *web.Ctx) error {
 		return errs.New(422, "Invalid name or account")
 	}
 	inst, _ := trading.FindInstrument(s.Symbol)
-	if (s.AccountID == "b3") != (inst.Market == "B3") {
+	if s.AccountID != accountFor(inst.Market) {
 		return errs.New(422, "Symbol does not match the account")
 	}
-	if s.AccountID == "b3" {
+	if s.AccountID != "us" {
 		var ds trading.Dataset
 		if err := h.Store.Get(
 			c.Context(),
@@ -299,6 +325,9 @@ func (h *Controller) Toggle(c *web.Ctx) error {
 	var s trading.Strategy
 	if err := h.Store.Get(c.Context(), "strategies", c.Param("id"), &s); err != nil {
 		return errs.New(404, "Strategy not found")
+	}
+	if in.Enabled && s.AccountID == "research" {
+		return errs.New(422, "Research strategies run in backtests only")
 	}
 	if !in.Enabled {
 		var a trading.State

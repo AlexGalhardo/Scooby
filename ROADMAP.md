@@ -206,11 +206,11 @@ Reference: [docs/trading/risk-and-execution.md](docs/trading/risk-and-execution.
 
 Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/strategies-and-markets.md](docs/trading/strategies-and-markets.md).
 
-- [ ] **11.1 Provider interface** (`transform_query`, `extract`, `transform` pattern in Go) with credentials validated before the call. Assert: a provider with a missing key fails before any network call.
-- [ ] **11.2 Coverage matrix** per market and data mode, in the API and the UI. Assert: snapshot includes live, delayed, end-of-day or none per market.
-- [ ] **11.3 Crypto candles** (public exchange API) and a testnet paper adapter for one venue. Assert: backtest on a downloaded BTC and USDT dataset reproduces.
-- [ ] **11.4 Forex dataset import** (backtest only) with provenance. Assert: import test with a sample file.
-- [ ] **11.5 Source terms** recorded per provider in [docs/sources.md](docs/sources.md). Assert: every provider in code has a row.
+- [x] **11.1 Provider interface** (`internal/providers`: `Provider`, `Registry`, credentials resolved as `<PROVIDER>_<NAME>`); a missing credential fails before any network call. Assert: `TestMissingCredentialFailsBeforeAnyCall`. See [ADR-0018](docs/adrs/0018-data-providers-and-research-account.md).
+- [x] **11.2 Coverage matrix** per market (data mode, execution, source, notes) in the snapshot and in Settings. Assert: `TestCoverageMatrixNamesEveryMarket` and the snapshot test (`coverage` has four rows).
+- [~] **11.3 Crypto:** Binance public klines (paged, closed candles only), 24/7 UTC sessions, BTCUSDT and ETHUSDT, CSV import, and a reproducible backtest. Assert: `TestBinanceParsesPagesAndKeepsOnlyClosedCandles`, `TestCryptoCSVImportsAcrossWeekendsAndBacktestsReproducibly`. **Not done:** a testnet paper adapter, which needs a Binance testnet account to validate.
+- [x] **11.4 Forex import** (EURUSD, USDBRL; backtest only; Monday to Friday UTC sessions; tick-accurate rounding). Assert: `TestFXCSVImportRespectsTheWeekend`, `TestTickRoundingFollowsTheInstrument`.
+- [x] **11.5 Source terms** recorded per provider in [docs/sources.md](docs/sources.md). Assert: `TestEveryProviderIsDocumentedWithItsTerms`.
 
 ### Phase 12: Strategy expansion
 

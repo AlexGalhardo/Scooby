@@ -24,6 +24,19 @@ var b3Holidays = map[string]bool{
 }
 
 func SessionBounds(market string, at time.Time) (time.Time, time.Time, bool) {
+	switch market {
+	case "CRYPTO":
+		// Crypto trades around the clock: each UTC day is one continuous session.
+		day := at.UTC().Truncate(24 * time.Hour)
+		return day, day.Add(24 * time.Hour), true
+	case "FX":
+		// Spot FX trades 24 hours from Monday to Friday, in UTC; the weekend is closed.
+		day := at.UTC().Truncate(24 * time.Hour)
+		if day.Weekday() == time.Saturday || day.Weekday() == time.Sunday {
+			return time.Time{}, time.Time{}, false
+		}
+		return day, day.Add(24 * time.Hour), true
+	}
 	zone := "America/New_York"
 	hour, minute, closeHour, closeMinute := 9, 30, 16, 0
 	if market == "B3" {
@@ -60,8 +73,16 @@ func Session(market string, t time.Time) bool {
 	return ok && !t.Before(start) && t.Before(end)
 }
 
+// Closing reports whether t is in the last minutes of a session, or outside one. Crypto never closes;
+// spot FX closes only around the Friday end of the week.
 func Closing(market string, t time.Time) bool {
 	_, end, ok := SessionBounds(market, t)
+	switch market {
+	case "CRYPTO":
+		return false
+	case "FX":
+		return !ok || (t.UTC().Weekday() == time.Friday && !t.Before(end.Add(-15*time.Minute)))
+	}
 	return !ok || !t.Before(end.Add(-15*time.Minute))
 }
 

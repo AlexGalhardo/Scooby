@@ -28,8 +28,8 @@ Implemented: SMA crossover, Z-score reversion, range breakout, opening-range bre
 | --- | --- | --- | --- | --- |
 | B3 (equities, mini-index, mini-dollar) | B3 calendar, BRL, early close and holidays, session grid changes | Licensed intraday CSV, broker feeds | Internal replay only | Costs include brokerage, exchange fees and taxes; tax treatment is out of scope |
 | US equities and ETFs | Exchange clock, USD, extended hours | Alpaca IEX (not consolidated), paid SIP | Alpaca Paper | Halts, pattern day trading rules apply to live margin accounts |
-| Crypto | 24/7, quote currency per pair | Public exchange candles | Testnet or simulator | Precision and lot rules per pair; exchange-specific outages |
-| Forex | 24/5, pairs, swaps | Broker or aggregator feeds | Simulator | No central tape; spreads vary; leverage defaults must stay off |
+| Crypto | 24/7, UTC days, quote currency USDT | Binance public klines or CSV | Backtest only (no paper adapter yet) | Precision and lot rules per pair; exchange-specific outages |
+| Forex | 24/5 in UTC, pairs | CSV import | Backtest only | No central tape; spreads vary; leverage defaults must stay off |
 
 Keep currencies and ledgers segregated; never sum BRL and USD without an explicit FX policy. Keep `market`, `venue`, currency and calendar separate from the symbol.
 

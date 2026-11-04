@@ -22,8 +22,8 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 	if strings.TrimSpace(source) == "" || strings.TrimSpace(license) == "" {
 		return Dataset{}, errors.New("source and license are required")
 	}
-	if i.Market != "B3" {
-		return Dataset{}, errors.New("CSV is for B3 replay; use Alpaca history for US")
+	if i.Market == "US" {
+		return Dataset{}, errors.New("CSV is for B3, crypto and FX; use Alpaca history for US")
 	}
 	raw, err := io.ReadAll(io.LimitReader(input, 10*1024*1024+1))
 	if err != nil {
@@ -34,7 +34,7 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 	}
 	hash := sha256.Sum256(raw)
 	ds := Dataset{
-		CalendarSource: B3CalendarVersion,
+		CalendarSource: calendarSource(i.Market),
 		SessionCloses:  map[string]time.Time{},
 		ID:             ID(),
 		Symbol:         symbol,
@@ -84,8 +84,10 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 		if len(ds.Candles) > 0 && !c.Time.After(ds.Candles[len(ds.Candles)-1].Time) {
 			return ds, fmt.Errorf("row %d duplicated or out of order", line)
 		}
-		_, end, _ := SessionBounds(i.Market, c.Time)
-		ds.SessionCloses[MarketDay(i.Market, c.Time)] = end
+		if i.Market == "B3" {
+			_, end, _ := SessionBounds(i.Market, c.Time)
+			ds.SessionCloses[MarketDay(i.Market, c.Time)] = end
+		}
 		ds.Candles = append(ds.Candles, c)
 		if len(ds.Candles) > 100000 {
 			return ds, errors.New("maximum of 100000 candles")
@@ -121,4 +123,14 @@ func DatasetHash(cs []Candle) string {
 
 func SampleCSV() string {
 	return "time,open,high,low,close,volume\n2026-10-26T10:00:00-03:00,30.00,30.20,29.90,30.10,100000\n2026-10-26T10:05:00-03:00,30.10,30.30,30.00,30.20,100000\n2026-10-26T10:10:00-03:00,30.20,30.25,30.00,30.05,100000\n"
+}
+
+func calendarSource(market string) string {
+	switch market {
+	case "CRYPTO":
+		return "Crypto: 24/7, UTC days"
+	case "FX":
+		return "Spot FX: 24h Monday to Friday, UTC"
+	}
+	return B3CalendarVersion
 }

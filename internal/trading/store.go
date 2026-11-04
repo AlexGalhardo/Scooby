@@ -28,7 +28,9 @@ func validTable(t string) bool {
 }
 func (s Store) q(query string) string { return database.Rebind(s.DB.Dialect(), query) }
 func (s Store) Initialize(ctx context.Context) error {
-	for _, a := range []State{NewState("b3", "BRL", "simulation"), NewState("us", "USD", "paper_broker")} {
+	for _, a := range []State{
+		NewState("b3", "BRL", "simulation"), NewState("us", "USD", "paper_broker"), NewState("research", "USD", "backtest"),
+	} {
 		if a.ID == "us" {
 			a.Cash = Zero
 			a.Initial = Zero

@@ -193,8 +193,17 @@ export interface RecordRow<T> {
   updated_at: string;
   payload: T;
 }
+export interface Coverage {
+  market: string;
+  label: string;
+  data: string;
+  execution: string;
+  source: string;
+  notes: string;
+}
 export interface Snapshot {
   accounts: Account[];
+  coverage: Coverage[];
   datasets: Dataset[];
   strategies: RecordRow<Strategy>[];
   backtests: RecordRow<Job>[];
@@ -219,7 +228,9 @@ export interface Snapshot {
   server_time: string;
 }
 export const money = (value: string | number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(value));
+  /^[A-Z]{3}$/.test(currency)
+    ? new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(value))
+    : `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(Number(value))} ${currency}`;
 export const date = (value: string) =>
   !value || value.startsWith("0001") ? "No update" : new Date(value).toLocaleString("en-US");
 export const alive = (value: string) =>
