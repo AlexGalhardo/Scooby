@@ -21,7 +21,7 @@ jobs:
       contents: read
     services:
       postgres:
-        image: postgres:18.6-alpine3.24
+        image: postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
         env:
           POSTGRES_USER: scooby
           POSTGRES_PASSWORD: scooby
@@ -182,3 +182,20 @@ jobs:
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.15.0
+
+  fuzz:
+    name: Fuzz (short)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Fuzz the CSV importer
+        run: go test -run '^$' -fuzz=FuzzImportCSV -fuzztime=15s ./internal/trading
+      - name: Fuzz the strategy signals
+        run: go test -run '^$' -fuzz=FuzzSignal -fuzztime=15s ./internal/trading

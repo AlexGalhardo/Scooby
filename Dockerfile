@@ -3,7 +3,7 @@
 # Railway, Fly, Render and plain Docker build it as is:
 # https://vukem.dev/docs/deployment/docker-and-railway
 
-FROM oven/bun:1.4.4-alpine AS assets
+FROM oven/bun:1.4.4-alpine@sha256:4cf82f5686b196504fe119db3fcd9185b191f82ece82c40680e597228ec6070a AS assets
 WORKDIR /src
 COPY package.json bun.lock ./
 # The lockfile is a required build input: --frozen-lockfile fails the build
@@ -15,7 +15,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 RUN bun run build
 
-FROM golang:1.27.3-alpine3.24 AS build
+FROM golang:1.27.3-alpine3.24@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb AS build
 WORKDIR /src
 ENV CGO_ENABLED=0
 ARG RAILWAY_GIT_COMMIT_SHA=unknown
@@ -29,7 +29,7 @@ RUN tags="$(sed 's/#.*//' .buildtags 2>/dev/null | tr -s ', \t\r\n' ',' | sed 's
 	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/vukem-trading/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/app ./cmd/app \
 	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/vukem-trading/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/engine ./cmd/engine
 
-FROM alpine:3.24.2
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 RUN apk add --no-cache ca-certificates tzdata \
 	&& adduser -D -H -u 10001 app \
 	&& mkdir -p /app/storage \

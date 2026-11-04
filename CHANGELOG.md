@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Fuzz tests for the CSV importer and the strategy signals, run briefly in CI.
 - Operations: `GET /api/metrics`, an `Uptime` workflow, runbooks (incident, restore, key rotation), a restore rehearsal script with its recorded run, a dependency policy and `bun audit` in CI.
 - A read-only MCP endpoint behind `MCP_TOKEN` with a fixed tool list, and strategy drafts that need explicit owner approval; ADR-0020.
 - Terminal: an always-visible safety strip, a command palette with Alt+digit page shortcuts, a server-side workspace (watchlist, price alerts, order templates), one-key paper order tickets sized by cash share and risk budget, and a canvas tape and ladder.
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Container images are pinned by digest in the Dockerfiles, Compose and CI.
 - Backtest partitions are now train (first 60%), test (next 20%) and validation (last 20%); the old test partition was the last 30%.
 - Orders that the open does not reach rest instead of being canceled; a buy never prints above the bar's high.
 - Remaining `^` ranges in `package.json` pinned to exact versions.

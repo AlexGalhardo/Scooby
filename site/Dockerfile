@@ -6,9 +6,9 @@
 #
 # On Railway set RAILWAY_DOCKERFILE_PATH=site/Dockerfile for the site service.
 
-FROM node:24.22.0-alpine3.24 AS build
+FROM node:24.22.0-alpine3.24@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f AS build
 # Bun installs the dependencies and runs the scripts; Next.js itself runs on Node.
-COPY --from=oven/bun:1.4.4-alpine /usr/local/bin/bun /usr/local/bin/bun
+COPY --from=oven/bun:1.4.4-alpine@sha256:4cf82f5686b196504fe119db3fcd9185b191f82ece82c40680e597228ec6070a /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /src/site
 COPY site/package.json site/bun.lock ./
 RUN bun install --frozen-lockfile
@@ -17,7 +17,7 @@ COPY docs /src/docs
 COPY CHANGELOG.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md /src/
 RUN bun run sync:docs && bun run build
 
-FROM node:24.22.0-alpine3.24
+FROM node:24.22.0-alpine3.24@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f
 WORKDIR /app
 RUN adduser -D -H -u 10001 app
 COPY --from=build --chown=app:app /src/site/.next/standalone ./
