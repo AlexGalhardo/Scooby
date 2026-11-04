@@ -12,15 +12,15 @@ Do not paste tokens or client secrets into the conversation or into versioned fi
 | --- | --- |
 | Project vukem-trading | `706b6cfc-45e2-4bfc-af6b-45a7c401ed37` |
 | Environment production | `a0036a02-8b91-4463-96b5-622ed1fe3805` |
-| scooby-web | `4611a2b2-b810-4941-9eb9-279a13bc7982` |
-| scooby-engine | `aa2f67bb-69b5-470f-a676-abbfc9d7a806` |
+| web | `4611a2b2-b810-4941-9eb9-279a13bc7982` |
+| worker (engine) | `aa2f67bb-69b5-470f-a676-abbfc9d7a806` |
 | Postgres | `17f09ea5-508e-4e1e-9c3c-40eeed4f3600` |
 | Web | [https://scooby-web-production.up.railway.app](https://scooby-web-production.up.railway.app) |
 | Google callback | [https://scooby-web-production.up.railway.app/auth/google/callback](https://scooby-web-production.up.railway.app/auth/google/callback) |
 
 Project: [https://railway.com/project/706b6cfc-45e2-4bfc-af6b-45a7c401ed37](https://railway.com/project/706b6cfc-45e2-4bfc-af6b-45a7c401ed37)
 
-Web and engine connected to GitHub `AlexGalhardo/Scooby`, branch `main`.
+Web and engine connected to GitHub `AlexGalhardo/vukem-trading`, branch `main`.
 Database with a private reference; application key generated and shared; values
 checked without printing them. The owner's email and OAuth remain placeholders;
 Alpaca and Telegram are empty/disabled. The user is creating Google/Telegram.
@@ -58,7 +58,7 @@ accepted plan/budget; own domain or Railway domain; owner's Google email. If no
 project exists, create a vukem-trading project and issue a token restricted to the
 environment, instead of providing global access to the account.
 
-Services: `scooby-web`, `scooby-engine`, PostgreSQL. Configuration via
+Services: `web`, `worker` (the engine), `site`, PostgreSQL. Configuration via
 `scripts/railway-configure.sh` and the current API; the TOMLs are historical references,
 since the API rejected legacy Config as Code (ADR-0014). One replica for the engine,
 Serverless/sleeping disabled. The worker keeps processing without the browser.
