@@ -1,4 +1,4 @@
-// Command app runs Scooby: the HTTP server by default, or a command such
+// Command app runs vukem-trading: the HTTP server by default, or a command such
 // as migrate, route:list or about (vukem <command> delegates here).
 package main
 
@@ -7,7 +7,7 @@ import (
 
 	vukem "github.com/AlexGalhardo/vukem"
 
-	"github.com/AlexGalhardo/Scooby/bootstrap"
+	"github.com/AlexGalhardo/vukem-trading/bootstrap"
 )
 
 func main() { os.Exit(vukem.Main(bootstrap.New)) }

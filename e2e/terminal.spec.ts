@@ -69,10 +69,10 @@ test("Google-only login, real navigation, CSV import and logout", async ({ page 
     await page.getByRole("link", { name: label, exact: true }).click();
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
   }
-  await page.screenshot({ path: "/tmp/scooby-desktop.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/vukem-trading-desktop.png", fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("button", { name: "Toggle Sidebar" })).toBeVisible();
-  await page.screenshot({ path: "/tmp/scooby-mobile.png", fullPage: true });
+  await page.screenshot({ path: "/tmp/vukem-trading-mobile.png", fullPage: true });
   expect(errors).toEqual([]);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: "Sign out", exact: true }).click();

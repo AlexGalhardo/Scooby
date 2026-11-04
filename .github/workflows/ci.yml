@@ -113,7 +113,7 @@ jobs:
       # The same build Railway, Fly, Render and plain Docker run. It also
       # covers the front-end build, so a broken asset pipeline fails here.
       - name: docker build
-        run: docker build -t scooby:ci .
+        run: docker build -t vukem-trading:ci .
 
   frontend:
     name: Frontend lint, types and build

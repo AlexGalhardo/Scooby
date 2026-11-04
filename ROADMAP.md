@@ -153,10 +153,9 @@ Goal: the repository follows the ecosystem standards and everything is in Englis
 - [x] **7.6 Agent files:** `AGENTS.md`, `CLAUDE.md`, `.agents/rules`, `.agents/skills`. Assert: files exist and AGENTS.md links resolve.
 - [x] **7.7 Documentation translated** to English with renamed files. Assert: `grep -rP "[áàâãéêíóôõúç]" docs` returns nothing.
 - [x] **7.8 Code strings translated** (UI, messages, comments, e2e). Assert: the same grep over `app internal cmd resources/js e2e` returns nothing; `go test ./...` and CI e2e pass (2026-11-04).
-- [ ] **7.9 Rename `Scooby` to `vukem-trading`:**
-  - [ ] Go module path and imports (`github.com/AlexGalhardo/Scooby`); assert: `go build ./...`.
-  - [ ] Compose project, database and user names, CI service names; assert: `docker compose config`.
-  - [ ] Railway service names (`scooby-web`, `scooby-engine`); assert: dashboard and `scripts/railway-*.sh` updated together.
+- [x] **7.9 Rename `Scooby` to `vukem-trading`:** module path and imports, ldflags, env examples, image tag, comments and docs. Assert: `go build ./...`, `go vet ./...` and `go test ./...` pass; `grep -rI Scooby` finds only the items below.
+  - Kept on purpose: the PostgreSQL fixture user, password and database `scooby` (Compose and CI) and the Compose project name, because renaming them orphans local volumes and would change the secret-scanner rule for that fixture value. Rename them together in a dedicated change if wanted.
+  - Railway services are already named `web`, `worker` and `site`; the Railway domain keeps its `scooby-web-production` hostname until a custom domain replaces it.
 - [ ] **7.10 `.golangci.yml`** from the ecosystem template and `golangci-lint run` clean. Assert: the command exits 0.
 - [ ] **7.11 OpenSSF Scorecard** badge green: branch protection ruleset on `main`, pinned actions, signed releases. Assert: the Scorecard viewer for the repository shows no failing critical check.
 - [ ] **7.12 First release `v0.1.0`:** CHANGELOG section, tag, release notes, GHCR image. Assert: the Release workflow publishes and `gh release view v0.1.0` shows the notes.

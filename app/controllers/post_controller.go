@@ -9,8 +9,8 @@ import (
 	"github.com/AlexGalhardo/vukem/orm"
 	"github.com/AlexGalhardo/vukem/web"
 
-	"github.com/AlexGalhardo/Scooby/app/models"
-	"github.com/AlexGalhardo/Scooby/app/requests"
+	"github.com/AlexGalhardo/vukem-trading/app/models"
+	"github.com/AlexGalhardo/vukem-trading/app/requests"
 )
 
 // PostController is the example CRUD rendered with Inertia pages

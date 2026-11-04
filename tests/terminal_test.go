@@ -2,9 +2,9 @@ package tests
 
 import (
 	"flag"
-	"github.com/AlexGalhardo/Scooby/app/commands"
-	"github.com/AlexGalhardo/Scooby/bootstrap"
-	"github.com/AlexGalhardo/Scooby/internal/trading"
+	"github.com/AlexGalhardo/vukem-trading/app/commands"
+	"github.com/AlexGalhardo/vukem-trading/bootstrap"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 	"github.com/AlexGalhardo/vukem/vukemtest"
 	"testing"
 )

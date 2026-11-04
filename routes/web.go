@@ -2,10 +2,10 @@ package routes
 
 import (
 	"context"
-	"github.com/AlexGalhardo/Scooby/app/accounts"
-	"github.com/AlexGalhardo/Scooby/app/controllers/terminal"
-	"github.com/AlexGalhardo/Scooby/resources"
 	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem-trading/app/accounts"
+	"github.com/AlexGalhardo/vukem-trading/app/controllers/terminal"
+	"github.com/AlexGalhardo/vukem-trading/resources"
 	"github.com/AlexGalhardo/vukem/auth"
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/middleware"

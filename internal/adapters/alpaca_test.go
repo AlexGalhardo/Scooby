@@ -2,7 +2,7 @@ package adapters
 
 import (
 	"context"
-	"github.com/AlexGalhardo/Scooby/internal/trading"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 	"io"
 	"net/http"
 	"strings"

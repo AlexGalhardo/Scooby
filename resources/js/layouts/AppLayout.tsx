@@ -135,7 +135,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </Button>
               <a
                 className="hidden text-xs text-muted-foreground md:inline-flex"
-                href="https://github.com/AlexGalhardo/Scooby"
+                href="https://github.com/AlexGalhardo/vukem-trading"
                 target="_blank"
                 rel="noreferrer"
               >

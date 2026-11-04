@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/AlexGalhardo/Scooby/bootstrap"
 	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem-trading/bootstrap"
 	"os"
 )
 

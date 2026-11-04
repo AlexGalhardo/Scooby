@@ -47,7 +47,7 @@ are still being refined. Round 3 in `grilling.md`.
 
 ## Real inventory of the codebase
 
-Repository: `AlexGalhardo/Scooby`. Inspected codebase: commit `9e21d88`.
+Repository: `AlexGalhardo/vukem-trading`. Inspected codebase: commit `9e21d88`.
 Vukem 0.37.0; Go 1.27.3; Inertia React 3.9.1; React 19.3.1;
 Tailwind 4.3.3; PostgreSQL with Vukem driver 0.6.1; Vite and TypeScript.
 The inventory above identifies the original codebase. The evolution implemented Google-only,

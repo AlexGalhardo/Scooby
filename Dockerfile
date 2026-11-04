@@ -26,8 +26,8 @@ COPY --from=assets /src/resources/public/build resources/public/build
 # Same tags as vukem build: .buildtags lists them (one per line or
 # comma-separated, "#" comments); --minimal apps put vukem_nosqlite there.
 RUN tags="$(sed 's/#.*//' .buildtags 2>/dev/null | tr -s ', \t\r\n' ',' | sed 's/^,//; s/,$//')" \
-	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/Scooby/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/app ./cmd/app \
-	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/Scooby/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/engine ./cmd/engine
+	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/vukem-trading/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/app ./cmd/app \
+	&& go build -trimpath -ldflags="-s -w -X github.com/AlexGalhardo/vukem-trading/internal/trading.BuildVersion=$RAILWAY_GIT_COMMIT_SHA" -tags "$tags" -o /out/engine ./cmd/engine
 
 FROM alpine:3.24.2
 RUN apk add --no-cache ca-certificates tzdata \

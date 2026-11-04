@@ -3,9 +3,9 @@ package tests
 import (
 	"context"
 	"fmt"
-	"github.com/AlexGalhardo/Scooby/bootstrap"
-	"github.com/AlexGalhardo/Scooby/internal/engine"
-	"github.com/AlexGalhardo/Scooby/internal/trading"
+	"github.com/AlexGalhardo/vukem-trading/bootstrap"
+	"github.com/AlexGalhardo/vukem-trading/internal/engine"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 	"github.com/AlexGalhardo/vukem/vukemtest"
 	"log/slog"
 	"net/url"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/AlexGalhardo/vukem/database"
 
-	"github.com/AlexGalhardo/Scooby/database/factories"
+	"github.com/AlexGalhardo/vukem-trading/database/factories"
 )
 
 // PostsSeeder creates demo posts.

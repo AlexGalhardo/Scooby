@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/AlexGalhardo/Scooby/app/accounts"
 	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem-trading/app/accounts"
 	"github.com/AlexGalhardo/vukem/auth"
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/ratelimit"

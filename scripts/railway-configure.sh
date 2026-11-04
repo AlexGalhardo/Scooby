@@ -2,7 +2,7 @@
 # Configure current Railway API settings without deprecated Config as Code paths.
 # Does not read, upload or display secrets. Run before publishing existing services.
 set -eu
-: "${RAILWAY_PROJECT_ID:?Set the existing Scooby project ID}"
+: "${RAILWAY_PROJECT_ID:?Set the existing Railway project ID}"
 : "${RAILWAY_ENVIRONMENT:?Set the environment ID}"
 : "${RAILWAY_WEB_SERVICE:?Set the web service ID}"
 : "${RAILWAY_ENGINE_SERVICE:?Set the engine service ID}"

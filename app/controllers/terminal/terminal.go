@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/AlexGalhardo/Scooby/internal/adapters"
-	"github.com/AlexGalhardo/Scooby/internal/trading"
 	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 	"github.com/AlexGalhardo/vukem/errs"
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/web"
@@ -121,7 +121,7 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(200, map[string]any{"accounts": states, "datasets": meta, "strategies": strategies, "backtests": jobs, "audit": audit, "instruments": trading.Instruments, "settings": map[string]any{"google_configured": h.App.Source.Get("SOCIAL_GOOGLE_CLIENT_ID") != "", "owner_configured": h.App.Source.Get("OWNER_GOOGLE_EMAIL") != "", "alpaca_configured": h.App.Source.Get("ALPACA_API_KEY") != "" && h.App.Source.Get("ALPACA_API_SECRET") != "", "mode": "paper_only", "feed": "IEX", "timeframe": 5, "engine_version": "scooby-1"}, "server_time": time.Now().UTC()})
+	return c.JSON(200, map[string]any{"accounts": states, "datasets": meta, "strategies": strategies, "backtests": jobs, "audit": audit, "instruments": trading.Instruments, "settings": map[string]any{"google_configured": h.App.Source.Get("SOCIAL_GOOGLE_CLIENT_ID") != "", "owner_configured": h.App.Source.Get("OWNER_GOOGLE_EMAIL") != "", "alpaca_configured": h.App.Source.Get("ALPACA_API_KEY") != "" && h.App.Source.Get("ALPACA_API_SECRET") != "", "mode": "paper_only", "feed": "IEX", "timeframe": 5, "engine_version": "vukem-trading-1"}, "server_time": time.Now().UTC()})
 }
 func (h *Controller) Import(c *web.Ctx) error {
 	var in struct {

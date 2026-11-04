@@ -7,12 +7,12 @@ import (
 	"github.com/AlexGalhardo/vukem/drivers/postgres"
 	"github.com/AlexGalhardo/vukem/inertia"
 
-	"github.com/AlexGalhardo/Scooby/app/jobs"
-	"github.com/AlexGalhardo/Scooby/app/listeners"
-	"github.com/AlexGalhardo/Scooby/database/migrations"
-	"github.com/AlexGalhardo/Scooby/database/seeders"
-	"github.com/AlexGalhardo/Scooby/resources"
-	"github.com/AlexGalhardo/Scooby/routes"
+	"github.com/AlexGalhardo/vukem-trading/app/jobs"
+	"github.com/AlexGalhardo/vukem-trading/app/listeners"
+	"github.com/AlexGalhardo/vukem-trading/database/migrations"
+	"github.com/AlexGalhardo/vukem-trading/database/seeders"
+	"github.com/AlexGalhardo/vukem-trading/resources"
+	"github.com/AlexGalhardo/vukem-trading/routes"
 )
 
 // New builds the application; cmd/app and the tests call it.

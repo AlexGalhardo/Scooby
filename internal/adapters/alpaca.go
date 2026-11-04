@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/AlexGalhardo/Scooby/internal/trading"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 	d "github.com/shopspring/decimal"
 	"io"
 	"net/http"

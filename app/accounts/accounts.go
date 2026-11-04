@@ -1,8 +1,8 @@
 package accounts
 
 import (
-	"github.com/AlexGalhardo/Scooby/app/models"
 	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem-trading/app/models"
 	"github.com/AlexGalhardo/vukem/auth"
 	"github.com/AlexGalhardo/vukem/auth/hash"
 	"github.com/AlexGalhardo/vukem/database"
