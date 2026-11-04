@@ -170,7 +170,7 @@ Goal: `trading.vukem.dev` opens the technical documentation, with the same look 
 - [x] **8.3 Site Dockerfile** (`site/Dockerfile`, context repository root, pinned Bun and Node images, non-root). Assert: `docker build -f site/Dockerfile .` succeeds.
 - [x] **8.4 CI job** for the site (lint, `check:mdx`, build). Assert: job green.
 - [x] **8.5 Railway `site` service** deployed after green CI. Assert: its Railway URL returns 200 and `/` redirects to `/docs/introduction`.
-- [ ] **8.6 DNS:** `trading.vukem.dev` CNAME shown, reviewed and applied by the owner. Assert: `curl -I https://trading.vukem.dev` returns 200 or 308 with a valid certificate.
+- [x] **8.6 DNS:** `trading.vukem.dev` CNAME and Railway verification TXT created in the Vercel zone for `vukem.dev` on 2026-11-04; Railway reports the domain verified with a valid certificate. Assert: public resolvers return the Railway edge and `/` answers 307 to `/docs/introduction` over valid TLS.
 - [ ] **8.7 Last-updated metadata and sitemap** refreshed (`bun run last-updated`). Assert: `check:last-updated` passes.
 
 ### Phase 8b: Known flaky test
