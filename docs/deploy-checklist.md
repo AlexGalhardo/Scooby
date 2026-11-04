@@ -1,163 +1,162 @@
-# Publicação Railway — configurações e handoff
+# Railway publication — configurations and handoff
 
-Estado: projeto provisionado; web, engine e PostgreSQL saudáveis em 2026-11-03; integrações externas
-aguardam credenciais reais. Ver destinos abaixo e confirmar saúde na CLI.
-Não colar tokens ou client secrets na conversa ou em arquivos versionados.
+Status: project provisioned; web, engine and PostgreSQL healthy on 2026-11-03; external integrations
+await real credentials. See the destinations below and confirm health in the CLI.
+Do not paste tokens or client secrets into the conversation or into versioned files.
 
-## Destino provisionado
+## Provisioned destination
 
-| Recurso | ID/endereço |
+| Resource | ID/address |
 | --- | --- |
-| Projeto Scooby | `706b6cfc-45e2-4bfc-af6b-45a7c401ed37` |
-| Ambiente production | `a0036a02-8b91-4463-96b5-622ed1fe3805` |
+| Project vukem-trading | `706b6cfc-45e2-4bfc-af6b-45a7c401ed37` |
+| Environment production | `a0036a02-8b91-4463-96b5-622ed1fe3805` |
 | scooby-web | `4611a2b2-b810-4941-9eb9-279a13bc7982` |
 | scooby-engine | `aa2f67bb-69b5-470f-a676-abbfc9d7a806` |
 | Postgres | `17f09ea5-508e-4e1e-9c3c-40eeed4f3600` |
-| Web | https://scooby-web-production.up.railway.app |
-| Google callback | https://scooby-web-production.up.railway.app/auth/google/callback |
+| Web | <https://scooby-web-production.up.railway.app> |
+| Google callback | <https://scooby-web-production.up.railway.app/auth/google/callback> |
 
-Projeto: https://railway.com/project/706b6cfc-45e2-4bfc-af6b-45a7c401ed37
+Project: <https://railway.com/project/706b6cfc-45e2-4bfc-af6b-45a7c401ed37>
 
-Web e engine conectadas ao GitHub `AlexGalhardo/Scooby`, branch `main`.
-Banco com referência privada; chave de aplicação gerada e compartilhada; valores
-conferidos sem imprimi-los. Email do proprietário e OAuth permanecem placeholders;
-Alpaca e Telegram estão vazios/desativados. O usuário está criando Google/Telegram.
-Região inicial herdada do provedor: `us-east4-eqdc4a`, sem alteração de plano.
-Deploys iniciais confirmados SUCCESS no commit `4337761`: web
+Web and engine connected to GitHub `AlexGalhardo/Scooby`, branch `main`.
+Database with a private reference; application key generated and shared; values
+checked without printing them. The owner's email and OAuth remain placeholders;
+Alpaca and Telegram are empty/disabled. The user is creating Google/Telegram.
+Initial region inherited from the provider: `us-east4-eqdc4a`, with no plan change.
+Initial deploys confirmed SUCCESS at commit `4337761`: web
 `266b5d5c-d668-4176-9bdc-7748ce9fee58`; engine
-`80a0f3e2-9559-4269-a83b-facc46502e5c`. Smoke HTTPS: `/` 302; `/login` 200;
-`/ready` 200; `/api/snapshot` sem sessão 401. Engine healthcheck aprovado pelo
-provedor; o contrato de readiness verifica heartbeat das duas contas no banco.
+`80a0f3e2-9559-4269-a83b-facc46502e5c`. HTTPS smoke test: `/` 302; `/login` 200;
+`/ready` 200; `/api/snapshot` without session 401. Engine healthcheck approved by the
+provider; the readiness contract checks the heartbeat of both accounts in the database.
 
-## Templates de variáveis
+## Variable templates
 
-- `.env.example`: desenvolvimento; credenciais opcionais vazias com placeholders
-  identificados em comentários, evitando chamadas externas com chaves fictícias.
-- `.env.railway.web.example` e `.env.railway.engine.example`: templates por serviço.
-- `.env.railway.web.local` e `.env.railway.engine.local`: cópias privadas ignoradas
-  pelo Git, preparadas no workspace. A chave da aplicação é gerada uma vez e
-  compartilhada entre as duas; não imprimir esses arquivos.
+- `.env.example`: development; optional credentials empty with placeholders
+  identified in comments, avoiding external calls with fake keys.
+- `.env.railway.web.example` and `.env.railway.engine.example`: templates per service.
+- `.env.railway.web.local` and `.env.railway.engine.local`: private copies ignored
+  by Git, prepared in the workspace. The application key is generated once and
+  shared between the two; do not print these files.
 
-Os arquivos `.example` não são carregados automaticamente pela Railway. Aplicar
-as variáveis no editor de cada serviço ou pela CLI autenticada. Não executar
-`source` nos templates Railway: `${{Postgres.DATABASE_URL}}` é uma referência do
-provedor, não uma expressão de shell. Ajustar `Postgres` ao nome real do serviço.
-O domínio, email e OAuth têm marcadores explícitos que devem ser substituídos;
-Alpaca e Telegram permanecem vazios até obter credenciais reais. O callback
-Google fica no domínio da web, em `/auth/google/callback`.
+The `.example` files are not loaded automatically by Railway. Apply
+the variables in each service's editor or through the authenticated CLI. Do not run
+`source` on the Railway templates: `${{Postgres.DATABASE_URL}}` is a provider reference, not a
+shell expression. Adjust `Postgres` to the service's real name.
+The domain, email and OAuth have explicit markers that must be replaced;
+Alpaca and Telegram remain empty until real credentials are obtained. The Google
+callback stays on the web domain, at `/auth/google/callback`.
 
-Preparar arquivos locais não comprova que as variáveis foram aplicadas no provedor;
-registrar projeto, serviços e domínio somente após confirmação da API Railway.
+Preparing local files does not prove the variables were applied on the provider;
+record the project, services and domain only after confirmation from the Railway API.
 
-## Informações não secretas para a publicação
+## Non-secret information for the publication
 
-Projeto/workspace Railway e ambiente desejado; nomes/IDs dos serviços; região e
-plano/orçamento aceito; domínio próprio ou domínio Railway; email Google do
-proprietário. Se não existir projeto, criar um projeto Scooby e emitir um token
-restrito ao ambiente, em vez de fornecer acesso global à conta.
+Railway project/workspace and desired environment; service names/IDs; region and
+accepted plan/budget; own domain or Railway domain; owner's Google email. If no
+project exists, create a vukem-trading project and issue a token restricted to the
+environment, instead of providing global access to the account.
 
-Serviços: `scooby-web`, `scooby-engine`, PostgreSQL. Configuração via
-`scripts/railway-configure.sh` e API atual; os TOMLs são referências históricas,
-pois a API rejeitou Config as Code legado (ADR-0014). Uma réplica para a engine,
-Serverless/sleeping desabilitado. O worker continua processando sem o navegador.
-Usar URL privada do PostgreSQL entre serviços. Apenas a web precisa de domínio
-público; `/ready` da engine funciona para healthcheck na porta configurada.
+Services: `scooby-web`, `scooby-engine`, PostgreSQL. Configuration via
+`scripts/railway-configure.sh` and the current API; the TOMLs are historical references,
+since the API rejected legacy Config as Code (ADR-0014). One replica for the engine,
+Serverless/sleeping disabled. The worker keeps processing without the browser.
+Use the private PostgreSQL URL between services. Only the web needs a
+public domain; the engine's `/ready` works for healthcheck on the configured port.
 
-## Segredos necessários, por destino
+## Secrets required, by destination
 
-| Variável | Destino | Como obter |
+| Variable | Destination | How to obtain |
 | --- | --- | --- |
-| `RAILWAY_TOKEN` | Ambiente seguro do Codex/CLI, não app | Token de projeto/ambiente; sessão OAuth CLI também é aceita |
-| `APP_KEY` | web e engine | Gerar uma vez com `vukem key:generate`; compartilhar a mesma chave e mantê-la |
-| `DATABASE_URL` | web e engine | Referência ao PostgreSQL do projeto, preferencialmente rede privada |
-| `SOCIAL_GOOGLE_CLIENT_SECRET` | somente web | Credencial OAuth tipo Web no Google Cloud |
-| `ALPACA_API_KEY`, `ALPACA_API_SECRET` | somente engine | Chaves da conta Alpaca **Paper** |
-| `TELEGRAM_BOT_TOKEN` | engine, opcional | Bot próprio para alertas operacionais |
+| `RAILWAY_TOKEN` | Secure environment of Codex/CLI, not the app | Project/environment token; CLI OAuth session is also accepted |
+| `APP_KEY` | web and engine | Generate once with `vukem key:generate`; share the same key and keep it |
+| `DATABASE_URL` | web and engine | Reference to the project's PostgreSQL, preferably private network |
+| `SOCIAL_GOOGLE_CLIENT_SECRET` | web only | OAuth credential of Web type in Google Cloud |
+| `ALPACA_API_KEY`, `ALPACA_API_SECRET` | engine only | Keys for the Alpaca **Paper** account |
+| `TELEGRAM_BOT_TOKEN` | engine, optional | Own bot for operational alerts |
 
-A web atualmente também usa as chaves Alpaca para importar histórico a pedido do
-proprietário. Para disponibilizar essa função, configurar as chaves paper na web
-ou separar futuramente a ingestão em job. Nunca expor essas chaves em `VITE_*`.
+The web currently also uses the Alpaca keys to import history at the owner's request.
+To make this function available, configure the paper keys on the web
+or separate the ingestion into a job in the future. Never expose these keys in `VITE_*`.
 
-Configurações adicionais:
+Additional settings:
 
 - `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://DOMINIO-WEB`.
-- `HOST=0.0.0.0`, `PORT` fornecido pela Railway; `ENGINE_HEALTH_PORT` vazio na
-  Railway para usar `PORT` (localmente pode ser `3001`).
-- `OWNER_GOOGLE_EMAIL`: email verificado admitido no bootstrap.
-- `SOCIAL_GOOGLE_CLIENT_ID`: ID do cliente OAuth Web.
-- Callback Google exato: `https://DOMINIO-WEB/auth/google/callback`.
+- `HOST=0.0.0.0`, `PORT` provided by Railway; `ENGINE_HEALTH_PORT` empty on
+  Railway to use `PORT` (locally it may be `3001`).
+- `OWNER_GOOGLE_EMAIL`: verified email admitted at bootstrap.
+- `SOCIAL_GOOGLE_CLIENT_ID`: Web OAuth client ID.
+- Exact Google callback: `https://DOMINIO-WEB/auth/google/callback`.
 - `SESSION_DRIVER=database`, `CACHE_STORE=database`, `MAIL_MAILER=log`.
-- `TELEGRAM_CHAT_ID`: chat do proprietário, se optar por alertas.
+- `TELEGRAM_CHAT_ID`: owner's chat, if you choose alerts.
 - CLI: `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT`, `RAILWAY_WEB_SERVICE`,
-  `RAILWAY_ENGINE_SERVICE` identificam o destino sem ambiguidade.
+  `RAILWAY_ENGINE_SERVICE` identify the destination without ambiguity.
 
-Configurar consentimento OAuth e usuário de teste se o app Google estiver em
-modo Testing. Uma conta Google válida diferente da autorizada será rejeitada.
-O email da configuração não substitui um subject já vinculado.
+Configure OAuth consent and a test user if the Google app is in
+Testing mode. A valid Google account other than the authorized one will be rejected.
+The configuration email does not replace an already linked subject.
 
-## Aplicar variáveis com segurança
+## Applying variables safely
 
-Preferir o editor de variáveis Railway ou bindings secretos do ambiente Codex.
-A CLI 5.71.0 foi instalada neste workspace e verificada pelo SHA256 publicado.
-Para automação, `railway variable set NOME --stdin --skip-deploys` lê um único
-valor da entrada; usar seletores explícitos de projeto/ambiente/serviço e não
-imprimir o retorno ou arquivos contendo segredos. Evitar valores secretos em
-argumentos de shell, screenshots e logs. Não iniciar login interativo por
-supor que um token precise ser exibido; usar a autorização configurada.
+Prefer the Railway variable editor or the Codex environment's secret bindings.
+CLI 5.71.0 was installed in this workspace and verified by the published SHA256.
+For automation, `railway variable set NAME --stdin --skip-deploys` reads a single
+value from the input; use explicit project/environment/service selectors and do not
+print the return value or files containing secrets. Avoid secret values in
+shell arguments, screenshots and logs. Do not start an interactive login
+on the assumption that a token must be displayed; use the configured authorization.
 
-## Ordem da publicação
+## Publication order
 
-1. Provisionar PostgreSQL e backup. Configurar variáveis e executar
-   `scripts/railway-configure.sh` com IDs explícitos; não definir caminho de TOML.
-2. Publicar web. Pre-deploy executa `/app/app migrate`; Vukem serializa migrations
-   PostgreSQL com advisory lock. Configurar timeout do pre-deploy no serviço.
-3. Esperar deploy bem-sucedido e `/ready`. `--ci` sozinho só acompanha build.
-4. Publicar engine, esperar `/ready` e verificar heartbeat do dashboard.
-5. Conferir Google real/callback/logout e admissão restrita.
-6. Importar histórico B3 autorizado e/ou buscar IEX. Começar com backtest.
-7. Revisar políticas e habilitar estratégia; contas começam **bloqueadas**.
-   Retomar PAPER é ação explícita no painel. Não existe configuração live.
-8. Exercitar cancelamento e reconciliação em conta paper dedicada antes de usar
-   a conta paper pessoal. Validar alertas se contratados/configurados.
+1. Provision PostgreSQL and backup. Configure variables and run
+   `scripts/railway-configure.sh` with explicit IDs; do not define a TOML path.
+2. Publish the web. The pre-deploy runs `/app/app migrate`; Vukem serializes PostgreSQL
+   migrations with an advisory lock. Configure the pre-deploy timeout on the service.
+3. Wait for a successful deploy and `/ready`. `--ci` alone only follows the build.
+4. Publish the engine, wait for `/ready` and verify the dashboard heartbeat.
+5. Check real Google login/callback/logout and restricted admission.
+6. Import authorized B3 history and/or fetch IEX. Start with backtest.
+7. Review policies and enable the strategy; accounts start **blocked**.
+   Resuming PAPER is an explicit action in the panel. There is no live configuration.
+8. Exercise cancellation and reconciliation in a dedicated paper account before using
+   the personal paper account. Validate alerts if contracted/configured.
 
-`scripts/railway-deploy.sh` publica sequencialmente serviços já configurados e
-aguarda status de sucesso por deployment ID. Aceita token seguro ou sessão OAuth
-CLI. Não cria projetos sem informação sobre o destino. A publicação inicial usou
-GitHub source connect e a configuração API equivalente, sem token no chat.
+`scripts/railway-deploy.sh` publishes sequentially the services already configured and
+waits for success status by deployment ID. Accepts a secure token or CLI OAuth
+session. Does not create projects without information about the destination. The initial publication used
+GitHub source connect and the equivalent API configuration, with no token in the chat.
 
-## Backup e recuperação
+## Backup and recovery
 
-Backup diário nativo habilitado e relido pela API para a instância de volume
-`18f653a2-4123-4230-a47a-3d3a57d32ab6`. Agenda retornada: `56 19 * * *`, retenção
-`518400` segundos (seis dias). A API não oferece retenção custom nesse contrato;
-a meta inicial de sete dias exige complemento externo, se mantida. Agendamento
-confirmado não significa que o primeiro backup ou restore já foi validado.
+Native daily backup enabled and re-read via the API for the volume instance
+`18f653a2-4123-4230-a47a-3d3a57d32ab6`. Returned schedule: `56 19 * * *`, retention
+`518400` seconds (six days). The API does not offer custom retention in this contract;
+the initial goal of seven days requires an external complement, if maintained. A confirmed schedule
+does not mean the first backup or restore has already been validated.
 
-`scripts/backup.sh` produz dump custom, com permissões restritas. Definir
-`BACKUP_FILE` fora do repositório e usar armazenamento privado cifrado. Agendar
-backup externo quando necessário para complementar a retenção do provedor.
-Meta operacional inicial: RPO 24h, RTO 2h; metas não foram medidas em produção.
+`scripts/backup.sh` produces a custom dump, with restricted permissions. Set
+`BACKUP_FILE` outside the repository and use encrypted private storage. Schedule an
+external backup when needed to complement the provider's retention.
+Initial operational target: RPO 24h, RTO 2h; the targets have not been measured in production.
 
-Restore em banco isolado: `pg_restore --no-owner --no-acl` para uma base de teste;
-nunca apontar engine/broker para o restore sem bloqueio e reconciliação. Foi
-exercitado dump/restore de base PostgreSQL de teste, não recuperação de produção.
+Restore into an isolated database: `pg_restore --no-owner --no-acl` into a test database;
+never point the engine/broker at the restore without blocking and reconciliation. The dump/restore of a test
+PostgreSQL database was exercised, not production recovery.
 
-Recuperação de Google: operador autenticado no ambiente administrativo pode
-executar `/app/app owner:reset --confirm RESET-OWNER --reason "motivo detalhado"`.
-Isso revoga sessões (session_version), registra auditoria e reabre bootstrap com
-`OWNER_GOOGLE_EMAIL`. Não exclui histórico financeiro e não é rota HTTP.
-Manter o proprietário anterior até confirmar posse da nova conta. Nenhum bypass
-de autenticação está incluído no binário de produção; `cmd/e2e` exige build tag.
+Google recovery: an operator authenticated in the administrative environment may
+run `/app/app owner:reset --confirm RESET-OWNER --reason "detailed reason"`.
+This revokes sessions (session_version), records audit and reopens bootstrap with
+`OWNER_GOOGLE_EMAIL`. It does not delete financial history and is not an HTTP route.
+Keep the previous owner until possession of the new account is confirmed. No authentication bypass
+is included in the production binary; `cmd/e2e` requires a build tag.
 
-## O que permanece dependente de evidência externa
+## What remains dependent on external evidence
 
-Login Google real, permissões/dados/fills da conta Alpaca, disponibilidade
-Railway, alertas reais, restauração no provedor, histórico B3 licenciado e
-observação de estratégias por período significativo. Testes locais não comprovam
-esses resultados nem desempenho financeiro. P6 permanece acompanhamento, não
-uma caixa marcada por dados sintéticos de teste.
+Real Google login, Alpaca account permissions/data/fills, Railway availability,
+real alerts, restoration on the provider, licensed B3 history and
+observation of strategies over a significant period. Local tests do not prove these
+results nor financial performance. P6 remains follow-up, not a box checked by synthetic test data.
 
-O ID externo da conta Alpaca fica vinculado após a primeira reconciliação. Rotação
-de chaves deve permanecer na mesma conta paper; apontar para outra conta bloqueia
-o executor, sem mesclar saldos, ordens e histórico. Migração de conta exige
-procedimento administrativo próprio.
+The external ID of the Alpaca account is bound after the first reconciliation. Key
+rotation must remain on the same paper account; pointing to another account blocks
+the executor, without merging balances, orders and history. Account migration requires
+its own administrative procedure.

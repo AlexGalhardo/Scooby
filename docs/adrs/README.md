@@ -1,25 +1,25 @@
-# ADRs — decisões de arquitetura
+# ADRs — architecture decisions
 
-Estados: **aceito** quando deriva de requisito explícito; **proposto** quando
-precisa de aceite do usuário. Aceitar ADR não significa implementá-lo.
-ADRs substituídos permanecem no histórico, com link para o sucessor.
+States: **accepted** when derived from an explicit requirement; **proposed** when
+it needs the user's acceptance. Accepting an ADR does not mean implementing it.
+Superseded ADRs remain in the history, with a link to the successor.
 
-| ADR | Tema | Estado |
+| ADR | Topic | State |
 | --- | --- | --- |
-| [0001](0001-stack-e-dashboard.md) | Stack, dashboard e shadcn/ui | Aceito por requisito; parcialmente implementado |
-| [0002](0002-monolito-modular-worker.md) | Monólito modular com worker separado | Proposto |
-| [0003](0003-google-only.md) | Login exclusivo Google | Aceito por requisito; implementação pendente |
-| [0004](0004-postgres-outbox.md) | PostgreSQL, outbox e precisão financeira | Proposto; PostgreSQL já confirmado |
-| [0005](0005-railway.md) | Deploy Railway | Aceito por requisito; topologia proposta |
-| [0006](0006-dados-e-eventos.md) | Dados, extensões e mensageria | Proposto |
-| [0007](0007-paper-first.md) | Paper-first e execução determinística | Paper-first aceito; detalhes propostos |
-| [0008](0008-brasil-e-eua.md) | Brasil e EUA no MVP | Aceito; provedores pendentes |
-| [0009](0009-uso-pessoal.md) | Terminal pessoal e conta única | Aceito |
-| [0010](0010-adapters-paper.md) | Alpaca Paper EUA e simulador B3 | Implementados; validação externa pendente |
-| [0011](0011-implementacao-autonoma.md) | Defaults e implementação autônoma | Aceito por instrução posterior |
-| [0012](0012-snapshots-transacionais.md) | Persistência efetivamente implementada | Implementado; detalha/atualiza ADR-0004 |
-| [0013](0013-workers-polling-e-deploy.md) | Polling, liderança e standby Railway | Implementado |
-| [0014](0014-railway-api-e-docker-portavel.md) | API Railway atual e Dockerfile portátil | Implementado durante publicação |
+| [0001](0001-stack-and-dashboard.md) | Stack, dashboard and shadcn/ui | Accepted by requirement; partially implemented |
+| [0002](0002-modular-monolith-worker.md) | Modular monolith with separate worker | Proposed |
+| [0003](0003-google-only.md) | Google-only login | Accepted by requirement; implementation pending |
+| [0004](0004-postgres-outbox.md) | PostgreSQL, outbox and financial precision | Proposed; PostgreSQL already confirmed |
+| [0005](0005-railway.md) | Railway deploy | Accepted by requirement; proposed topology |
+| [0006](0006-data-and-events.md) | Data, extensions and messaging | Proposed |
+| [0007](0007-paper-first.md) | Paper-first and deterministic execution | Paper-first accepted; details proposed |
+| [0008](0008-brazil-and-us.md) | Brazil and US in the MVP | Accepted; providers pending |
+| [0009](0009-personal-use.md) | Personal terminal and single account | Accepted |
+| [0010](0010-paper-adapters.md) | Alpaca Paper US and B3 simulator | Implemented; external validation pending |
+| [0011](0011-autonomous-implementation.md) | Defaults and autonomous implementation | Accepted by later instruction |
+| [0012](0012-transactional-snapshots.md) | Persistence effectively implemented | Implemented; details/updates ADR-0004 |
+| [0013](0013-polling-workers-and-deploy.md) | Polling, leadership and Railway standby | Implemented |
+| [0014](0014-railway-api-and-portable-docker.md) | Current Railway API and portable Dockerfile | Implemented during publication |
 
-Cada ADR deve registrar contexto, decisão, alternativas, consequências e gatilho
-de revisão. Brasil e EUA e uso pessoal estão confirmados; Alpaca Paper, simulador interno B3 e admissão de uma conta também. IEX e CSV B3 foram adotados por delegação; credenciais/datasets continuam externos.
+Each ADR must record context, decision, alternatives, consequences and review
+trigger. Brazil and US and personal use are confirmed; Alpaca Paper, the internal B3 simulator and admission of one account are also. IEX and B3 CSV were adopted by delegation; credentials/datasets remain external.

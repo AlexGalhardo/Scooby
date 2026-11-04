@@ -1,0 +1,66 @@
+# Development plan
+
+> Implementation update: see the [ROADMAP](../ROADMAP.md),
+> [ADR-0011](adrs/0011-autonomous-implementation.md),
+> [ADR-0012](adrs/0012-transactional-snapshots.md) and
+> [ADR-0013](adrs/0013-polling-workers-and-deploy.md) for the effective state.
+> The text below preserves the original requirements/designs, not a statement that
+> all infrastructure or external validation details have already occurred.
+
+Status: draft. It is not an order to implement pending choices.
+
+## Stages and dependencies
+
+| Phase | Verifiable deliverable | Depends on | Completion gate |
+| --- | --- | --- | --- |
+| P0 | Requirements, SDDs, ADRs and grilling | Conversation | Q1–Q3 answered; complete dependent rounds and joint review |
+| P1 | Google-only, `/`, shadcn/ui sidebar | P0 for user authorization | Session, callback and navigation tests; public starter removed |
+| P2 | Financial schema and feed | Market, broker and data plan | Precision, calendar, gaps and candle revision tested |
+| P3 | Strategies and backtest | Dataset + approved rules | Deterministic replay, costs and temporal separation |
+| P4 | Worker, risk and paper | Adapter + risk policy | Tests for failure, duplication, partial execution and restart |
+| P5 | Operational dashboard and Railway | P1–P4 | Reconciliation, alerts, restore and runbooks exercised |
+| P6 | Continuous validation | P5 | Out-of-sample evidence and stable operation; numeric criteria agreed |
+| P7 | Possible live | Future explicit decision | Own review, limits, monitoring and operational rollback |
+
+Week estimates from the conversation are illustrative. Do not adopt a schedule before
+defining scope, access to history, budget and acceptance criteria.
+
+## Implementation increments
+
+1. Create identity and session migrations; integrate Google through the Vukem
+   native support; restrict authorization according to the chosen audience.
+2. Expose only `/login`, the Google flow, assets and health publicly. Protect pages,
+   JSON and streams. Home becomes the dashboard; `/dashboard` may redirect to `/`.
+3. Install shadcn/ui over Vite, alias and Tailwind tokens; sidebar and real
+   empty states, without fictitious numbers appearing as real financial data.
+4. Add domain entities and interfaces; validate the broker with contract tests
+   before spreading external endpoints through the code.
+5. Implement feed and pure strategies with fixtures; then the historical simulator.
+6. Implement intent/outbox/risk, paper executor and recovery reconciliation.
+7. Connect real backend data to the dashboard and publish to Railway when requested.
+
+## Definition of done
+
+Acceptance criteria of the SDD implemented; tests proportional to the impact; compatible
+schema; secrets outside Git; error and loading states present; log without
+credentials; runbook updated. For the engine, fault injection tests and proof
+that closing the browser does not interfere. CI green and review of the delivery limits.
+
+## Traceability
+
+| Requirement | Design | ADR | Verification |
+| --- | --- | --- | --- |
+| RF-01–RF-04 | SDD-01 | 0001, 0003 | Auth + UI in `validation.md` |
+| RF-05 | SDD-02 to 04 | 0001, 0002, 0004 | Domain, DB and integration |
+| RF-06 | SDD-05 | 0005 | Deploy/restore/health |
+| RP-01–RP-02 | SDD-02 | 0002, 0006 | Replay and integrity |
+| RP-03, RP-05–RP-07 | SDD-03 | 0002, 0004, 0007 | Risk, idempotency and recovery |
+| RP-04 | SDD-04 | 0006, 0007 | No look-ahead and costs |
+| RP-08–RP-09 | SDD-01, 03, 05 | 0003, 0005 | Authorization, audit and observability |
+
+## External dependencies
+
+Railway account and domain/callback URL; Google OAuth project; broker account and credentials
+only after selection; licensed historical source; budget; possible
+Telegram channel. Creating the projects and publishing are future stages, not deliverables
+completed by this documentation. Do not ask for secret values in conversation.

@@ -1,0 +1,23 @@
+# ADR-0009 — personal terminal in the MVP
+
+Date: 2026-11-03. State: **Accepted by user answer; implementation pending**.
+
+## Context
+
+In round 1, Q1, the user confirmed personal use.
+
+## Decision
+
+MVP for the owner, with no public sign-up, billing or management platform for third parties. Q6 confirmed one Google account: verified email in the initial configuration and later binding to the stable subject.
+
+## Alternatives
+
+SaaS from the start was discarded for the MVP. Restricted invitations may be evaluated without presuming monetization.
+
+## Consequences
+
+An owner may have Brazil and US paper accounts; protect access and secrets, preserve audit and the possibility of identity recovery.
+
+## Review trigger
+
+Explicit request from other users, sharing or operation as SaaS.

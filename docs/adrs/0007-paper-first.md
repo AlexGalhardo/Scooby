@@ -1,23 +1,23 @@
-# ADR-0007 — validação por simulação antes de live
+# ADR-0007 — validation through simulation before live
 
-Data: 2026-11-03. Estado: **Aceito para paper-first pela resposta a Q3; detalhes técnicos propostos**.
+Date: 2026-11-03. State: **Accepted for paper-first by the answer to Q3; technical details proposed**.
 
-## Contexto
+## Context
 
-Execução automatizada precisa de evidência de correção e recuperação. O usuário confirmou backtesting e paper trading no MVP em Q3.
+Automated execution needs evidence of correctness and recovery. The user confirmed backtesting and paper trading in the MVP in Q3.
 
-## Decisão
+## Decision
 
-MVP backtest + paper, sem adapter live habilitado. Usar estratégias e risco determinísticos; LLM, se futura, só produz configuração revisável.
+MVP backtest + paper, without a live adapter enabled. Use deterministic strategies and risk; an LLM, if introduced in the future, only produces reviewable configuration.
 
-## Alternativas
+## Alternatives
 
-Live desde o início ou LLM com acesso direto a ordens. O primeiro amplia critérios de escopo; o segundo não preserva o motor determinístico proposto.
+Live from the start, or an LLM with direct access to orders. The first expands the scope criteria; the second does not preserve the proposed deterministic engine.
 
-## Consequências
+## Consequences
 
-Permite testar contratos sem capital real, mas paper não prova lucro nem fidelidade de liquidez. Broker paper ainda é decisão posterior ao mercado.
+Allows testing contracts without real capital, but paper does not prove profit nor liquidity fidelity. A paper broker is still a later decision after the market.
 
-## Gatilho de revisão
+## Review trigger
 
-Futura mudança explícita de escopo, com limites, evidências e autorização operacional própria.
+Future explicit scope change, with limits, evidence and its own operational authorization.

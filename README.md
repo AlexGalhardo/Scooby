@@ -1,109 +1,115 @@
-# Scooby
+<div align="center">
 
-**Comece pelo [ROADMAP.md](ROADMAP.md)**: onboarding, estado real, testes,
-limitações e próxima ação para sessões e agentes.
+<h1><strong><a href="https://trading.vukem.dev" style="text-decoration: none" target="_blank">vukem-trading</a></strong></h1>
 
-Terminal pessoal de trading quantitativo em Go/Vukem, Inertia/React/TypeScript,
-Tailwind/shadcn-ui e PostgreSQL. Exclusivamente backtesting e paper trading:
-Alpaca Paper nos EUA e replay interno B3. Sem capital real.
+[![CI](https://github.com/AlexGalhardo/vukem-trading/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexGalhardo/vukem-trading/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
+[![Go 1.27.3](https://img.shields.io/badge/go-1.27.3-00ADD8?logo=go&logoColor=white)](go.mod)
+<a href="https://github.com/AlexGalhardo/vukem-trading/releases"><img src="https://img.shields.io/github/v/release/AlexGalhardo/vukem-trading?include_prereleases&label=version" alt="Version"></a>
+<a href="https://scorecard.dev/viewer/?uri=github.com/AlexGalhardo/vukem-trading"><img src="https://api.scorecard.dev/projects/github.com/AlexGalhardo/vukem-trading/badge" alt="OpenSSF Scorecard"></a>
 
-## Implementado
+<h3><strong>Open Source Quantitative Trading Terminal: Backtesting and Paper Trading</strong></h3>
 
-Login exclusivo Google com conta única e subject persistente; dashboard privado
-com sidebar responsiva, gráficos, dados, estratégias versionadas, laboratório de
-backtests, ordens, posições, risco, auditoria e status de integrações.
+</div>
 
-Três estratégias (médias, reversão e rompimento), cálculo decimal, datasets
-com hash/procedência, jobs canceláveis e relatórios exportáveis. Worker Go
-independente da web com liderança/fencing, reservas e intenções transacionais,
-reconciliação de ordens ambíguas/parciais e bloqueio de risco durável.
+## Introduction
 
-O [checklist Railway](docs/deploy-checklist.md) contém todas as variáveis e o
-procedimento de publicação. Web publicada em
-https://scooby-web-production.up.railway.app; credenciais Google/Alpaca/Telegram
-ainda precisam substituir os placeholders. Railway já autorizado via OAuth CLI.
+vukem-trading is a personal, open source trading terminal for systematic strategies. It runs backtests and **paper trading** for B3, US equities, crypto and forex, with a risk engine that enforces stops, exposure caps and a daily-loss kill switch. It never sends real orders and makes no promise of profitability.
 
-## Desenvolvimento
+The application is written in Go on the [Vukem framework](https://vukem.dev), with an Inertia, React and Tailwind web terminal, PostgreSQL, and an independent engine worker. The full technical documentation is at <https://trading.vukem.dev>.
 
-Requisitos: Go 1.27.3+, Node.js 24+, npm, Docker Compose. Em clone novo, copiar
-`.env.example` para `.env` **somente se não existir**. Nunca sobrescrever chave ou
-configuração existente. Instalar CLI e gerar chave na primeira preparação:
+## Summary
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Documentation](#documentation)
+- [Stability](#stability)
+- [Contributing](#contributing)
+- [Code of conduct](#code-of-conduct)
+- [Security vulnerabilities](#security-vulnerabilities)
+- [License](#license)
+
+## Features
+
+- Private dashboard with Google-only sign-in for a single owner account.
+- Versioned strategies (moving-average crossover, mean reversion, breakout), deterministic and decimal-exact.
+- Backtest lab with datasets that carry hash, provenance and license; cancelable jobs; exportable reports.
+- Independent engine with leader election and fencing, reservations, order intents in a transactional outbox, and reconciliation of ambiguous or partial orders.
+- Durable risk blocks, audit trail and integration status.
+- Paper execution through Alpaca Paper (US) and an internal replay for B3.
+
+## Quick start
 
 ```sh
-go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.37.0
+git clone https://github.com/AlexGalhardo/vukem-trading.git
+cd vukem-trading
+cp -n .env.example .env
 vukem key:generate
-npm ci
-docker compose up -d postgres
-vukem migrate
-vukem serve
+docker compose up --build
 ```
 
-Configurar `OWNER_GOOGLE_EMAIL` e OAuth Google Web em `.env`; callback local:
-`http://localhost:3000/auth/google/callback`. Google verifica a identidade e o
-servidor admite apenas a conta configurada. Sem OAuth o login informa a pendência.
+Open <http://localhost:3000>. Setup guides: [local with Docker](docs/setup-local-with-docker.md), [VPS with Docker](docs/setup-vps-with-docker.md) and [Railway](docs/setup-in-railway.md).
 
-Em outro terminal, executar o worker:
+Frontend tooling uses Bun 1.4.4:
 
 ```sh
-ENGINE_HEALTH_PORT=3001 go run ./cmd/engine
+bun install --frozen-lockfile
+bun run typecheck   # bun check
+bun run lint        # Biome
+bun run lint:md     # markdownlint
+go vet ./... && go test -race ./...
 ```
 
-Ou `go run ./cmd/app trading:work`. Para executar tudo em containers:
-`docker compose up --build`. A web aplica migrations antes da engine iniciar.
-A engine não precisa de domínio público. Contas começam bloqueadas e estratégias
-desabilitadas; ative explicitamente depois de revisar os limites.
+## Documentation
 
-## Dados e simulações
+- [ROADMAP.md](ROADMAP.md): current state, phases and checklists.
+- [docs/trading/](docs/trading/README.md): research on ten reference trading projects.
+- [docs/brainstorming.md](docs/brainstorming.md): owner decisions.
+- [ADRs](docs/adrs/README.md) and [SDDs](docs/sdd/README.md): design decisions and specifications.
+- [AGENTS.md](AGENTS.md): guide for AI agents.
 
-Watchlist inicial: PETR4, VALE3, ITUB4, AAPL, NVDA, TSLA. CSV B3 2026 com
-`time,open,high,low,close,volume`, timestamps RFC3339 e offset, candles encerrados
-de cinco minutos e origem/licença declaradas. Importações são atômicas e rejeitam
-duplicatas, ordem temporal inválida, decimais inválidos e fora de sessão.
-Calendário B3 2026 inclui feriados/abertura especial e mudança de grade em novembro;
-anos não revisados falham fechados. EUA usa calendário e feed IEX Alpaca.
+## Stability
 
-Amostra de formato em [examples/b3-format.csv](examples/b3-format.csv),
-**sintética e insuficiente para validar estratégia**. Um único replay B3 ativo por
-conta preserva o relógio histórico. EUA permite uma configuração ativa por ativo.
-Não somar BRL/USD nem apresentar replay como execução em corretora.
+vukem-trading follows [Semantic Versioning](https://semver.org) and tags releases as `vX.Y.Z` on `main`. Changes are listed in [CHANGELOG.md](CHANGELOG.md), which follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Release notes are the matching CHANGELOG section.
 
-Backtests usam próximo evento elegível, custos/slippage configurados, participação
-limitada por volume e stop conservador em ambiguidade OHLC. Treino/teste: 70/30;
-benchmark bruto e limitações identificados. Não há promessa de rentabilidade.
+## Contributing
 
-## Verificação
+Thank you for considering a contribution.
 
-```sh
-npm run typecheck
-npm run build
-go test -race ./...
-go vet ./...
-go tool govulncheck ./...
-```
+- Read the design documents in `docs/` (SDDs in `docs/sdd/`, decisions in `docs/adrs/`) before changing behavior.
+- Write the test first. Run the specific test, lint and typecheck that cover your change.
+- Update the relevant SDD, `CHANGELOG.md` (under `[Unreleased]`) and the documentation in the same change when behavior, commands or conventions change.
 
-Para integração PostgreSQL, criar um banco dedicado cujo nome termine em `_test`
-e configurar `TEST_DATABASE_URL`. Nunca usar produção nesses testes. Casos
-incluem concorrência de reservas, rollback e failover de liderança.
+The full guide (setup, checks, commit style) is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-```sh
-npx playwright install chromium
-npm run test:e2e
-```
+### Pull requests
 
-E2E usa servidor loopback com fake OAuth **somente** em `KindTest` e build tag
-`e2e`; não é incluído na imagem de produção. Exercita login, importação, criação
-de estratégia, job/relatório de backtest, navegação, mobile e logout.
-No ambiente Codex com Chromium instalado, usar `CHROMIUM_PATH=/usr/bin/chromium`.
-Não rodar `npm run build` ao mesmo tempo que Go compila os assets embutidos.
+1. Create a branch from `main`.
+2. Make one logical change per commit.
+3. Open a pull request against `main`; its title is a Conventional Commit.
 
-## Build e operação
+`main` accepts changes only through a pull request with green required checks and linear history.
 
-`scripts/build.sh` gera `bin/app` e `bin/engine`, com versão Git nos relatórios.
-O Dockerfile gera ambos os executáveis e assets em imagem sem root. Para Railway,
-configurar `railway.web.toml` e `railway.engine.toml` em serviços separados.
-Scripts de deploy e backup em `scripts/`; detalhes de recuperação e variáveis em
-[docs/deploy-checklist.md](docs/deploy-checklist.md).
+### Commits
 
-Histórico/dados externos, integrações autenticadas, deploy real e validação
-quantitativa prolongada dependem da configuração do proprietário. O CI e os
-fixtures comprovam comportamento técnico, não desempenho financeiro.
+Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) in English: `type(scope): description`.
+
+- Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, `style`, `revert`.
+- Scopes: `engine`, `risk`, `backtest`, `adapters`, `data`, `strategy`, `web`, `site`, `auth`, `infra`, `deps`, `repo`, `docs`.
+
+The `.githooks/commit-msg` hook checks the header locally (`git config core.hooksPath .githooks`).
+
+## Code of conduct
+
+To keep the community welcoming to everyone, please review and follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security vulnerabilities
+
+If you discover a security vulnerability, please follow the [security policy](SECURITY.md) instead of opening a public issue.
+
+## License
+
+vukem-trading is open source software released under the [MIT license](LICENSE.md).
+
+Trading involves risk. This software is for research and paper trading; nothing here is investment advice.

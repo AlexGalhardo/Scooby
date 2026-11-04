@@ -1,23 +1,23 @@
-# ADR-0005 — hospedagem na Railway
+# ADR-0005 — Railway hosting
 
-Data: 2026-11-03. Estado: **Aceito como destino; topologia proposta**.
+Date: 2026-11-03. State: **Accepted as destination; proposed topology**.
 
-## Contexto
+## Context
 
-O usuário definiu Railway para deploy; a execução precisa de serviço contínuo.
+The user chose Railway for deploy; execution requires a continuous service.
 
-## Decisão
+## Decision
 
-Hospedar na Railway. Propor serviços web e engine separados, PostgreSQL privado, migrations em pre-deploy e engine sem hibernação.
+Host on Railway. Propose separate web and engine services, private PostgreSQL, migrations in pre-deploy and an engine without hibernation.
 
-## Alternativas
+## Alternatives
 
-VPS, Kubernetes ou execução em funções efêmeras. Alternativas não são o destino pedido; podem ser revisitadas se limitações medidas exigirem.
+VPS, Kubernetes or execution in ephemeral functions. These alternatives are not the requested destination; they may be revisited if measured limitations require it.
 
-## Consequências
+## Consequences
 
-Configurar saúde, segredos, recursos, deploy concorrente e backup. Railway não garante sozinho exclusividade de executor nem reconciliação.
+Configure health, secrets, resources, concurrent deploy and backup. Railway does not by itself guarantee executor exclusivity or reconciliation.
 
-## Gatilho de revisão
+## Review trigger
 
-Limitação de região, conectividade, custo, disponibilidade ou requisitos específicos do broker.
+Limitation of region, connectivity, cost, availability or specific broker requirements.

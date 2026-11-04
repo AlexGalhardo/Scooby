@@ -1,23 +1,23 @@
-# ADR-0003 — autenticação exclusiva Google
+# ADR-0003 — Google-exclusive authentication
 
-Data: 2026-11-03. Estado: **Aceito por requisito; uma conta autorizada confirmada**.
+Date: 2026-11-03. State: **Accepted by requirement; one authorized account confirmed**.
 
-## Contexto
+## Context
 
-O usuário exige `/login` com apenas Google e redirect de visitante do dashboard para essa página.
+The user requires `/login` with Google only and a redirect of visitors from the dashboard to that page.
 
-## Decisão
+## Decision
 
-Usar OAuth/OIDC Google no servidor com suporte Vukem; sessões locais. Remover rotas locais de senha/cadastro/reset do scaffold. Login bem-sucedido termina em `/`.
+Use Google OAuth/OIDC on the server with Vukem support; local sessions. Remove the scaffold's local password/sign-up/reset routes. Successful login ends at `/`.
 
-## Alternativas
+## Alternatives
 
-Senhas locais, múltiplos provedores e login diretamente na corretora. Não correspondem ao fluxo solicitado.
+Local passwords, multiple providers and login directly at the broker. They do not match the requested flow.
 
-## Consequências
+## Consequences
 
-Depende de projeto OAuth, callback e armazenamento compartilhado de states/sessões. Autenticação não substitui autorização; uso pessoal confirmado, Q6 confirmou uma conta, autorizada por email verificado no bootstrap e depois vinculada ao subject Google.
+Depends on an OAuth project, callback and shared storage for states/sessions. Authentication does not replace authorization; personal use is confirmed, Q6 confirmed one account, authorized by verified email at bootstrap and then bound to the Google subject.
 
-## Gatilho de revisão
+## Review trigger
 
-Novo requisito de identidade ou recuperação. Não adicionar provedor sem decisão registrada.
+New identity or recovery requirement. Do not add a provider without a recorded decision.

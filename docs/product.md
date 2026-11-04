@@ -1,0 +1,90 @@
+# Product vision and requirements
+
+> Implementation update: see the [ROADMAP](../ROADMAP.md),
+> [ADR-0011](adrs/0011-autonomous-implementation.md),
+> [ADR-0012](adrs/0012-transactional-snapshots.md) and
+> [ADR-0013](adrs/0013-polling-workers-and-deploy.md) for the effective state.
+> The text below preserves the original requirements/designs, not a statement that
+> all infrastructure or external validation details have already occurred.
+
+Status: confirmed requirements + recommended scope under discussion.
+
+## Objective
+
+Build vukem-trading as an algorithmic trading platform: research strategies,
+simulate their results, monitor the market and execute rules with risk
+controls. Profitability is not a guaranteeable requirement. The conversation provided is context
+and a catalog of possibilities; its examples do not confirm market, broker,
+risk values, budget or commercial purpose.
+
+## Confirmed requirements
+
+| ID | Requirement | Specification |
+| --- | --- | --- |
+| RF-01 | `/` is the main authenticated dashboard | SDD-01 |
+| RF-02 | Visitor without a session is redirected to `/login` | SDD-01 |
+| RF-03 | `/login` offers only the Google login button | SDD-01 |
+| RF-04 | Default dashboard with shadcn/ui sidebar | SDD-01 |
+| RF-05 | Keep Go/Vukem, React/Inertia, Tailwind and PostgreSQL | ADR-0001 |
+| RF-06 | Deploy on Railway | SDD-05, ADR-0005 |
+| RF-07 | Planning, SDDs and ADRs versioned in `docs/` | This set |
+| RF-08 | Refine decisions through grilling | `grilling.md` |
+
+Google authenticates the person in vukem-trading; it does not grant access to the broker account.
+The automatic redirect is from the protected dashboard to `/login`; the browser only
+goes to Google when the person clicks the button.
+
+## Decisions confirmed in round 1
+
+| ID | Decision | Origin |
+| --- | --- | --- |
+| RF-09 | Personal terminal in the MVP | Answer Q1 |
+| RF-10 | Cover Brazil/B3 and US | Answer Q2 |
+| RF-11 | MVP with backtesting and paper trading; no real capital | Answer Q3 |
+| RF-12 | Alpaca Paper as the first US integration | Answer Q4 |
+| RF-13 | B3 starts with the internal simulator | Answer Q5 |
+| RF-14 | Only one authorized Google account | Answer Q6 |
+
+Both markets are part of the scope; an incremental delivery per market
+does not remove B3 from the MVP. Alpaca Paper and the internal B3 simulation are defined; datasets, budget and
+the temporal mode of the B3 simulation remain under refinement. Each market will have its own calendar, currency, precision
+and adapter. Accounts and reports remain segregated by BRL and USD until
+a currency consolidation policy exists. Personal use does not mean open sign-up.
+
+## Proposed functional scope
+
+| ID | Capability | Summary acceptance |
+| --- | --- | --- |
+| RP-01 | Market series with provenance | Symbol, feed, time, delay and gaps visible |
+| RP-02 | Versioned strategies | Validated parameters, immutable version, audited activation |
+| RP-03 | Central risk engine | Every order validated, including future manual orders |
+| RP-04 | Reproducible backtesting | Dataset, code, configuration and costs identified |
+| RP-05 | Paper trading | Execution independent of the browser and reconciliation |
+| RP-06 | Orders, fills and positions | Persistent history and ambiguous states made explicit |
+| RP-07 | Emergency | Blocks new exposures and allows monitoring of cancellations |
+| RP-08 | Operational dashboard | P&L, exposure, drawdown, orders and service health |
+| RP-09 | Audit | Who changed what, version, time and correlation |
+
+## Recommended MVP, not yet approved
+
+Brazil and US confirmed, simulation accounts segregated by market; candles instead of HFT/full book,
+three strategies (moving averages, reversion and breakout), fictitious capital, no leverage
+or short selling initially. Concrete limits will be chosen later,
+after the market and instrument. Research in Python may be added when
+a demonstrated need exists; it does not require a second runtime in the first deploy.
+
+SaaS, paid signals, derivatives, statistical arbitrage, ML, real execution and
+tax calculation are outside the confirmed MVP. Multiple integrations are planned
+for Brazil and the US, with Alpaca Paper confirmed and the external B3 broker postponed until API validation. They may return in a future phase upon a product decision.
+
+## Quality and limits
+
+Money and quantities do not use binary floating point in accounting. Every mutation
+requires authorization on the server. Stale data does not generate new exposures.
+Without persistent state or reliable reconciliation, the engine does not resume operations.
+Closing the browser or ending the session does not interrupt the worker.
+
+Measurable targets for latency, availability, retention and capacity will be adjusted in the
+operation round. Do not promise exchange-grade low latency on general application infrastructure. Data distribution, broker eligibility, taxation and
+requirements to offer the service to third parties need their own analysis after
+the audience and market answers; this document does not reach a legal conclusion.

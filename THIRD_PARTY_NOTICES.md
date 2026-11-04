@@ -5,9 +5,9 @@ TradingView Lightweight Charts is used for chart rendering.
 ## NOTICE
 
 TradingView Lightweight Charts™
-Copyright (с) 2025 TradingView, Inc. https://www.tradingview.com/
+Copyright (с) 2025 TradingView, Inc. <https://www.tradingview.com/>
 
-Source: https://github.com/tradingview/lightweight-charts/blob/master/NOTICE
+Source: <https://github.com/tradingview/lightweight-charts/blob/master/NOTICE>
 
 ## LICENSE
 

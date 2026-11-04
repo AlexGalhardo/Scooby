@@ -1,0 +1,77 @@
+# Technical, quantitative and operational validation
+
+> Implementation update: see the [ROADMAP](../ROADMAP.md),
+> [ADR-0011](adrs/0011-autonomous-implementation.md),
+> [ADR-0012](adrs/0012-transactional-snapshots.md) and
+> [ADR-0013](adrs/0013-polling-workers-and-deploy.md) for the effective state.
+> The text below preserves the original requirements/designs, not a statement that
+> all infrastructure or external validation details have already occurred.
+
+Status: test plan; not evidence of implementation.
+
+## Authentication and dashboard
+
+A visitor at `/` is redirected to `/login` without private data. `/login` contains
+only the Google provider, with no password, local sign-up or reset. An authenticated user
+returns to `/`. Refuse a callback without state, expired, replayed or with an
+invalid token. An unauthorized identity does not create a valid session. Test session
+fixation, logout, revocation, CSRF and external redirect. Old routes and JSON/stream
+endpoints obey the same permissions; two users cannot access another's account.
+The sidebar works by keyboard and on mobile; contrasts, loading, empty, unavailable
+and delayed data states are distinct. Emergency asks for confirmation of a destructive action,
+but the quick block of new entries must be accessible and unambiguous.
+
+## Domain and risk engine
+
+Table-driven tests of precision, tick/lot, buy/exit, invalid stop, cost,
+slippage, exposure, daily loss and expired price. Two competing intents do not
+consume the same risk margin. Risk of open/unknown orders remains
+reserved. The trading day comes from the market calendar; the server's local time does not redefine the limit. Restarting does not reset daily loss or the kill switch.
+
+## Execution failure matrix
+
+| Injected failure | Expected result |
+| --- | --- |
+| Crash after recording the intent, before sending | Recover the intent without duplicating |
+| Timeout after the broker accepted the order | `unknown` state; query by identifier before any action |
+| Duplicate or out-of-order fill | Applied once in the ledger, coherent projection |
+| Partial execution followed by cancellation | Update quantity and remaining risk correctly |
+| Feed drops, lags or contains an outlier | Block new entries, signal degradation |
+| Database unavailable | Halt new decisions; reconcile before resuming |
+| Deploy with two overlapping workers | Generation/lock prevents new sends from the old one; reconcile in flight |
+| Cancellation without confirmation | Do not assume closed nor release the reservation |
+| Kill switch with an order in flight | Durable block and external result reconciled |
+| Session/holiday/DST | No operation outside the instrument's policy |
+| External position diverges | Account quarantine; controlled resumption |
+
+## Quantitative evidence
+
+Reserve sets by time: development, validation and an untouched final test.
+Walk-forward redoes selection only with available past data. Record asset survival,
+splits, dividends, timezone, adjustments, gaps and revisions. Separate adjusted price
+for research from the tradable price for fills; record conversions.
+Forbid signals from the candle close with a fill at the same already-known close;
+by default, execute at the next eligible event with costs.
+
+Report net return, drawdown, drawdown duration, turnover, number of
+trades, exposure, average gain/loss, win rate and cost sensitivity.
+Compare benchmark and fees in the same currency/period. Sharpe only with frequency,
+annualization and explicit assumptions. Few trades and multiple parameter attempts
+reduce confidence; report this, not only the best curve.
+
+## Operation gates
+
+Reproducible backtest → simulation with failures → observed paper → review.
+Numeric criteria (maximum loss, divergence, delay tolerance, period and
+minimum sample) will be agreed in the grilling. Paper does not fully reproduce
+real liquidity, queue, fees or slippage. Approval of technical performance is not
+financial approval. Live depends on a future decision and a new acceptance of criteria.
+
+## Proposed tools and CI
+
+Keep `go test -race`, `go vet`, `govulncheck`, TypeScript, build, secret scanning
+and image. Add broker adapter contracts with fixtures, real PostgreSQL, a
+fake OAuth flow in tests, E2E navigation, restore and replay of failure scenarios.
+No real broker credentials in CI; external tests only in paper and a
+dedicated environment. The current documentation change requires links and consistency; it
+does not re-run the entire starter suite without a code change.

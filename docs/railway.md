@@ -1,104 +1,103 @@
-# Operação e deploy na Railway
+# Railway operation and deploy
 
-> Atualização da publicação: projeto provisionado, serviços criados e web online.
-> Destinos, domínio e configuração efetiva estão no
-> [checklist](deploy-checklist.md#destino-provisionado) e
-> [ADR-0014](adrs/0014-railway-api-e-docker-portavel.md). O texto histórico abaixo
-> não descreve o estado atual e não deve orientar configurações de variáveis.
+> Publication update: project provisioned, services created and web online.
+> Destinations, domain and effective configuration are in the
+> [checklist](deploy-checklist.md#provisioned-destination) and
+> [ADR-0014](adrs/0014-railway-api-and-portable-docker.md). The historical text below
+> does not describe the current state and should not guide variable configurations.
+>
+> Implementation update: see the [ROADMAP](../ROADMAP.md),
+> [ADR-0011](adrs/0011-autonomous-implementation.md),
+> [ADR-0012](adrs/0012-transactional-snapshots.md) and
+> [ADR-0013](adrs/0013-polling-workers-and-deploy.md) for the effective state.
+> The text below preserves the original requirements/designs, not a statement that
+> all infrastructure or external validation details have already occurred.
 
-> Atualização de implementação: consulte o [ROADMAP](../ROADMAP.md),
-> [ADR-0011](adrs/0011-implementacao-autonoma.md),
-> [ADR-0012](adrs/0012-snapshots-transacionais.md) e
-> [ADR-0013](adrs/0013-workers-polling-e-deploy.md) para o estado efetivo.
-> O texto abaixo preserva requisitos/desenhos originais, não uma declaração de
-> que todos os detalhes de infraestrutura ou validação externa já ocorreram.
+Status: destination confirmed; topology and configurations below proposed. No
+Railway service was created at this stage.
 
-Estado: destino confirmado; topologia e configurações abaixo propostas. Nenhum
-serviço Railway foi criado nesta etapa.
+## Initial topology
 
-## Topologia inicial
-
-| Serviço | Processo | Exposição |
+| Service | Process | Exposure |
 | --- | --- | --- |
-| web | Binário Vukem atual, `/app/app` | HTTPS público; páginas e APIs autenticadas |
-| engine | Futuro binário `/app/engine` | Sem domínio público; conexão ao broker/feed |
-| PostgreSQL | Serviço persistente | Rede privada entre serviços |
-| backtest | Job/processo separado se necessário | Sem disputa de recursos com execução |
+| web | Current Vukem binary, `/app/app` | Public HTTPS; authenticated pages and APIs |
+| engine | Future binary `/app/engine` | No public domain; connection to broker/feed |
+| PostgreSQL | Persistent service | Private network between services |
+| backtest | Separate job/process if needed | No resource contention with execution |
 
-Manter engine continuamente ativa e desabilitar hibernação/serverless nela.
-Inicialmente uma réplica; locks e fencing continuam necessários durante rolling
-deploy. Não escalar executor por simples alteração de réplicas. Cache/broker
-adicionais entram só por ADR. Confirmar região, plano, CPU/RAM, orçamento e
-backup antes do deploy, sem assumir TimescaleDB disponível.
+Keep the engine continuously active and disable hibernation/serverless on it.
+Initially one replica; locks and fencing remain necessary during rolling
+deploy. Do not scale the executor by simply changing replica counts. Additional cache/broker
+components are added only via ADR. Confirm region, plan, CPU/RAM, budget and
+backup before deploy, without assuming TimescaleDB is available.
 
-## Build e comandos
+## Build and commands
 
-O Dockerfile atual só compila `cmd/app`; criar `cmd/engine` exige alterar build e
-imagem. Não configurar um start command inexistente. A web escuta em
-`0.0.0.0:$PORT`; assets Vite são embutidos. Manter usuário sem privilégios.
+The current Dockerfile only compiles `cmd/app`; creating `cmd/engine` requires changing the build and
+image. Do not configure a non-existent start command. The web listens on
+`0.0.0.0:$PORT`; Vite assets are embedded. Keep an unprivileged user.
 
-Proposta de pre-deploy: `/app/app migrate`. Migrations devem ser compatíveis com
-a versão antiga durante sobreposição e usar serialização/lock. Expandir schema,
-publicar consumidores e só depois remover campos. Falha de migration impede
-promoção. Não rodar migrations destrutivas no boot de cada worker.
+Proposed pre-deploy: `/app/app migrate`. Migrations must be compatible with
+the old version during overlap and use serialization/lock. Expand the schema,
+publish consumers and only then remove fields. Migration failure blocks
+promotion. Do not run destructive migrations at the boot of each worker.
 
-Na Railway, start command de Docker sobrescreve ENTRYPOINT; informar o executável
-completo. Validar configuração em staging, sem presumir expansão de shell. Registrar uma configuração por serviço quando implementado.
+On Railway, a Docker start command overrides ENTRYPOINT; provide the full
+executable. Validate the configuration in staging, without assuming shell expansion. Record one configuration per service when implemented.
 
-## Variáveis propostas
+## Proposed variables
 
-| Serviço | Variáveis | Observação |
+| Service | Variables | Note |
 | --- | --- | --- |
-| web | APP_ENV, APP_DEBUG, APP_URL, HOST, PORT | production, debug falso, URL HTTPS canônica |
-| web | APP_KEY, DATABASE_URL | Segredos Railway; chave persistente entre deploys |
-| web | SOCIAL_GOOGLE_CLIENT_ID, SOCIAL_GOOGLE_CLIENT_SECRET | Nomes existentes do scaffold Vukem |
-| web | CACHE_STORE, SESSION_DRIVER | Definir armazenamento compartilhado e migrations |
-| engine | DATABASE_URL, TRADING_MODE | `TRADING_MODE` é contrato novo proposto |
-| engine | BROKER_API_KEY, BROKER_API_SECRET | Nomes genéricos propostos; só paper no escopo recomendado |
-| engine | BROKER_BASE_URL, MARKET_DATA_FEED | Validados contra allowlist do adapter/mode |
-| engine | ENGINE_ACCOUNT_ID | Nova configuração proposta, escopo da liderança |
-| alertas | TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID | Opcionais, após escolha do canal |
+| web | APP_ENV, APP_DEBUG, APP_URL, HOST, PORT | production, debug off, canonical HTTPS URL |
+| web | APP_KEY, DATABASE_URL | Railway secrets; persistent key across deploys |
+| web | SOCIAL_GOOGLE_CLIENT_ID, SOCIAL_GOOGLE_CLIENT_SECRET | Existing names from the Vukem scaffold |
+| web | CACHE_STORE, SESSION_DRIVER | Define shared storage and migrations |
+| engine | DATABASE_URL, TRADING_MODE | `TRADING_MODE` is a proposed new contract |
+| engine | BROKER_API_KEY, BROKER_API_SECRET | Proposed generic names; paper only in the recommended scope |
+| engine | BROKER_BASE_URL, MARKET_DATA_FEED | Validated against the adapter/mode allowlist |
+| engine | ENGINE_ACCOUNT_ID | Proposed new configuration, leadership scope |
+| alerts | TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID | Optional, after choosing the channel |
 
-IDs de usuário autorizado e limites serão definidos após Q1. Não enviar segredos
-a props Inertia, bundle Vite, logs ou documentos. Google callback deve coincidir
-com URI registrada, incluindo protocolo, domínio e path. Login não requer tokens
-de acesso Google permanentes se nenhuma API Google será usada.
+Authorized user IDs and limits will be defined after Q1. Do not send secrets
+to Inertia props, Vite bundle, logs or documents. The Google callback must match the
+registered URI, including protocol, domain and path. Login does not require permanent Google
+access tokens if no Google API will be used.
 
-## Saúde, telemetria e recuperação
+## Health, telemetry and recovery
 
-`/up` existe no starter como liveness; não expor saldos ou configurações ali.
-Propor `/ready` para web/dependências. A Railway usa healthcheck para deploy;
-monitoramento contínuo precisa de ferramenta/alertas próprios. Worker reporta
-heartbeat no banco e readiness interna; não depende de acesso público ao endpoint.
+`/up` exists in the starter as liveness; do not expose balances or configurations there.
+Propose `/ready` for the web/dependencies. Railway uses healthcheck for deploy;
+continuous monitoring needs its own tool/alerts. The worker reports
+heartbeat in the database and internal readiness; it does not depend on public access to the endpoint.
 
-Métricas: idade do último candle, atraso do feed, processamento, latência do
-broker, intenções unknown, divergências, reservas de risco, heartbeat, fila/outbox,
-falhas de login e conexões. Logs estruturados com request/event/order IDs;
-redigir tokens, cabeçalhos e perfis pessoais. Retenção e metas ainda pendentes.
+Metrics: age of the last candle, feed delay, processing, broker latency, `unknown` intents,
+divergences, risk reservations, heartbeat, queue/outbox,
+login failures and connections. Structured logs with request/event/order IDs;
+redact tokens, headers and personal profiles. Retention and targets still pending.
 
-Runbook de incidente: persistir bloqueio da conta → confirmar novas entradas
-bloqueadas → consultar estado broker → cancelar conforme política → reconciliar →
-verificar posições e exposição → registrar causa → retomar explicitamente.
-Zerar posições é operação distinta, sujeita a mercado/limites; falha ou falta de
-conectividade deve aparecer como pendência, nunca como confirmação de flat.
+Incident runbook: persist the account block → confirm new entries are
+blocked → query broker state → cancel according to policy → reconcile →
+verify positions and exposure → record the cause → resume explicitly.
+Closing all positions is a separate operation, subject to market/limits; failure or lack of
+connectivity must appear as pending, never as confirmation of flat.
 
-Runbook de restart: adquirir liderança → carregar bloqueios/versões → reconciliar
-ordens e fills → reconstruir exposição → validar feed/calendário → habilitar só se
-a política permitir. Restore é feito em ambiente isolado sem execução habilitada;
-reconciliar contra broker antes de qualquer retomada. Definir RPO/RTO e ensaiar
-restore; volume persistente sozinho não é estratégia de backup.
+Restart runbook: acquire leadership → load blocks/versions → reconcile
+orders and fills → rebuild exposure → validate feed/calendar → enable only if
+the policy allows. Restore is done in an isolated environment without execution enabled;
+reconcile against the broker before any resumption. Define RPO/RTO and rehearse
+the restore; a persistent volume alone is not a backup strategy.
 
-Rollback de código não reverte fills ou cancela ordens. Evitar downgrade de schema
-financeiro. Worker deve reagir a SIGTERM parando novas entradas, preservando
-intenções e finalizando checkpoint; o broker continua fonte de confirmação.
+Code rollback does not revert fills or cancel orders. Avoid downgrading the financial schema. The worker must react to SIGTERM by stopping new entries, preserving
+intents and finalizing a checkpoint; the broker remains the source of confirmation.
 
-O pre-deploy roda em container separado, com variáveis e rede privada, mas sem
-volumes montados. Não depender de escrita em disco nessa etapa. Ausência de sticky
-sessions na distribuição de réplicas reforça sessions e states compartilhados.
+The pre-deploy runs in a separate container, with variables and private network, but without
+mounted volumes. Do not depend on disk writes at this stage. The absence of sticky
+sessions in the distribution of replicas reinforces shared sessions and states.
 
-## Ajuste após rodada 2
+## Adjustment after round 2
 
-EUA: segredos exclusivos de Alpaca Paper e allowlist de host paper. B3: adapter
-interno sem credenciais de ordens externas. Web: `OWNER_GOOGLE_EMAIL` é proposta
-de configuração para o gate inicial da única conta autorizada. Uma vez vinculada,
-a identidade Google persistida prevalece; recuperação deve ser auditada.
+US: secrets exclusive to Alpaca Paper and an allowlist of the paper host. B3: internal adapter
+without external order credentials. Web: `OWNER_GOOGLE_EMAIL` is a proposed
+configuration for the initial gate of the only authorized account. Once bound,
+the persisted Google identity prevails; recovery must be audited.

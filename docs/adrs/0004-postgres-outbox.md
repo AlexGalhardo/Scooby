@@ -1,23 +1,23 @@
-# ADR-0004 — persistência financeira e outbox
+# ADR-0004 — financial persistence and outbox
 
-Data: 2026-11-03. Estado: **Proposto; PostgreSQL confirmado**.
+Date: 2026-11-03. State: **Proposed; PostgreSQL confirmed**.
 
-## Contexto
+## Context
 
-Ordens e reservas precisam ser duráveis e consistentes; rede externa não participa da transação do banco.
+Orders and reservations must be durable and consistent; the external network does not participate in the database transaction.
 
-## Decisão
+## Decision
 
-Propor PostgreSQL como registro de intenções, fills, ledger, reservas e outbox transacional. NUMERIC/decimal para valores; unicidade de sinais e IDs de execução.
+Propose PostgreSQL as the record of intents, fills, ledger, reservations and the transactional outbox. NUMERIC/decimal for values; uniqueness of signals and execution IDs.
 
-## Alternativas
+## Alternatives
 
-Redis como banco definitivo; mensageria sem outbox; floats na contabilidade. Não oferecem as invariantes necessárias ao desenho proposto.
+Redis as the definitive database; messaging without outbox; floats in accounting. They do not offer the invariants required by the proposed design.
 
-## Consequências
+## Consequences
 
-Exige locks por conta, índices, workers idempotentes e limpeza/monitoramento de outbox. Não entrega exactly-once na corretora; timeout exige reconciliação.
+Requires per-account locks, indexes, idempotent workers and outbox cleanup/monitoring. Does not deliver exactly-once at the broker; timeout requires reconciliation.
 
-## Gatilho de revisão
+## Review trigger
 
-Contenção ou volume medidos exigirem outro transporte, preservando registro e invariantes.
+Measured contention or volume requiring another transport, while preserving the record and invariants.

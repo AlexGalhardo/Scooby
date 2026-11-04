@@ -1,270 +1,270 @@
-# ROADMAP — Scooby
+# ROADMAP: trading.vukem.dev
 
-**Documento principal para onboarding e continuidade entre sessões/agentes.**
-Atualizado: 2026-11-03. Repositório: [AlexGalhardo/Scooby](https://github.com/AlexGalhardo/Scooby).
+**Primary document for onboarding and continuity across sessions and agents.**
 
-## 1. Ponto de retomada
+Updated: 2026-11-04. Repository: [AlexGalhardo/vukem-trading](https://github.com/AlexGalhardo/vukem-trading). Documentation: <https://trading.vukem.dev>.
 
-O terminal pessoal **paper-only está implementado**, incluindo web, worker,
-backtesting, risco e adapters. Projeto e serviços Railway foram provisionados;
-web e engine saudáveis, com web em https://scooby-web-production.up.railway.app. O próximo passo é
-substituir placeholders por credenciais Google/Telegram/Alpaca e validar as
-integrações, conforme [docs/deploy-checklist.md](docs/deploy-checklist.md).
-Não recriar o starter nem repetir a entrevista de decisões já encerradas.
+Legend: `[x]` done and verified, `[~]` partly done (the note says what is missing), `[ ]` to do. A box is checked only when its **audit assert** passes. Never check a box from a fixture or a document alone.
 
-Templates por serviço disponíveis em `.env.railway.web.example` e
-`.env.railway.engine.example`; cópias `.local` são privadas e ignoradas pelo Git.
-O usuário está criando Google OAuth e Telegram. Não substituir credenciais reais
-por placeholders nem considerar autenticação/publicação Railway concluídas sem
-confirmação da CLI/API. Ver [checklist](docs/deploy-checklist.md#templates-de-variáveis).
+## 1. Resume point
 
-A última instrução do usuário autorizou implementar todo o roadmap sem interrupções
-e pedir configurações de deploy ao final. Isso substitui o bloqueio anterior de
-Q7–Q9: defaults foram adotados por delegação e documentados no ADR-0011, sem
-inventar respostas individuais. Estratégias/contas começam desabilitadas/bloqueadas.
+The personal **paper-only terminal is implemented**: Vukem web, an independent Go engine, backtesting, risk and adapters. Railway runs web, engine and PostgreSQL; the web is at <https://scooby-web-production.up.railway.app> (the service names still say `scooby`).
 
-**Não concluído por falta de acesso externo:** OAuth Google real, credenciais e
-permissões Alpaca Paper, dados históricos B3 licenciados,
-alertas reais e acompanhamento quantitativo prolongado. Não confundir testes
-locais com operação/lucratividade comprovada. Capital real permanece fora do MVP.
+On 2026-11-04 the project got its repository standards (lint, hooks, community files), moved the frontend to Bun 1.4.4 with `bun check` and Biome, added release and security workflows, and gained a researched knowledge base in [docs/trading/](docs/trading/README.md). Owner decisions are in [docs/brainstorming.md](docs/brainstorming.md).
 
-## 2. Onboarding de uma nova sessão
+**Next concrete action:** finish Phase 7 (English-only repository and renames), then Phase 8 (publish the documentation site at `trading.vukem.dev`).
 
-1. Ler `git status --short --branch`, `git log -5 --oneline` e eventuais `AGENTS.md`;
-   preservar alterações preexistentes.
-2. Ler este ROADMAP, o [README](README.md) e o [checklist de deploy](docs/deploy-checklist.md).
-3. Conferir os [ADRs](docs/adrs/README.md), especialmente 0011–0014, e o SDD da tarefa.
-4. Revisar o código: checklist/documento não substitui evidência de implementação.
-5. Consultar [pesquisa web](docs/web-research.nd); revalidar políticas, versões e
-   calendários antes de ampliar cobertura. Ela contém limitações de acesso.
-6. Inspecionar ferramentas e bindings de segredos sem imprimir valores. Processos,
-   caches, `/tmp` e `/workspace/.tools` não são dependências versionadas garantidas.
-7. Continuar a menor entrega autorizada, executar verificações pertinentes e
-   atualizar este arquivo com evidências, pendências e próxima ação concreta.
+Owner-side items that block validation, not coding: real Google OAuth, Alpaca Paper credentials, licensed B3 intraday data, Telegram alerts and a prolonged paper observation period. Real capital stays out of scope.
 
-Instruções atuais do usuário prevalecem. A skill grilling foi usada na fase de
-planejamento; a ordem posterior de execução autônoma permite escolhas técnicas
-rotineiras sem reabrir aprovação. Novos mercados, SaaS ou capital real exigem novo
-escopo. Não solicitar tokens no chat: usar variáveis seguras do ambiente/provedor.
+## 2. Onboarding for a new session
 
-## 3. Escopo e escolhas
+1. Run `git status --short --branch` and `git log -5 --oneline`; preserve existing changes.
+2. Read this file, [AGENTS.md](AGENTS.md), [README.md](README.md) and [docs/brainstorming.md](docs/brainstorming.md).
+3. Read the ADRs ([docs/adrs/](docs/adrs/README.md)), especially 0011 to 0014, and the SDD of the task.
+4. Read the matching rules in [.agents/rules/](.agents/rules/) before editing.
+5. Check the code: a checkbox is not evidence of implementation.
+6. Do the smallest authorized delivery, run the focused checks, and update this file with evidence, pending items and the next action.
 
-| Tema | Estado/decisão |
+Do not ask for tokens in chat; use secure provider variables. Never print secrets.
+
+## 3. Scope and decisions
+
+| Topic | State |
 | --- | --- |
-| Público | Pessoal; única conta Google autorizada; sem cadastro público |
-| Mercados | B3 + ações EUA; BRL/USD segregados |
-| Execução | Alpaca Paper EUA; replay interno B3; nenhum adapter live |
-| Login | `/` protegido → visitante vai a `/login`; único botão Google; sucesso em `/` |
-| Interface | React/Inertia, Tailwind, shadcn/ui Radix, sidebar e gráficos |
-| Backend | Go/Vukem, PostgreSQL; web e engine em processos distintos |
-| Estratégias | SMA crossover, reversão Z-score, rompimento; versões imutáveis |
-| Universo inicial | PETR4, VALE3, ITUB4, AAPL, NVDA, TSLA; long-only, sem leverage |
-| Dados | Candles fechados de 5m; IEX EUA e CSV autorizado B3 |
-| B3 | Calendário revisado 2026, feriados/abertura especial e grade por período |
-| EUA | Calendário da API Alpaca + clock antes de operar |
-| Risco inicial | 50 bps/operação; perda diária 100 bps; exposição 5000 bps; 3 posições |
-| Simulação | Custos 5 bps/lado, slippage 5 bps; editáveis com conta bloqueada |
-| Infra | Railway; web/engine/PostgreSQL; sem dependência inicial Redis/NATS/TimescaleDB |
+| Audience | Owner only; one Google account; no public sign-up |
+| Money | Paper now, live later behind gates (Phase 17); no live adapter exists |
+| Markets | B3 and US equities today; crypto and forex planned; BRL and USD ledgers segregated |
+| Execution | Alpaca Paper (US); internal replay (B3); simulator for the rest |
+| Strategies | SMA crossover, Z-score reversion, breakout today; opening range, VWAP, ADX trend, grid and DCA planned |
+| Data | CSV import; IEX through Alpaca; free APIs, broker paper accounts and paid feeds planned behind provider interfaces |
+| Risk, non-negotiable | Mandatory stop on every order; daily-loss kill switch; risk per trade as a percentage of capital; exposure caps per asset and in total |
+| Stack | Go 1.27.3, Vukem 0.37.0, PostgreSQL 18, React 19 and Inertia 3, Tailwind 4, Bun 1.4.4, Biome 2 |
+| Infra | Railway: web, engine, PostgreSQL, plus the `site` service |
+| Docs | Next.js site in `site/`, generated from the Markdown in `docs/` |
 
-Defaults de ativos/feed/timeframe/limites foram adotados na implementação delegada,
-não tratados como recomendações financeiras. B3 começa com patrimônio fictício
-identificado; EUA não mostra patrimônio conhecido antes de reconciliar a conta.
+## 4. Repository map
 
-## 4. Estado do código e caminhos relevantes
-
-| Caminho | Implementação |
+| Path | Purpose |
 | --- | --- |
-| `cmd/app`, `bootstrap` | Servidor/CLI Vukem; migrations, providers e defaults |
-| `cmd/engine` | Processo contínuo paper; não depende da sessão web |
-| `routes/web.go`, `routes/social.go` | Rotas privadas, Google-only e APIs |
-| `app/accounts` | Gate de email verificado, vínculo por subject e sessões |
-| `app/controllers/terminal` | Snapshots, importação, estratégias, jobs e controles |
-| `app/commands` | Worker/readiness e recuperação de proprietário por CLI |
-| `internal/trading/domain.go` | Decimais, sizing, reservas, fills, ledger e políticas |
-| `internal/trading/calendar.go` | Calendário B3 e limites de sessão |
-| `internal/trading/data.go` | CSV estrito, validação, hashes e gaps |
-| `internal/trading/backtest.go` | Replay determinístico, custos, curvas e métricas |
-| `internal/trading/store.go` | Transações, audit, versões, jobs, artefatos e snapshots |
-| `internal/adapters` | Alpaca paper/data/calendar e alertas Telegram opcionais |
-| `internal/engine` | Liderança, fencing, replay, dispatch e reconciliação |
-| `database/migrations` | Identidade, sessão/cache, contas, datasets, estratégias/jobs/audit |
-| `resources/js/pages/Terminal.tsx` | Visão geral, mercado, estratégias, backtests, ordens, posições, risco, auditoria, settings |
-| `resources/js/components/ui` | Componentes gerados shadcn/ui |
-| `resources/js/pages/Auth/Login.tsx` | Login Google exclusivo |
-| `tests`, `internal/*/*_test.go` | Auth, domínio, adapters, falhas, concorrência e failover |
-| `cmd/e2e`, `e2e` | Fake OAuth apenas KindTest/build tag e teste browser |
-| `Dockerfile`, `railway.*.toml`, `scripts` | Dois binários, deploy sequencial e backup |
+| `cmd/app`, `cmd/engine`, `cmd/e2e` | Web server, paper engine worker, end-to-end fixture server |
+| `app/`, `routes/`, `bootstrap/` | Vukem application code |
+| `internal/trading` | Decimals, sizing, reservations, ledger, calendars, CSV, backtests, store |
+| `internal/engine` | Leader election, fencing, replay, dispatch, reconciliation |
+| `internal/adapters` | Alpaca paper, data and calendar; Telegram alerts |
+| `resources/js` | Inertia React terminal; `components/ui` is generated shadcn/ui |
+| `site/` | Documentation site (Next.js); content generated from `docs/` |
+| `docs/` | Product, architecture, ADRs, SDDs, setup guides, trading knowledge base |
+| `.agents/` | Rules and skills for agents |
+| `.github/workflows/` | `ci`, `release`, `scorecard`, `codeql`, `pr-title`, `vuln` |
 
-Stack fixada: Go 1.27.3; Vukem 0.37.0; driver PostgreSQL 0.6.1; Inertia React
-3.9.1; React 19.3.1; Tailwind 4.3.3; Vite/TypeScript e dependências no lockfile.
-`/posts`, cadastro local, senha e reset de senha não estão publicados.
+## 5. Phases
 
-## 5. Checklist de entregas
+### Phase 0: Foundation and specification
 
-`[x]` significa código/artefato entregue. Validação externa permanece separada.
+- [x] Official starter, PostgreSQL, Compose, Git and CI.
+- [x] Product, architecture, data model, planning, research and onboarding documents.
+- [x] Six SDDs and ADRs 0001 to 0014.
+- [x] Owner decisions recorded (grilling plus the 2026-11-04 interview).
 
-### P0 — Fundação e especificação
+**Audit assert:** `ls docs/adrs docs/sdd` lists every file linked from `docs/adrs/README.md` and `docs/sdd/README.md`.
 
-- [x] Starter oficial, PostgreSQL, Compose, Git e CI.
-- [x] Produto, arquitetura, modelo lógico, planejamento, pesquisa web e onboarding.
-- [x] 6 SDDs, ADRs originais e ADRs 0011–0013 de implementação.
-- [x] Q1–Q6 registradas; defaults Q7–Q9 adotados sob autorização posterior.
-- [x] Regras/limites/configuração e procedimento de recuperação definidos.
+### Phase 1: Identity and dashboard
 
-### P1 — Identidade e dashboard
+- [x] Google-only login, single account, persistent subject, state, nonce and PKCE.
+- [x] Shared sessions and cache, rotation and revocation, CSRF, OAuth throttling.
+- [x] Private `/`, `/login`, logout; no local password or sign-up surface.
+- [x] Responsive sidebar, theme, charts, empty, error and loading states.
+- [x] Server guards on pages and APIs; no credential in props or bundle.
+- [ ] Exercise real Google OAuth with the final domain and callback.
 
-- [x] Login Google-only; conta única; subject persistente; state/nonce/PKCE nativos.
-- [x] Sessões e cache compartilhados; rotação/revogação; CSRF e throttle OAuth.
-- [x] `/` privado, `/login`, logout; sem superfícies locais de senha/cadastro.
-- [x] Sidebar shadcn/ui, tema, mobile, gráficos e estados vazios/erro/loading.
-- [x] Guards de servidor em páginas e APIs; nenhuma credencial nas props/bundle.
-- [ ] Exercitar OAuth Google real com domínio/callback finais.
+**Audit assert:** the e2e login spec passes (`bun run test:e2e`); an unauthenticated request to `/api/snapshot` returns 401.
 
-### P2 — Dados financeiros
+### Phase 2: Financial data
 
-- [x] Contas/modos/moedas segregados e instrumentos com tick/lote.
-- [x] CSV atômico com procedência/licença/hash, OHLCV, offsets e grade de 5m.
-- [x] Rejeição de entradas inválidas/duplicadas/fora de ordem; gaps identificados.
-- [x] Histórico IEX via adapter e calendário/clock Alpaca.
-- [x] B3 2026: feriados, Cinzas 13h, grade março/novembro; anos não revisados rejeitados.
-- [ ] Receber e validar dataset B3 intraday efetivamente licenciado.
-- [ ] Validar IEX com permissões e limites da conta escolhida.
+- [x] Segregated accounts, modes and currencies; instruments with tick and lot.
+- [x] Atomic CSV import with provenance, license, hash, OHLCV, offsets and a 5-minute grid.
+- [x] Rejection of invalid, duplicate and out-of-order rows; gaps identified.
+- [x] IEX history through the adapter; Alpaca calendar and clock.
+- [x] B3 2026 calendar, holidays, special opening, session grid changes; unreviewed years fail closed.
+- [ ] Receive and validate a licensed B3 intraday dataset.
+- [ ] Validate IEX with the chosen account's permissions and limits.
 
-### P3 — Estratégias e backtesting
+**Audit assert:** `go test ./internal/trading -run 'Calendar|Import|Dataset'` passes; importing a sample with a duplicate row fails.
 
-- [x] Médias móveis, reversão à média e rompimento determinísticos, com warmup.
-- [x] Configurações imutáveis; nova versão numerada; ativação separada da conta.
-- [x] Jobs persistentes, cancelamento, recuperação e timeout de processamento.
-- [x] Próxima barra elegível, custos, slippage, participação máxima por volume/lote.
-- [x] Stop conservador e gap-through; relatório identifica hipóteses e limitações.
-- [x] Dataset/config/código identificados; curva, benchmark bruto e artefato JSON.
-- [x] Métricas de retorno, custos, drawdown/duração, turnover, trades e ganhos/perdas.
-- [x] Partições temporais 70/30 e modo exploratório explicitamente identificado.
-- [ ] Avaliar estratégias em amostras licenciadas/out-of-sample significativas.
+### Phase 3: Strategies and backtesting
 
-### P4 — Risco, paper e recuperação
+- [x] SMA crossover, mean reversion and breakout, deterministic, with warm-up.
+- [x] Immutable configurations, numbered versions, activation separate from the account.
+- [x] Persistent, cancelable, recoverable jobs with timeouts.
+- [x] Next eligible bar, costs, slippage, participation cap, conservative stop, gap-through.
+- [x] Dataset, configuration and code identified; equity curve, benchmark, JSON artifact.
+- [x] Return, cost, drawdown, turnover, trades, win and loss metrics; 70/30 partitions.
+- [ ] Evaluate strategies on licensed, significant out-of-sample data.
 
-- [x] Decimal, sizing, limites de caixa/exposição/perda diária e posições.
-- [x] Reserva + intenção/outbox no mesmo snapshot/transação e lock por conta.
-- [x] Fills deduplicados, parciais, custos, ledger e P&L de posições.
-- [x] Worker independente; advisory lock dedicado, standby e leader_epoch.
-- [x] Reconciliação antes de novas entradas; timeout sem retry cego; estado unknown.
-- [x] Bloquear, cancelar e solicitar zeragem são ações distintas e auditadas.
-- [x] Proteção ao desabilitar estratégia com risco pendente; B3 usa um replay ativo por conta.
-- [x] Testes de reservas concorrentes, rollback, timeout/partial/dedupe e failover.
-- [ ] Exercitar contratos/cancelamentos/fills na conta Alpaca Paper dedicada real.
+**Audit assert:** two runs with the same dataset hash and configuration produce byte-identical reports.
 
-### P5 — Railway e operação
+### Phase 4: Risk, paper and recovery
 
-- [x] Dashboard conectado aos snapshots PostgreSQL com polling autenticado.
-- [x] Auditoria de ações/políticas/rejeições, heartbeat e readiness da engine.
-- [x] Dois executáveis e imagem sem root; configuração API web/engine e Compose.
-- [x] Deploy sequencial, healthcheck, migrations e script de backup.
-- [x] Recuperação administrativa de proprietário auditada, com revogação de sessões.
-- [x] Backup/restore ensaiado em PostgreSQL de teste isolado.
-- [x] CLI Railway autenticada por OAuth; projeto, serviços, variáveis e domínio criados.
-- [x] Web publicada; build, migrations, login HTTP e acesso ao banco confirmados.
-- [x] Configuração pela API atual e Dockerfile portável (ADR-0014), sem TOML legado.
-- [x] Web, engine e PostgreSQL publicados e saudáveis no domínio Railway.
-- [x] Backup diário PostgreSQL agendado; retenção do provedor confirmada em seis dias.
-- [ ] Confirmar orçamento/adequação regional e configurar monitoramento externo.
-- [ ] Validar primeira execução do backup e complementar retenção se exigir sete dias.
-- [ ] Testar Google/broker/Telegram e restore no provedor escolhido.
+- [x] Decimal sizing; cash, exposure, daily-loss and position limits.
+- [x] Reservation plus intent and outbox in one snapshot and transaction, with an account lock.
+- [x] Deduplicated fills, partial fills, costs, ledger and position P&L.
+- [x] Independent worker, advisory lock, standby and `leader_epoch`.
+- [x] Reconciliation before new entries; timeout without blind retry; `unknown` state.
+- [x] Block, cancel and flatten are distinct and audited.
+- [x] Tests for concurrent reservations, rollback, timeout, partial, dedupe and failover.
+- [ ] Exercise contracts, cancels and fills on a dedicated real Alpaca Paper account.
 
-### P6 — Validação contínua
+**Audit assert:** `go test -race ./internal/engine ./internal/trading` passes against a `_test` database.
 
-- [x] Instrumentação e relatórios para acompanhamento e revisão de drawdown/custos.
-- [ ] Observar paper ao longo dos períodos/cenários acordados; registrar divergências.
-- [ ] Comparar resultados fora da amostra sem otimizar no teste final.
-- [ ] Medir latência, capacidade, RPO/RTO e revisar políticas com evidências externas.
-- [ ] Registrar decisão de manutenção/desativação por estratégia.
+### Phase 5: Railway and operations
 
-P6 depende de passagem do tempo, dados e contas configuradas; não marcar como
-concluído por fixtures sintéticos. P7/live, SaaS, derivados, ML e apuração fiscal
-não foram adicionados ao escopo.
+- [x] Dashboard on PostgreSQL snapshots with authenticated polling.
+- [x] Audit trail, heartbeat and engine readiness.
+- [x] Two binaries, non-root image, Compose; sequential deploy with healthcheck and migrations.
+- [x] Audited owner recovery with session revocation; backup and restore rehearsed on a test database.
+- [x] Railway project, services, variables and domain created; web and engine healthy.
+- [x] Daily PostgreSQL backup scheduled (provider retention six days).
+- [x] Deploy on push to `main` verified with the Bun Dockerfile (2026-11-04).
+- [ ] Confirm budget and region; add external monitoring.
+- [ ] Validate the first backup run and a restore on the provider.
+- [ ] Test Google, broker and Telegram integrations in production.
 
-## 6. Contratos e limitações importantes
+**Audit assert:** `/` returns 302, `/login` 200, `/ready` 200, `/api/snapshot` without a session 401.
 
-- Persistência financeira usa JSON decimal versionado em conta PostgreSQL, com
-  lock/CAS e audit no mesmo commit; não alegar tabelas NUMERIC normalizadas onde
-  não existem. ADR-0012 explica tradeoffs e migração futura para volume alto.
-- Outbox é a lista durável de ordens aprovadas no snapshot. Não há exactly-once
-  externo; request já em voo exige reconciliação mesmo com geração/fencing.
-- Polling web 10s; loop de execução 15s; candles 5m. Não é HFT ou stop nativo
-  garantido na corretora. Alertas opcionais precisam de token/chat configurados.
-- Calendário B3 suporta 2026. Ampliar anos somente com calendário revisado e testes.
-  IEX não equivale ao mercado consolidado; CSV público diário não fabrica intraday.
-- Snapshot financeiro cresce com o histórico. Não truncar ledger para economizar
-  espaço; normalizar/arquivar com trilha antes de volume elevado.
-- Somente uma configuração por ativo EUA e um replay B3 por conta ficam ativos.
-  Desligar proteção com posição/ordem pendente é rejeitado; primeiro reduzir risco.
-- B3 é replay histórico interno, não corretora B3 nem feed ao vivo. Os stops/alvos
-  são executados pelo simulador/engine, com limites explícitos de liquidez/latência.
-- A web pode usar chaves paper para importar IEX; todos os valores ficam no servidor.
-  Não colocar credenciais em variáveis `VITE_*`, props, logs ou arquivos Git.
+### Phase 6: Continuous validation
 
-## 7. Executar e verificar
+- [x] Instrumentation and reports for drawdown and cost review.
+- [ ] Observe paper trading across the agreed periods; log divergences from the backtest.
+- [ ] Compare out-of-sample results without optimizing on the final test set.
+- [ ] Measure latency, capacity, RPO and RTO.
+- [ ] Record a keep-or-disable decision per strategy.
 
-Instruções completas no README; não sobrescrever `.env` nem regenerar chave em uso.
+Phase 6 depends on time, data and configured accounts; do not check it from synthetic fixtures.
 
-```sh
-npm ci
-docker compose up -d postgres
-vukem migrate
-vukem serve
-# Outro terminal:
-ENGINE_HEALTH_PORT=3001 go run ./cmd/engine
-```
+### Phase 7: Repository standards and English-only
 
-```sh
-npm run typecheck
-npm run build
-go test -race ./...
-go vet ./...
-go tool govulncheck ./...
-npm run test:e2e
-git diff --check
-```
+Goal: the repository follows the ecosystem standards and everything is in English.
 
-PostgreSQL integration requer `TEST_DATABASE_URL` para banco dedicado `*_test`.
-E2E requer Chromium/Playwright e Go no PATH; usa fake OAuth apenas em KindTest,
-build tag `e2e` e endereço loopback. Em Codex, `CHROMIUM_PATH=/usr/bin/chromium`.
-Não compilar Go simultaneamente com Vite apagando/recriando assets embutidos.
+- [x] **7.1 Git remote** points to `AlexGalhardo/vukem-trading`. Assert: `git remote -v`.
+- [x] **7.2 Community and policy files:** `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE.md`, issue and PR templates, `CODEOWNERS`. Assert: files exist and `bun run lint:md` passes on them.
+- [x] **7.3 Tooling:** `.markdownlint*.jsonc`, `.githooks/commit-msg`, `.config/cliff.toml`, `biome.json` (v2), `.editorconfig` with tabs. Assert: `bun run lint` and `bun run lint:md` pass.
+- [x] **7.4 Bun 1.4.4:** lockfile `bun.lock`, `packageManager`, Dockerfile on `oven/bun:1.4.4-alpine`, `bun check` instead of `tsc`. Assert: `bun run typecheck` prints "No type errors"; `docker build .` succeeds.
+- [x] **7.5 Workflows:** `ci`, `release` (CHANGELOG-driven, GHCR image, provenance), `scorecard`, `codeql`, `pr-title`, `vuln`. Assert: YAML parses; CI green on `main`.
+- [x] **7.6 Agent files:** `AGENTS.md`, `CLAUDE.md`, `.agents/rules`, `.agents/skills`. Assert: files exist and AGENTS.md links resolve.
+- [x] **7.7 Documentation translated** to English with renamed files. Assert: `grep -rP "[áàâãéêíóôõúç]" docs` returns nothing.
+- [~] **7.8 Code strings translated** (UI, messages, comments, e2e). Assert: the same grep over `app internal cmd resources/js e2e` returns nothing and `go test ./...`, `bun run test:e2e` pass.
+- [ ] **7.9 Rename `Scooby` to `vukem-trading`:**
+  - [ ] Go module path and imports (`github.com/AlexGalhardo/Scooby`); assert: `go build ./...`.
+  - [ ] Compose project, database and user names, CI service names; assert: `docker compose config`.
+  - [ ] Railway service names (`scooby-web`, `scooby-engine`); assert: dashboard and `scripts/railway-*.sh` updated together.
+- [ ] **7.10 `.golangci.yml`** from the ecosystem template and `golangci-lint run` clean. Assert: the command exits 0.
+- [ ] **7.11 OpenSSF Scorecard** badge green: branch protection ruleset on `main`, pinned actions, signed releases. Assert: the Scorecard viewer for the repository shows no failing critical check.
+- [ ] **7.12 First release `v0.1.0`:** CHANGELOG section, tag, release notes, GHCR image. Assert: the Release workflow publishes and `gh release view v0.1.0` shows the notes.
 
-O ambiente inicial tem Go válido em `/workspace/.tools/go/bin`; verificar antes
-de reutilizar. Seguir instruções de cloud/proxy/CA disponíveis. O disco do executor
-é limitado: build Docker local pode esgotar espaço; usar CI para validar a imagem,
-sem alterar storage driver/proxy nem desabilitar TLS.
+### Phase 8: Documentation site and DNS
 
-## 8. Evidências e continuidade
+Goal: `trading.vukem.dev` opens the technical documentation, with the same look as vukem.dev.
 
-Verificações realizadas durante implementação:
+- [x] **8.1 Site shell** copied from the vukem site and rebranded (`site/`). Assert: `cd site && bun run build`.
+- [~] **8.2 Content sync:** `bun run sync:docs` generates `content/docs` and `navigation.ts` from `docs/`. Assert: `bun run check:mdx` passes.
+- [ ] **8.3 Site Dockerfile** (`site/Dockerfile`, context repository root, pinned Bun and Node images, non-root). Assert: `docker build -f site/Dockerfile .` succeeds.
+- [ ] **8.4 CI job** for the site (lint, `check:mdx`, build). Assert: job green.
+- [ ] **8.5 Railway `site` service** deployed after green CI. Assert: its Railway URL returns 200 and `/` redirects to `/docs/introduction`.
+- [ ] **8.6 DNS:** `trading.vukem.dev` CNAME shown, reviewed and applied by the owner. Assert: `curl -I https://trading.vukem.dev` returns 200 or 308 with a valid certificate.
+- [ ] **8.7 Last-updated metadata and sitemap** refreshed (`bun run last-updated`). Assert: `check:last-updated` passes.
 
-- Auth/gate/replay de callback/logout, rotas privadas e validações de API.
-- Domínio: decimal, sizing, perda diária, duplicatas, fills parciais, CSV e calendários.
-- Adapter/engine: timeout após envio sem reenvio, partial/dedup e reconciliação.
-- PostgreSQL real: concorrência de 16 reservas, rollback e troca de liderança.
-- Browser: Google fake → dashboard → CSV → estratégia → backtest/relatório →
-  navegação de todas as áreas → mobile → logout.
-- Dump/restore em base isolada; readiness worker; compilação Go e frontend.
-- Railway real: web `266b5d5c-d668-4176-9bdc-7748ce9fee58` e engine
-  `80a0f3e2-9559-4269-a83b-facc46502e5c` com status SUCCESS no commit `4337761`.
-  `/` 302, `/login` 200, `/ready` 200 e `/api/snapshot` sem sessão 401.
-- CI do ajuste Docker/API aprovado:
-  https://github.com/AlexGalhardo/Scooby/actions/runs/41655709136.
-- CI e scan de segredos devem ser conferidos no commit final; não inferir estado
-  atual apenas de execução antiga. Login/broker reais não foram exercitados.
+### Phase 9: Backtest realism and validation
 
-Histórico: `205f7a3`/`9e21d88` fundação; `4e2adde` especificações;
-`4664823` pesquisa; `daeed47` onboarding inicial. O commit de implementação será
-localizado por `git log`; não registrar um hash futuro antes do commit existir.
+Reference: [docs/trading/backtesting.md](docs/trading/backtesting.md).
 
-Ao concluir cada sessão, atualizar checklist e registrar: mudança, teste/evidência,
-ADRs afetados, bloqueios externos e primeira próxima ação. Preservar o histórico
-de respostas; nunca marcar feature pronta por haver apenas documentação.
+- [ ] **9.1 Parameter declarations as data** (name, type, range, step, default) shared by backtester, UI and optimizer. Assert: a strategy exposes its schema and the UI renders it.
+- [ ] **9.2 Look-ahead test:** perturb future candles and assert earlier signals are unchanged, for every strategy. Assert: `go test -run LookAhead ./internal/trading`.
+- [ ] **9.3 Partial fills over several bars** with the participation cap; resting-order semantics (price must trade through). Assert: unit tests for a 3-bar partial fill and for a touch without fill.
+- [ ] **9.4 Fill-rule ADR** (walk the book versus crossing) written before any broker-style simulator. Assert: ADR merged.
+- [ ] **9.5 Walk-forward runner** with windows and a minimum trade count per window. Assert: a report lists per-window metrics.
+- [ ] **9.6 Robustness statistics:** block-bootstrap Monte Carlo on trades, cost stress (2x costs and slippage), deflated Sharpe. Assert: report includes the three and flags runs under 30 trades.
+- [ ] **9.7 Three-period split** (train, test, validation) with validation touched once per candidate. Assert: the API refuses a second validation run for the same configuration without an override.
+- [ ] **9.8 Report metrics:** Sharpe and Sortino with stated risk-free rate, Calmar, SQN, exposure, Buy and Hold baseline. Assert: golden-file test.
 
-**Próxima ação:** no serviço web, substituir Google OAuth e email autorizado;
-validar callback e login real. No serviço engine, configurar Telegram opcional e
-Alpaca Paper; repetir chaves paper na web se usar importação IEX. Railway já está
-autenticado/provisionado. Contas permanecem bloqueadas até revisão e retomada
-explícita. Conferir [destinos](docs/deploy-checklist.md#destino-provisionado).
+### Phase 10: Risk hardening
+
+Reference: [docs/trading/risk-and-execution.md](docs/trading/risk-and-execution.md).
+
+- [ ] **10.1 Master arm switch and default deny** per account and venue. Assert: with the switch off every order is rejected with a reason.
+- [ ] **10.2 Mandatory stop** on every entry, enforced by the risk engine. Assert: a test submits an order without a stop and expects rejection.
+- [ ] **10.3 Risk per trade in basis points** drives sizing; unit names pinned in identifiers and tests. Assert: table test at 25, 50 and 100 bps.
+- [ ] **10.4 Daily-loss kill switch** blocks new entries until the next session and is audited. Assert: simulate a loss over the limit; entries blocked, exits allowed.
+- [ ] **10.5 Protections:** stop-loss streak lock, equity-drawdown lock, per-symbol cooldown. Assert: tests for each lock and its expiry at the next candle.
+- [ ] **10.6 Exit model:** triple barrier (stop, target, time) with a close-reason enum. Assert: every closed position has a reason.
+- [ ] **10.7 Stale-feed and unknown-order alarms** (Telegram). Assert: fault-injection test raises each alert once.
+
+### Phase 11: Data providers
+
+Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/strategies-and-markets.md](docs/trading/strategies-and-markets.md).
+
+- [ ] **11.1 Provider interface** (`transform_query`, `extract`, `transform` pattern in Go) with credentials validated before the call. Assert: a provider with a missing key fails before any network call.
+- [ ] **11.2 Coverage matrix** per market and data mode, in the API and the UI. Assert: snapshot includes live, delayed, end-of-day or none per market.
+- [ ] **11.3 Crypto candles** (public exchange API) and a testnet paper adapter for one venue. Assert: backtest on a downloaded BTC and USDT dataset reproduces.
+- [ ] **11.4 Forex dataset import** (backtest only) with provenance. Assert: import test with a sample file.
+- [ ] **11.5 Source terms** recorded per provider in [docs/sources.md](docs/sources.md). Assert: every provider in code has a row.
+
+### Phase 12: Strategy expansion
+
+- [ ] **12.1 Opening-range breakout** with session-aware bounds. Assert: backtest on the intraday sample runs and passes 9.2.
+- [ ] **12.2 VWAP reversion.** Assert: same.
+- [ ] **12.3 ADX-filtered trend.** Assert: same.
+- [ ] **12.4 Grid and DCA (spot)** with capped inventory and a range exit. Assert: inventory never exceeds the configured cap in a trending fixture.
+- [ ] **12.5 Market making** stays out of scope until order-book data and an accepted fill-rule ADR exist.
+
+### Phase 13: Terminal UX
+
+Reference: [docs/trading/terminal-and-agents.md](docs/trading/terminal-and-agents.md).
+
+- [ ] **13.1 Safety bar:** arm switch, kill switch, account state banner, live risk panel. Assert: e2e asserts the banner changes when the account is blocked.
+- [ ] **13.2 Command palette and numbered shortcuts.** Assert: e2e opens a page through the palette.
+- [ ] **13.3 Saved workspace layout** per user. Assert: layout survives a reload.
+- [ ] **13.4 Watchlist** with a size cap and a coverage-matrix view.
+- [ ] **13.5 Paper hotkey order templates** sized by percentage of buying power. Assert: e2e places a paper order with a hotkey.
+- [ ] **13.6 Canvas tape and ladder** for streamed data. Assert: no React state updates per tick (profiling note in the PR).
+- [ ] **13.7 Generated TypeScript wire types** from Go structs with a drift check in CI. Assert: CI fails when a Go struct changes without regenerating.
+- [ ] **13.8 Alerts:** thresholds with a checker interval and Telegram delivery. Assert: fault-injection test.
+
+### Phase 14: Observability and operations
+
+- [ ] **14.1 Metrics:** heartbeat age, feed staleness, reconciliation drift, rejected-order rate, slippage versus expectation. Assert: exposed on an authenticated endpoint.
+- [ ] **14.2 External uptime check** on `/up` and the site. Assert: alert fires on a forced failure.
+- [ ] **14.3 Runbooks** for incident, restore and key rotation in `docs/`. Assert: restore rehearsal log committed.
+- [ ] **14.4 Dependency policy:** Dependabot, `govulncheck`, OSV-Scanner on the site, betterleaks. Assert: all jobs green on `main`.
+
+### Phase 15: Agents and MCP (read-only)
+
+- [ ] **15.1 Read-only MCP server** for market data and reports with a bearer token and a tool allowlist. Assert: a request without a token is rejected.
+- [ ] **15.2 No order tools** are exposed to any agent. Assert: tool list test.
+- [ ] **15.3 LLM-assisted strategy drafting** produces a validated configuration for human review only. Assert: the draft cannot be activated without an owner action.
+
+### Phase 16: Multi-user (explicitly out of scope)
+
+Not planned. Reopen only with a new ADR covering isolation, authorization, billing and regulation.
+
+### Phase 17: Live-readiness gate (decision only)
+
+No live adapter is built in this roadmap. Writing an ADR is the only allowed work until all of these hold:
+
+- [ ] Paper results over an agreed period match backtest expectations within a stated tolerance.
+- [ ] Risk gate, kill switch and reconciliation have failure-path tests in CI.
+- [ ] Live is enabled by a server-side flag separate from any agent or UI setting.
+- [ ] Credentials encrypted at rest and present only in the worker.
+- [ ] First-period limits (order size, daily loss) set deliberately low.
+- [ ] Owner sign-off recorded in an ADR.
+
+## 6. Contracts and limitations
+
+- Financial persistence uses versioned decimal JSON in a PostgreSQL account with lock and compare-and-swap plus audit in the same commit; do not claim normalized `NUMERIC` tables that do not exist. ADR-0012 explains the trade-offs and the migration path for high volume.
+- The outbox is the durable list of orders approved in the snapshot. There is no external exactly-once; an in-flight request needs reconciliation even with generation and fencing.
+- Web polling is 10 s, the execution loop 15 s, candles 5 m. This is not HFT, and stops are not guaranteed broker-native stops.
+- The B3 calendar supports 2026 only. Extend a year only with a reviewed calendar and tests. IEX is not the consolidated market.
+- The financial snapshot grows with history. Never truncate the ledger to save space; normalize or archive with a trail first.
+- One active configuration per US asset and one active B3 replay per account.
+- B3 is an internal historical replay, not a broker or a live feed.
+- The web may use paper keys to import IEX data; all values stay on the server. Never place credentials in `VITE_*` variables, props, logs or Git.
+- Push to `main` deploys to Railway. Use pull requests with green CI.

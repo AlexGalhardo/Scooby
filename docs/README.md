@@ -1,68 +1,68 @@
-# Scooby — documentação do produto e da arquitetura
+# vukem-trading — product and architecture documentation
 
-O [ROADMAP.md da raiz](../ROADMAP.md) é o documento principal do projeto.
-Leia-o primeiro para onboarding, estado real e próxima ação; este índice reúne
-os documentos de referência.
+The [ROADMAP.md at the root](../ROADMAP.md) is the project's main document.
+Read it first for onboarding, the actual state and the next action; this index
+gathers the reference documents.
 
-Data-base: 2026-11-03. Idioma dos documentos: português.
+Data base: 2026-11-03. Document language: English.
 
-**Estado atual: implementação paper entregue, publicação/configuração externa pendentes.**
-O [ROADMAP](../ROADMAP.md) e os ADRs 0011–0013 descrevem código e defaults atuais.
-Os desenhos abaixo preservam o planejamento original; onde houver diferença,
-consultar os ADRs de implementação e [checklist de deploy](deploy-checklist.md).
+**Current state: paper implementation delivered, external publication/configuration pending.**
+The [ROADMAP](../ROADMAP.md) and ADRs 0011–0013 describe the current code and defaults.
+The designs below preserve the original planning; where there is a difference,
+consult the implementation ADRs and the [deploy checklist](deploy-checklist.md).
 
-**Histórico do planejamento:** Esta documentação não representa funcionalidades já implementadas. Os requisitos expressos pelo usuário estão confirmados; recomendações e ADRs propostos precisam das respostas ao grilling. Não há autorização de ativação de operações reais implícita neste planejamento.
+**Planning history:** This documentation does not represent features already implemented. The requirements expressed by the user are confirmed; recommendations and proposed ADRs need answers from the grilling. No authorization to activate real operations is implied by this planning.
 
-## Navegação
+## Navigation
 
-| Documento | Finalidade |
+| Document | Purpose |
 | --- | --- |
-| [Produto](produto.md) | Objetivo, escopo e requisitos rastreáveis |
-| [Brainstorming](brainstorming.md) | Alternativas, tradeoffs e hipóteses |
-| [Grilling](grilling.md) | Árvore de decisões e rodadas de perguntas |
-| [Arquitetura](arquitetura.md) | Serviços, fluxo de eventos e limites |
-| [Modelo de dados](modelo-de-dados.md) | Entidades, integridade e precisão |
-| [Planejamento](planejamento.md) | Fases, dependências e critérios de conclusão |
-| [Operação na Railway](railway.md) | Deploy, variáveis, recuperação e observabilidade |
-| [Validação](validacao.md) | Testes, experimentos quantitativos e liberação |
-| [Fontes](fontes.md) | Documentação primária e limites das verificações |
-| [Deploy/configurações](deploy-checklist.md) | Variáveis, publicação e recuperação |
-| [Pesquisa web](web-research.nd) | Achados, fontes oficiais, limitações e impactos no projeto |
-| [SDDs](sdd/README.md) | Especificações de comportamento e desenho técnico |
-| [ADRs](adrs/README.md) | Decisões arquiteturais e respectivos estados |
+| [Product](product.md) | Objective, scope and traceable requirements |
+| [Brainstorming](brainstorming.md) | Alternatives, tradeoffs and hypotheses |
+| [Grilling](grilling.md) | Decision tree and question rounds |
+| [Architecture](architecture.md) | Services, event flow and boundaries |
+| [Data model](data-model.md) | Entities, integrity and precision |
+| [Planning](planning.md) | Phases, dependencies and completion criteria |
+| [Railway operations](railway.md) | Deploy, variables, recovery and observability |
+| [Validation](validation.md) | Tests, quantitative experiments and release |
+| [Sources](sources.md) | Primary documentation and limits of the verifications |
+| [Deploy/configurations](deploy-checklist.md) | Variables, publication and recovery |
+| [Web research](web-research.md) | Findings, official sources, limitations and impacts on the project |
+| [SDDs](sdd/README.md) | Behavior specifications and technical design |
+| [ADRs](adrs/README.md) | Architectural decisions and their states |
 
-## Escopo confirmado pelo proprietário
+## Scope confirmed by the owner
 
-Uso pessoal, mercados Brasil/B3 e EUA, backtesting e paper trading no MVP.
-Alpaca Paper nos EUA, simulador interno B3 e uma conta Google autorizada estão
-confirmados. Fontes de dados, instrumentos, frequência, limites e recuperação da
-identidade continuam em refinamento. Rodada 3 em `grilling.md`.
+Personal use, Brazil/B3 and US markets, backtesting and paper trading in the MVP.
+Alpaca Paper in the US, the internal B3 simulator and an authorized Google account
+are confirmed. Data sources, instruments, frequency, limits and identity recovery
+are still being refined. Round 3 in `grilling.md`.
 
-## Como ler os estados
+## How to read the states
 
-- **Confirmado:** requisito explicitamente solicitado nesta conversa.
-- **Proposto:** alternativa recomendada, ainda não aceita pelo usuário.
-- **Pendente:** depende de uma resposta ou investigação.
-- **Implementado:** evidência no código, distinta do estado de uma decisão.
+- **Confirmed:** requirement explicitly requested in this conversation.
+- **Proposed:** recommended alternative, not yet accepted by the user.
+- **Pending:** depends on an answer or an investigation.
+- **Implemented:** evidence in the code, distinct from the state of a decision.
 
-## Inventário real da base
+## Real inventory of the codebase
 
-Repositório: `AlexGalhardo/Scooby`. Base inspecionada: commit `9e21d88`.
+Repository: `AlexGalhardo/Scooby`. Inspected codebase: commit `9e21d88`.
 Vukem 0.37.0; Go 1.27.3; Inertia React 3.9.1; React 19.3.1;
-Tailwind 4.3.3; PostgreSQL com driver Vukem 0.6.1; Vite e TypeScript.
-O inventário acima identifica a base original. A evolução implementou Google-only,
-sidebar shadcn/ui, dashboard, dados, estratégias, backtest, adapters paper e worker.
-`/posts` não é mais publicado. Estado detalhado e testes no ROADMAP.
+Tailwind 4.3.3; PostgreSQL with Vukem driver 0.6.1; Vite and TypeScript.
+The inventory above identifies the original codebase. The evolution implemented Google-only,
+shadcn/ui sidebar, dashboard, data, strategies, backtest, paper adapters and worker.
+`/posts` is no longer published. Detailed state and tests in the ROADMAP.
 
-## Processo utilizado
+## Process used
 
-A skill `grilling` foi encontrada em `/tmp/vukem/.claude/skills/grilling/SKILL.md`.
-Ela orienta entrevistas em rodadas, com dependências explícitas entre decisões.
-Não foram encontradas skills instaladas com os nomes `planejamento`,
-`brainstorming` ou `grill-me`; os documentos com esses temas são trabalho de
-planejamento, sem alegar execução de skills ausentes. A cópia em `/tmp` não faz
-parte do projeto e pode desaparecer; este registro preserva a procedência.
+The `grilling` skill was found at `/tmp/vukem/.claude/skills/grilling/SKILL.md`.
+It guides interviews in rounds, with explicit dependencies between decisions.
+No installed skills named `planejamento`, `brainstorming` or `grill-me` were found;
+the documents with these themes are planning work, without claiming execution of
+missing skills. The copy in `/tmp` is not part of the project and may disappear; this
+record preserves its provenance.
 
-O usuário autorizou documentar agora. A implementação do produto não começa
-nesta etapa. Depois de cada resposta, atualizar `grilling.md`, requisitos,
-SDDs afetados e ADRs. Nunca promover uma recomendação a decisão silenciosamente.
+The owner authorized documenting now. The product implementation does not start
+at this stage. After each answer, update `grilling.md`, requirements, affected
+SDDs and ADRs. Never silently promote a recommendation to a decision.

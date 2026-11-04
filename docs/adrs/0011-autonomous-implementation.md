@@ -1,0 +1,32 @@
+# ADR-0011 — autonomous execution and MVP defaults
+
+Date: 2026-11-03. State: accepted by the later instruction to implement the roadmap
+without interruptions. The values are engineering defaults for simulation, not an invented
+answer to Q7–Q9 nor an investment recommendation.
+
+## Decision
+
+Keep Brazil/US and exclusively fictitious capital. Adopt the watchlist PETR4,
+VALE3, ITUB4, AAPL, NVDA, TSLA; long-only and no leverage; closed five-minute
+candles; US source IEX and B3 CSV import. Three strategy families, immutable configs
+and disabled by default. Adopt a modular architecture with web and worker,
+PostgreSQL without mandatory extensions and shadcn/ui Radix.
+
+Risk defaults: 50 bps per trade; daily loss 100 bps; exposure 5000 bps;
+three positions; simulated cost 5 bps per side and slippage 5 bps. The policy is validated
+and editable with the account blocked; strategies/accounts start without executing.
+
+## Consequences
+
+Q7–Q9 no longer block implementation; their history remains as not individually answered. Do not reduce Brazil to the US. B3 has a calendar revised
+for 2026, rejecting years not yet supported; expand with verified sources.
+No real-time B3 schedule or external B3 broker. Do not connect real money.
+
+Google recovery is an audited CLI and revokes sessions; there is no public bypass.
+Deploy is authorized as a goal, but requires the owner's credentials.
+The P6 quantitative observation remains pending real data/period.
+
+## Review
+
+Change defaults upon proven need, with tests and documentation. A change
+of market, real capital or offer to third parties requires a new scope.

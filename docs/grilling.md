@@ -1,108 +1,106 @@
-# Grilling — árvore de decisões
+# Grilling — decision tree
 
-Estado: rodadas 1 e 2 respondidas; Q7–Q9 não foram respondidas individualmente.
-A instrução posterior de implementar tudo sem interrupções delegou escolhas de
-implementação. Defaults adotados estão no ADR-0011 e no ROADMAP; não são respostas
-inventadas do proprietário. A implementação começou com essa autorização. Nenhuma opção pré-selecionada é aceite. O documento continua em rascunho até haver entendimento compartilhado.
+Status: rounds 1 and 2 answered; Q7–Q9 were not answered individually.
+The later instruction to implement everything without interruptions delegated implementation
+choices. Defaults adopted are in ADR-0011 and in the ROADMAP; they are not invented answers
+from the owner. Implementation started under that authorization. No pre-selected option is accepted. The document remains a draft until there is shared understanding.
 
-## Método
+## Method
 
-Perguntar apenas decisões cujos pré-requisitos estejam resolvidos. Dar uma
-recomendação e formular a pergunta para que "sim" a aceite. Fatos de ferramentas,
-código e provedores são pesquisados, não delegados ao usuário. Não implementar
-escolhas ainda abertas; documentação solicitada pode avançar com estados claros.
+Ask only decisions whose prerequisites are resolved. Give a recommendation and phrase the question so that "yes" accepts it. Facts about tools,
+code and providers are researched, not delegated to the user. Do not implement
+choices still open; requested documentation may advance with clear states.
 
-## Decisões já estabelecidas
+## Decisions already established
 
-Go/Vukem + Inertia/React/Tailwind/PostgreSQL; `/` como dashboard; Google como
-único login; visitante vai para `/login`; sidebar shadcn/ui; Railway.
+Go/Vukem + Inertia/React/Tailwind/PostgreSQL; `/` as dashboard; Google as the
+only login; visitor goes to `/login`; shadcn/ui sidebar; Railway.
 
-## Rodada 1 — respondida
+## Round 1 — answered
 
-**Q1 — Público:** podemos começar como terminal pessoal, restrito à conta Google
-do proprietário? Recomendação: sim, pessoal no MVP. Alternativa: SaaS desde o
-início. Resposta: **uso pessoal confirmado**.
+**Q1 — Audience:** can we start as a personal terminal, restricted to the owner's Google account?
+Recommendation: yes, personal in the MVP. Alternative: SaaS from the start. Answer: **personal use confirmed**.
 
-**Q2 — Mercado:** podemos começar apenas com ações americanas? Recomendação:
-sim, um mercado. Alternativas: B3, cripto, Brasil + EUA. Resposta: **Brasil e EUA confirmados**.
+**Q2 — Market:** can we start with US stocks only? Recommendation:
+yes, one market. Alternatives: B3, crypto, Brazil + US. Answer: **Brazil and US confirmed**.
 
-**Q3 — Modo:** podemos começar só com backtesting e paper trading? Recomendação:
-sim; real fica em fase posterior. Resposta: **backtesting e paper confirmados**.
+**Q3 — Mode:** can we start with only backtesting and paper trading? Recommendation:
+yes; real trading comes in a later phase. Answer: **backtesting and paper confirmed**.
 
-## Árvore de dependências
+## Dependency tree
 
 ```mermaid
 flowchart TD
-  Publico[Público: pessoal ou SaaS] --> Acesso[Allowlist ou onboarding e isolamento]
-  Publico --> Segredos[Modelo de credenciais e autorização]
-  Mercado[Mercado inicial] --> Broker[Corretora e feed elegíveis]
-  Broker --> Instrumentos[Ativos, calendário, precisão e histórico]
-  Modo[Paper ou real no MVP] --> Liberacao[Critérios de ativação e operação]
-  Instrumentos --> Estrategias[Timeframe, estratégias e ordens suportadas]
-  Estrategias --> Risco[Limites e política de encerramento]
-  Segredos --> Operacao[Orçamento, retenção, alertas e recuperação]
-  Risco --> Operacao
-  Liberacao --> Operacao
-  Operacao --> Revisao[Revisão conjunta dos SDDs e ADRs]
+  Audience[Audience: personal or SaaS] --> Access[Allowlist or onboarding and isolation]
+  Audience --> Secrets[Credential and authorization model]
+  Market[Initial market] --> Broker[Eligible broker and feed]
+  Broker --> Instruments[Assets, calendar, precision and history]
+  Mode[Paper or real in the MVP] --> Release[Activation and operation criteria]
+  Instruments --> Strategies[Timeframe, strategies and supported orders]
+  Strategies --> Risk[Limits and closing policy]
+  Secrets --> Operation[Budget, retention, alerts and recovery]
+  Risk --> Operation
+  Release --> Operation
+  Operation --> Review[Joint review of SDDs and ADRs]
 ```
 
-## Rodada 2 — respondida
+## Round 2 — answered
 
-**Q4 — EUA:** podemos usar Alpaca Paper como primeira integração, com adapter
-substituível? Recomendação: sim. Alternativas: IBKR ou escolher depois.
-Resposta: **Alpaca Paper confirmado para EUA**.
+**Q4 — US:** can we use Alpaca Paper as the first integration, with a replaceable adapter?
+Recommendation: yes. Alternatives: IBKR or choose later.
+Answer: **Alpaca Paper confirmed for the US**.
 
-**Q5 — B3:** podemos começar com backtest e simulador interno e conectar paper
-externo depois de comprovar uma API? Recomendação: sim. Alternativa: exigir
-integração com corretora B3 no MVP. Resposta: **simulador interno B3 confirmado**.
+**Q5 — B3:** can we start with backtest and an internal simulator, and connect an external paper
+account later after proving an API? Recommendation: yes. Alternative: require
+integration with a B3 broker in the MVP. Answer: **B3 internal simulator confirmed**.
 
-**Q6 — Acesso:** podemos permitir uma conta Google, autorizada inicialmente por
-email verificado e depois vinculada ao subject estável? Recomendação: sim,
-sem cadastro público. Alternativa: outras contas por convite. Resposta: **uma conta Google autorizada confirmada**.
+**Q6 — Access:** can we allow one Google account, initially authorized by verified
+email and later bound to the stable subject? Recommendation: yes,
+no public sign-up. Alternative: other accounts by invitation. Answer: **one authorized Google account confirmed**.
 
-Simulador interno usa dinheiro fictício e modelo próprio de fills; não pode ser
-rotulado como execução em corretora. Fonte de dados B3 continua em aberto mesmo
-com o simulador interno já aceito em Q5.
+The internal simulator uses fictitious money and its own fill model; it cannot be labeled as broker
+execution. The B3 data source remains open even with the internal simulator
+already accepted in Q5.
 
-## Rodada 3 — fronteira atual
+## Round 3 — current frontier
 
-**Q7 — Ativos:** podemos começar com ações à vista, long-only sem alavancagem,
-watchlist PETR4, VALE3, ITUB4, AAPL, NVDA e TSLA? Recomendação: sim, configurável;
-opções, futuros e cripto fora do MVP. Resposta: **pendente**.
+**Q7 — Assets:** can we start with spot stocks, long-only without leverage,
+watchlist PETR4, VALE3, ITUB4, AAPL, NVDA and TSLA? Recommendation: yes, configurable;
+options, futures and crypto outside the MVP. Answer: **pending**.
 
-**Q8 — Dados:** podemos usar IEX/Alpaca nos EUA e importar candles históricos B3
-via CSV com procedência/licença? B3 inicialmente replay histórico; tempo real
-exige fornecedor próprio. Recomendação: sim. Resposta: **pendente**.
+**Q8 — Data:** can we use IEX/Alpaca in the US and import historical B3 candles
+via CSV with provenance/license? B3 initially historical replay; real time
+requires its own provider. Recommendation: yes. Answer: **pending**.
 
-**Q9 — Tempo:** podemos usar candles fechados de 5 minutos, sessão regular e
-encerramento planejado antes do fechamento? Recomendação: sim, respeitando os
-calendários dos dois mercados. Resposta: **pendente**.
+**Q9 — Time:** can we use closed 5-minute candles, regular session and
+planned closing before the close? Recommendation: yes, respecting the
+calendars of both markets. Answer: **pending**.
 
-## Rodadas seguintes, ainda não enviadas
+## Following rounds, not yet sent
 
-Depois de Q1: proprietário autorizado por identidade, convites, recuperação,
-isolamento por conta, perfis de acesso e eventual monetização.
-Depois de Q2: corretora, dados disponíveis, orçamento do feed, universo de ativos,
-moeda e sessões. Só depois: estratégias, frequências e tipos de ordem.
-Depois de Q3: definição de paper, necessidade de broker externo, gates de live,
-reconciliação, supervisão e bloqueios de risco.
-Depois dessas escolhas: limites numéricos, sem overnight, encerramento de sessão,
-tratamento de desconexões, alertas e autoridade para retomar.
-Por fim: retenção, RPO/RTO, disponibilidade, orçamento Railway, cronograma e
-aceite do plano de implementação.
+After Q1: owner authorized by identity, invitations, recovery, isolation per account,
+access profiles and eventual monetization.
+After Q2: broker, available data, feed budget, asset universe,
+currency and sessions. Only after that: strategies, frequencies and order types.
+After Q3: definition of paper, need for an external broker, live gates,
+reconciliation, supervision and risk blocks.
+After these choices: numeric limits, no overnight positions, session closing,
+handling of disconnections, alerts and authority to resume.
+Finally: retention, RPO/RTO, availability, Railway budget, schedule and
+acceptance of the implementation plan.
 
-## Registro de respostas
+## Answer log
 
-| Rodada | Decisão | Resposta | Impacto |
+| Round | Decision | Answer | Impact |
 | --- | --- | --- | --- |
-| 1 | Público | Pessoal | Sem SaaS no MVP; autorização do proprietário obrigatória |
-| 1 | Mercado | Brasil + EUA | Dois calendários/moedas; adapters definidos na rodada 2 |
-| 1 | Execução | Backtest + paper | Capital real fora do MVP |
-| 2 | Corretora EUA | Alpaca Paper | Adapter externo paper confirmado |
-| 2 | Simulação B3 | Interna inicialmente | Não prometer ordens externas B3 |
-| 2 | Admissão Google | Uma conta autorizada | Email verificado de bootstrap + subject estável |
-| 3 | Universo e direção | Pendente | Precisão, capacidades e exposição |
-| 3 | Feeds e histórico | Pendente | IEX e CSV B3 são propostas |
-| 3 | Frequência/sessão | Pendente | Estratégias e calendários |
+| 1 | Audience | Personal | No SaaS in the MVP; owner authorization mandatory |
+| 1 | Market | Brazil + US | Two calendars/currencies; adapters defined in round 2 |
+| 1 | Execution | Backtest + paper | Real capital outside the MVP |
+| 2 | US broker | Alpaca Paper | External paper adapter confirmed |
+| 2 | B3 simulation | Internal initially | Do not promise external B3 orders |
+| 2 | Google admission | One authorized account | Verified bootstrap email + stable subject |
+| 3 | Universe and direction | Pending | Precision, capabilities and exposure |
+| 3 | Feeds and history | Pending | IEX and B3 CSV are proposals |
+| 3 | Frequency/session | Pending | Strategies and calendars |
 
-A entrevista ainda não terminou. Datas em documentos não substituem aceites.
+The interview is not finished yet. Dates in documents do not replace acceptances.
