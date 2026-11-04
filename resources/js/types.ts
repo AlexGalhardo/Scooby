@@ -60,6 +60,10 @@ export interface Policy {
   cost_bps: number;
   slippage_bps: number;
   max_age_seconds: number;
+  stop_streak: number;
+  streak_lock_mins: number;
+  cooldown_mins: number;
+  drawdown_bps: number;
 }
 export interface Order {
   id: string;

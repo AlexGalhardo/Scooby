@@ -150,12 +150,23 @@ func (s Store) Mutate(ctx context.Context, id, actor, action string, fn func(*St
 		}
 		oldPolicy := a.Policy
 		oldDecisions := len(a.RiskDecisions)
+		wasHalted, oldReason := a.Halted, a.Reason
 		if err := fn(&a); err != nil {
 			return err
 		}
 		for _, decision := range a.RiskDecisions[oldDecisions:] {
 			raw, _ := json.Marshal(decision)
 			if err := audit(ctx, tx, "engine", "risk.rejected", id, string(raw)); err != nil {
+				return err
+			}
+		}
+		if a.Halted && (!wasHalted || a.Reason != oldReason) {
+			if err := audit(ctx, tx, "engine", "risk.halt", id, a.Reason); err != nil {
+				return err
+			}
+		}
+		if wasHalted && !a.Halted {
+			if err := audit(ctx, tx, "engine", "risk.resume", id, "Halt lifted: "+oldReason); err != nil {
 				return err
 			}
 		}

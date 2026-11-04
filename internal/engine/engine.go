@@ -128,14 +128,18 @@ func (e Engine) Tick(ctx context.Context) error {
 		return err
 	}
 	for _, id := range []string{"b3", "us"} {
-		if err := e.mutate(
-			ctx,
-			id,
-			"engine",
-			"tick",
-			func(a *trading.State) error { a.Heartbeat = time.Now().UTC(); return nil },
-		); err != nil {
+		var fresh []string
+		if err := e.mutate(ctx, id, "engine", "tick", func(a *trading.State) error {
+			a.Heartbeat = time.Now().UTC()
+			fresh = a.Watch(a.Heartbeat)
+			return nil
+		}); err != nil {
 			return err
+		}
+		for _, msg := range fresh {
+			if e.Alert != nil {
+				e.Alert(ctx, msg)
+			}
 		}
 	}
 	for _, s := range strategies {
@@ -202,19 +206,14 @@ func (e Engine) Tick(ctx context.Context) error {
 }
 
 func (e Engine) halt(ctx context.Context, id, reason string) {
-	changed := false
 	err := e.mutate(ctx, id, "engine", "halt", func(a *trading.State) error {
-		changed = !a.Halted || a.Reason != reason
-		if changed {
+		if !a.Halted || a.Reason != reason {
 			a.Halt(reason)
 		}
 		return nil
 	})
 	if err != nil {
 		e.Log.Error("cannot persist halt", "error", err)
-	}
-	if changed && e.Alert != nil {
-		e.Alert(ctx, id+": "+reason)
 	}
 }
 
@@ -244,10 +243,7 @@ func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Datas
 				return err
 			}
 			day := trading.MarketDay(inst.Market, c.Time)
-			if a.Day != day {
-				a.Day = day
-				a.DayStart = a.Equity()
-			}
+			a.NewDay(day)
 			for j := range a.Orders {
 				o := &a.Orders[j]
 				if o.Symbol == s.Symbol && o.Open() && o.CreatedAt.Before(c.Time) {
@@ -264,16 +260,21 @@ func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Datas
 			a.Mark(s.Symbol, c.Close)
 			if p, ok := a.Positions[s.Symbol]; ok {
 				price := trading.Zero
+				reason := trading.CloseSignal
 				if c.Low.LessThanOrEqual(p.Stop) {
 					price = d.Min(p.Stop, c.Open)
+					reason = trading.CloseStop
 				} else if c.High.GreaterThanOrEqual(p.Target) {
 					price = p.Target
+					reason = trading.CloseTarget
 				} else if ds.ClosingAt(c.Time) || index == len(ds.Candles)-1 {
 					price = c.Close
+					reason = trading.CloseSession
 				}
 				if price.IsPositive() {
 					o, err := a.Reserve(s, "sell", s.ID+fmt.Sprint(index, "/exit"), price, c.Time)
 					if err == nil {
+						o.Close = reason
 						fillPrice := price.Mul(trading.D("1").Sub(trading.Fraction(a.Policy.SlippageBPS)))
 						if err := a.ApplyFill(
 							trading.Fill{
@@ -320,17 +321,18 @@ func (e Engine) SignalUS(ctx context.Context, s trading.Strategy, ds trading.Dat
 			a.Halt("Stale quote")
 			return nil
 		}
-		day := trading.MarketDay("US", clock.Time)
-		if a.Day != day {
-			a.Day = day
-			a.DayStart = a.Equity()
-		}
+		a.NewDay(trading.MarketDay("US", clock.Time))
 		a.Mark(s.Symbol, last.Close)
 		side := trading.Signal(s, ds.Candles)
+		reason := trading.CloseSignal
 		if p, ok := a.Positions[s.Symbol]; ok {
-			if last.Close.LessThanOrEqual(p.Stop) || last.Close.GreaterThanOrEqual(p.Target) ||
-				clock.NextClose.Sub(clock.Time) < 15*time.Minute {
-				side = "sell"
+			switch {
+			case last.Close.LessThanOrEqual(p.Stop):
+				side, reason = "sell", trading.CloseStop
+			case last.Close.GreaterThanOrEqual(p.Target):
+				side, reason = "sell", trading.CloseTarget
+			case clock.NextClose.Sub(clock.Time) < 15*time.Minute:
+				side, reason = "sell", trading.CloseSession
 			}
 		}
 		if side == "hold" {
@@ -340,7 +342,10 @@ func (e Engine) SignalUS(ctx context.Context, s trading.Strategy, ds trading.Dat
 			return nil
 		}
 		key := s.ID + "/" + last.Time.Format(time.RFC3339) + "/" + side
-		_, err := a.Reserve(s, side, key, last.Close, clock.Time)
+		o, err := a.Reserve(s, side, key, last.Close, clock.Time)
+		if err == nil && side == "sell" {
+			o.Close = reason
+		}
 		a.RecordRejection(key, s.Symbol, side, err, clock.Time)
 		return nil
 	})

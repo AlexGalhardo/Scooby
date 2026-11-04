@@ -194,9 +194,20 @@ type Policy struct {
 	CostBPS       int `json:"cost_bps"`
 	SlippageBPS   int `json:"slippage_bps"`
 	MaxAgeSeconds int `json:"max_age_seconds"`
+	// Protections; zero disables each one, which keeps policies stored before they existed unchanged.
+	StopStreak     int `json:"stop_streak"`      // consecutive stop-loss exits on a symbol before it is locked
+	StreakLockMins int `json:"streak_lock_mins"` // length of that lock
+	CooldownMins   int `json:"cooldown_mins"`    // pause on a symbol after any exit
+	DrawdownBPS    int `json:"drawdown_bps"`     // equity drawdown from the peak that halts the account
 }
 
-func DefaultPolicy() Policy { return Policy{50, 100, 5000, 3, 5, 5, 600} }
+func DefaultPolicy() Policy {
+	return Policy{
+		RiskBPS: 50, DailyLossBPS: 100, ExposureBPS: 5000, MaxPositions: 3, CostBPS: 5, SlippageBPS: 5,
+		MaxAgeSeconds: 600, StopStreak: 3, StreakLockMins: 240, DrawdownBPS: 1000,
+	}
+}
+
 func (p Policy) Validate() error {
 	if p.RiskBPS < 1 || p.RiskBPS > 100 || p.DailyLossBPS < 1 || p.DailyLossBPS > 500 || p.ExposureBPS < 100 ||
 		p.ExposureBPS > 10000 ||
@@ -207,7 +218,11 @@ func (p Policy) Validate() error {
 		p.SlippageBPS < 1 ||
 		p.SlippageBPS > 100 ||
 		p.MaxAgeSeconds < 60 ||
-		p.MaxAgeSeconds > 900 {
+		p.MaxAgeSeconds > 900 ||
+		p.StopStreak < 0 || p.StopStreak > 10 ||
+		p.StreakLockMins < 0 || p.StreakLockMins > 1440 || (p.StopStreak > 0 && p.StreakLockMins < 1) ||
+		p.CooldownMins < 0 || p.CooldownMins > 1440 ||
+		(p.DrawdownBPS != 0 && (p.DrawdownBPS < 100 || p.DrawdownBPS > 5000)) {
 		return errors.New("invalid risk limits")
 	}
 	return nil
@@ -237,6 +252,7 @@ type Order struct {
 	Status     string    `json:"status"`
 	BrokerID   string    `json:"broker_id"`
 	Reason     string    `json:"reason"`
+	Close      string    `json:"close_reason"`
 	Generation int64     `json:"generation"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
@@ -260,28 +276,31 @@ type Fill struct {
 	Time    time.Time `json:"time"`
 }
 type State struct {
-	BrokerAccountID string              `json:"broker_account_id"`
-	RiskDecisions   []RiskDecision      `json:"risk_decisions"`
-	LeaderEpoch     int64               `json:"leader_epoch"`
-	ID              string              `json:"id"`
-	Mode            string              `json:"mode"`
-	Currency        string              `json:"currency"`
-	Cash            d.Decimal           `json:"cash"`
-	Initial         d.Decimal           `json:"initial"`
-	DayStart        d.Decimal           `json:"day_start"`
-	Day             string              `json:"day"`
-	Realized        d.Decimal           `json:"realized"`
-	Peak            d.Decimal           `json:"peak"`
-	Policy          Policy              `json:"policy"`
-	Halted          bool                `json:"halted"`
-	Reason          string              `json:"reason"`
-	Generation      int64               `json:"generation"`
-	Heartbeat       time.Time           `json:"heartbeat"`
-	ReconciledAt    time.Time           `json:"reconciled_at"`
-	Orders          []Order             `json:"orders"`
-	Positions       map[string]Position `json:"positions"`
-	Fills           []Fill              `json:"fills"`
-	Cursors         map[string]string   `json:"cursors"`
+	BrokerAccountID string               `json:"broker_account_id"`
+	RiskDecisions   []RiskDecision       `json:"risk_decisions"`
+	LeaderEpoch     int64                `json:"leader_epoch"`
+	ID              string               `json:"id"`
+	Mode            string               `json:"mode"`
+	Currency        string               `json:"currency"`
+	Cash            d.Decimal            `json:"cash"`
+	Initial         d.Decimal            `json:"initial"`
+	DayStart        d.Decimal            `json:"day_start"`
+	Day             string               `json:"day"`
+	Realized        d.Decimal            `json:"realized"`
+	Peak            d.Decimal            `json:"peak"`
+	Policy          Policy               `json:"policy"`
+	Halted          bool                 `json:"halted"`
+	Reason          string               `json:"reason"`
+	Generation      int64                `json:"generation"`
+	Heartbeat       time.Time            `json:"heartbeat"`
+	ReconciledAt    time.Time            `json:"reconciled_at"`
+	Orders          []Order              `json:"orders"`
+	Positions       map[string]Position  `json:"positions"`
+	Fills           []Fill               `json:"fills"`
+	Cursors         map[string]string    `json:"cursors"`
+	Locks           map[string]time.Time `json:"locks"`
+	Streaks         map[string]int       `json:"streaks"`
+	Alerted         map[string]time.Time `json:"alerted"`
 }
 
 func NewState(id, currency, mode string) State {
@@ -295,7 +314,7 @@ func NewState(id, currency, mode string) State {
 		Peak:      D("100000"),
 		Policy:    DefaultPolicy(),
 		Halted:    true,
-		Reason:    "Waiting for configuration and activation",
+		Reason:    haltWaiting,
 		Orders:    []Order{},
 		Fills:     []Fill{},
 		Positions: map[string]Position{},
@@ -355,9 +374,12 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		if a.Halted {
 			return nil, errors.New("account blocked")
 		}
+		if err := a.entryAllowed(s.Symbol, at); err != nil {
+			return nil, err
+		}
 		if a.DayStart.IsPositive() &&
 			a.Equity().LessThanOrEqual(a.DayStart.Mul(D("1").Sub(Fraction(a.Policy.DailyLossBPS)))) {
-			a.Halt("Daily loss limit")
+			a.Halt(haltDailyLoss)
 			return nil, errors.New(a.Reason)
 		}
 		if p := a.Positions[s.Symbol]; p.Qty.IsPositive() {
@@ -397,6 +419,7 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		Stop:       stop,
 		Target:     target,
 		Reserved:   reserve,
+		Close:      closeFor(side),
 		Status:     "approved",
 		Generation: a.Generation,
 		CreatedAt:  at,
@@ -448,10 +471,12 @@ func (a *State) ApplyFill(f Fill) error {
 			return errors.New("sell exceeds position")
 		}
 		a.Cash = a.Cash.Add(value).Sub(f.Fees)
-		a.Realized = a.Realized.Add(f.Price.Sub(p.Average).Mul(f.Qty)).Sub(f.Fees)
+		pnl := f.Price.Sub(p.Average).Mul(f.Qty).Sub(f.Fees)
+		a.Realized = a.Realized.Add(pnl)
 		p.Qty = p.Qty.Sub(f.Qty)
 		if p.Qty.IsZero() {
 			delete(a.Positions, f.Symbol)
+			a.afterExit(f.Symbol, o.Close, pnl, f.Time)
 		} else {
 			p.Mark = f.Price
 			a.Positions[f.Symbol] = p

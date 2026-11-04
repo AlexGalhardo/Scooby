@@ -1457,6 +1457,10 @@ function RiskForm({
           ["cost_bps", "Simulated costs per side (bps)", 0, 100],
           ["slippage_bps", "Slippage / limit (bps)", 1, 100],
           ["max_age_seconds", "Max price age (seconds)", 60, 900],
+          ["stop_streak", "Stop-loss streak before a symbol lock (0 = off)", 0, 10],
+          ["streak_lock_mins", "Streak lock length (minutes)", 0, 1440],
+          ["cooldown_mins", "Cooldown after any exit (minutes, 0 = off)", 0, 1440],
+          ["drawdown_bps", "Equity drawdown halt (bps, 0 = off)", 0, 5000],
         ] as const
       ).map(([key, label, min, max]) => (
         <Field key={key} label={label}>

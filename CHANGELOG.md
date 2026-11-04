@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Engine.Run` treats an error raised while its context is being cancelled as a clean stop; this removes the flaky `TestPostgresWorkerFailover`.
 - `State.Reserve` rejects an entry without a valid stop (`stop required`), even when a strategy bypassed `Strategy.Validate`.
 
+### Added
+
+- Risk protections: stop-loss streak lock, per-symbol cooldown and equity-drawdown halt, configurable in the risk form.
+- Close reason on every exit order; audit entries `risk.halt` and `risk.resume`; one-shot alerts for halts and stuck unknown orders.
+- The daily-loss halt lifts at the next market day.
+
 ### Changed
 
 - Remaining `^` ranges in `package.json` pinned to exact versions.
