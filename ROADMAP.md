@@ -181,14 +181,14 @@ Goal: `trading.vukem.dev` opens the technical documentation, with the same look 
 
 Reference: [docs/trading/backtesting.md](docs/trading/backtesting.md).
 
-- [ ] **9.1 Parameter declarations as data** (name, type, range, step, default) shared by backtester, UI and optimizer. Assert: a strategy exposes its schema and the UI renders it.
-- [ ] **9.2 Look-ahead test:** perturb future candles and assert earlier signals are unchanged, for every strategy. Assert: `go test -run LookAhead ./internal/trading`.
-- [ ] **9.3 Partial fills over several bars** with the participation cap; resting-order semantics (price must trade through). Assert: unit tests for a 3-bar partial fill and for a touch without fill.
-- [ ] **9.4 Fill-rule ADR** (walk the book versus crossing) written before any broker-style simulator. Assert: ADR merged.
-- [ ] **9.5 Walk-forward runner** with windows and a minimum trade count per window. Assert: a report lists per-window metrics.
-- [ ] **9.6 Robustness statistics:** block-bootstrap Monte Carlo on trades, cost stress (2x costs and slippage), deflated Sharpe. Assert: report includes the three and flags runs under 30 trades.
-- [ ] **9.7 Three-period split** (train, test, validation) with validation touched once per candidate. Assert: the API refuses a second validation run for the same configuration without an override.
-- [ ] **9.8 Report metrics:** Sharpe and Sortino with stated risk-free rate, Calmar, SQN, exposure, Buy and Hold baseline. Assert: golden-file test.
+- [x] **9.1 Parameter declarations as data** (`internal/trading/kinds.go`: name, label, type, min, max, step, default per kind) shared by validation, `GET /api/strategy-kinds` and the strategy form. Assert: `TestStrategyKindsSchemaIsServedAndEnforced`.
+- [x] **9.2 Look-ahead test:** future candles are rescaled and earlier signals, equity and fills must not change, for every strategy kind. Assert: `TestNoStrategyLooksAhead`.
+- [x] **9.3 Partial fills over several bars** with the 1% participation cap, and resting-order semantics (a limit fills only when the bar trades strictly through it; a touch does not fill). Assert: `TestPartialFillSpansSeveralBars`, `TestRestingBuyFillsOnlyWhenTheBarTradesThrough`, `TestMarketableBuyNeverPaysAboveTheBarHigh`, `TestThinBarLeavesTheOrderOpen`.
+- [x] **9.4 Fill-rule ADR** written: [ADR-0016](docs/adrs/0016-fill-rules-and-validation-protocol.md). Also ADR-0015 (Bun, Biome, `bun check`) and ADR-0017 (documentation site).
+- [x] **9.5 Walk-forward runner:** partition `walkforward` reports four consecutive windows with bars, trades, return, drawdown and a too-few-trades flag. Shortcut: each window starts cold with its own warm-up. Assert: `TestWalkForwardReportsEveryWindow`.
+- [x] **9.6 Robustness statistics:** deterministic block bootstrap of closed trades, cost stress with doubled costs and slippage, deflated Sharpe discounted by the number of strategy versions tried, and a fewer-than-30-trades flag. Shortcut: the Sharpe variance across trials comes from the estimator's standard error, not from stored trial Sharpes. Assert: `TestMonteCarloIsDeterministicAndLowTradesAreFlagged`, `TestCostStressNeverImprovesTheResult`, `TestDeflatedSharpeDiscountsTheNumberOfTrials`.
+- [x] **9.7 Three-period split:** train 60%, test 20%, validation 20%; the API accepts `validation` once per strategy version (409 unless `repeat_validation`). Assert: `TestPartitionsAreTrainTestValidation`, `TestValidationPartitionIsUsedOncePerStrategyVersion`.
+- [x] **9.8 Report metrics:** Sharpe and Sortino with the stated risk-free rate, Calmar, SQN, exposure, buy-and-hold baseline, shown in the report dialog. Assert: `TestStatsAreComputedAndStated` and the golden file `internal/trading/testdata/backtest_metrics.golden.json` (`TestBacktestMetricsGolden`; refresh with `go test ./internal/trading -run Golden -update`).
 
 ### Phase 10: Risk hardening
 

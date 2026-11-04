@@ -55,7 +55,9 @@ import {
   type Dataset,
   date,
   type Job,
+  type KindSpec,
   money,
+  type ParamSpec,
   type Policy,
   type Snapshot,
   type Strategy,
@@ -72,6 +74,37 @@ const titles: Record<string, [string, string]> = {
   audit: ["Audit", "A persistent trail of decisions and actions."],
   settings: ["Settings", "Status of integrations and the execution environment."],
 };
+const fallbackParams: ParamSpec[] = [
+  { name: "fast", label: "Fast window", type: "int", min: 2, max: 499, step: 1, default: 9 },
+  {
+    name: "slow",
+    label: "Slow window / lookback",
+    type: "int",
+    min: 3,
+    max: 500,
+    step: 1,
+    default: 21,
+  },
+  { name: "threshold", label: "Z-score", type: "float", min: 0.1, max: 10, step: 0.1, default: 2 },
+  {
+    name: "stop_bps",
+    label: "Stop (bps)",
+    type: "int",
+    min: 10,
+    max: 2000,
+    step: 10,
+    default: 100,
+  },
+  {
+    name: "target_bps",
+    label: "Target (bps)",
+    type: "int",
+    min: 10,
+    max: 5000,
+    step: 10,
+    default: 200,
+  },
+];
 const kindName: Record<string, string> = {
   ma_cross: "Moving average crossover",
   mean_reversion: "Mean reversion",
@@ -734,6 +767,70 @@ export default function Terminal({ section }: { section: string }) {
                       detail="Candles with position"
                     />
                   </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Stat
+                      label="Sharpe / Sortino"
+                      value={`${report.result.metrics.sharpe.toFixed(2)} / ${report.result.metrics.sortino.toFixed(2)}`}
+                      detail={`Risk-free ${report.result.metrics.risk_free_annual_pct}% a year`}
+                    />
+                    <Stat
+                      label="Calmar / SQN"
+                      value={`${report.result.metrics.calmar.toFixed(2)} / ${report.result.metrics.sqn.toFixed(2)}`}
+                      detail="Annualized return over max drawdown"
+                    />
+                    <Stat
+                      label="Buy and hold"
+                      value={`${Number(report.result.metrics.benchmark_return_pct).toFixed(2)}%`}
+                      detail="No fees, no leverage"
+                    />
+                  </div>
+                  {report.result.robustness && (
+                    <div className="space-y-1 rounded-lg bg-muted/40 p-3 text-xs">
+                      <p className="font-medium">Overfitting checks</p>
+                      <p>
+                        Deflated Sharpe {report.result.robustness.deflated_sharpe.toFixed(2)} after{" "}
+                        {report.result.robustness.trials} trial(s)
+                        {report.result.robustness.low_trades
+                          ? " · fewer than 30 trades: weak statistics"
+                          : ""}
+                      </p>
+                      {report.result.robustness.monte_carlo && (
+                        <p>
+                          Bootstrap return P5 / P50 / P95:{" "}
+                          {report.result.robustness.monte_carlo.p5_return_pct.toFixed(2)}% /{" "}
+                          {report.result.robustness.monte_carlo.p50_return_pct.toFixed(2)}% /{" "}
+                          {report.result.robustness.monte_carlo.p95_return_pct.toFixed(2)}% · loss
+                          probability{" "}
+                          {(report.result.robustness.monte_carlo.probability_of_loss * 100).toFixed(
+                            0,
+                          )}
+                          %
+                        </p>
+                      )}
+                      {report.result.robustness.cost_stress_return_pct !== undefined && (
+                        <p>
+                          Return with doubled costs:{" "}
+                          {Number(report.result.robustness.cost_stress_return_pct).toFixed(2)}%
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {report.result.windows && report.result.windows.length > 0 && (
+                    <GridTable
+                      headers={["Window", "Bars", "Trades", "Return", "Max drawdown", "Note"]}
+                      rows={report.result.windows.map((w) =>
+                        row(
+                          w.index,
+                          w.index,
+                          w.bars,
+                          w.trades,
+                          `${Number(w.return_pct).toFixed(2)}%`,
+                          `${Number(w.max_drawdown_pct).toFixed(2)}%`,
+                          w.note ?? (w.enough_trades ? "" : "too few trades"),
+                        ),
+                      )}
+                    />
+                  )}
                   <div className="space-y-2 text-xs text-muted-foreground">
                     {report.result.warnings.map((w) => (
                       <p key={w}>• {w}</p>
@@ -1262,7 +1359,24 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
   });
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [kinds, setKinds] = useState<KindSpec[]>([]);
+  useEffect(() => {
+    let active = true;
+    api<KindSpec[]>("/api/strategy-kinds")
+      .then((k) => active && setKinds(k))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+  const spec = kinds.find((k) => k.kind === s.kind);
+  const params: ParamSpec[] = spec?.params ?? fallbackParams;
   const change = (key: keyof Strategy, value: string | number) => setS({ ...s, [key]: value });
+  const pickKind = (kind: string) => {
+    const next = kinds.find((k) => k.kind === kind);
+    const defaults = Object.fromEntries((next?.params ?? []).map((p) => [p.name, p.default]));
+    setS({ ...s, ...defaults, kind });
+  };
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -1288,8 +1402,11 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
         />
       </Field>
       <Field label="Family">
-        <Select value={s.kind} onChange={(v) => change("kind", v)}>
-          {Object.entries(kindName).map(([k, v]) => (
+        <Select value={s.kind} onChange={pickKind}>
+          {(kinds.length > 0
+            ? kinds.map((k): [string, string] => [k.kind, k.label])
+            : Object.entries(kindName)
+          ).map(([k, v]) => (
             <option key={k} value={k}>
               {v}
             </option>
@@ -1331,24 +1448,16 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
         </Field>
       )}
       <div className="grid grid-cols-2 gap-3">
-        {(
-          [
-            ["fast", "Fast window", 2, 499],
-            ["slow", "Slow window / lookback", 3, 500],
-            ["threshold", "Z-score", 0.1, 10],
-            ["stop_bps", "Stop (bps)", 10, 2000],
-            ["target_bps", "Target (bps)", 10, 5000],
-          ] as const
-        ).map(([key, label, min, max]) => (
-          <Field key={key} label={label}>
+        {params.map((p) => (
+          <Field key={p.name} label={p.label}>
             <Input
               type="number"
-              step={key === "threshold" ? 0.1 : 1}
-              min={min}
-              max={max}
+              step={p.step}
+              min={p.min}
+              max={p.max}
               required
-              value={s[key]}
-              onChange={(e) => change(key, Number(e.target.value))}
+              value={s[p.name]}
+              onChange={(e) => change(p.name, Number(e.target.value))}
             />
           </Field>
         ))}
@@ -1416,8 +1525,10 @@ function BacktestForm({
       </Field>
       <Field label="Time partition">
         <Select value={partition} onChange={setPartition}>
-          <option value="test">Final test · last 30%</option>
-          <option value="train">Development · first 70%</option>
+          <option value="train">Train · first 60%</option>
+          <option value="test">Test · next 20%</option>
+          <option value="validation">Validation · last 20% (use once per version)</option>
+          <option value="walkforward">Walk-forward · 4 windows over the full period</option>
           <option value="all">Exploratory · full period</option>
         </Select>
       </Field>

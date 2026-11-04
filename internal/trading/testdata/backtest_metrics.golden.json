@@ -1,0 +1,13 @@
+{
+  "benchmark_return_pct": "0.9100",
+  "calmar": -23.074653,
+  "costs": "782.23",
+  "exposure_pct": 7.142857,
+  "fills": 32,
+  "max_drawdown_pct": "3.6836",
+  "return_pct": "-3.6836",
+  "sharpe": -16.428665,
+  "sortino": -18.321905,
+  "sqn": -2.601044,
+  "trades": 16
+}

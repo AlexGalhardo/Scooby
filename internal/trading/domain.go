@@ -6,7 +6,6 @@ import (
 	"errors"
 	"math"
 	"slices"
-	"strconv"
 	"time"
 
 	d "github.com/shopspring/decimal"
@@ -111,19 +110,7 @@ func (s Strategy) Validate() error {
 	if _, err := FindInstrument(s.Symbol); err != nil {
 		return err
 	}
-	if !slices.Contains([]string{"ma_cross", "mean_reversion", "breakout"}, s.Kind) || s.Fast < 2 || s.Slow <= s.Fast ||
-		s.Slow > 500 ||
-		math.IsNaN(s.Threshold) ||
-		math.IsInf(s.Threshold, 0) ||
-		s.Threshold < 0.1 ||
-		s.Threshold > 10 ||
-		s.StopBPS < MinStopBPS ||
-		s.StopBPS > 2000 ||
-		s.TargetBPS < 10 ||
-		s.TargetBPS > 5000 {
-		return errors.New("invalid strategy parameters")
-	}
-	return nil
+	return s.validateParams()
 }
 
 func mean(cs []Candle) float64 {
@@ -523,57 +510,6 @@ func MarketDay(market string, t time.Time) string {
 }
 
 func Reject(o *Order, reason string) { o.Status = "rejected"; o.Reason = reason; o.Reserved = Zero }
-func Simulate(a *State, o *Order, c Candle) error {
-	if o == nil || !o.Open() {
-		return nil
-	}
-	price := c.Open
-	if o.Side == "buy" {
-		price = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS)))
-		if price.GreaterThan(o.Limit) || price.GreaterThan(c.High) {
-			o.Status = "canceled"
-			o.Reason = "Limit not reached on the next bar"
-			o.Reserved = Zero
-			return nil
-		}
-	} else {
-		price = price.Mul(D("1").Sub(Fraction(a.Policy.SlippageBPS)))
-		if price.LessThan(o.Limit) {
-			o.Status = "canceled"
-			o.Reserved = Zero
-			return nil
-		}
-	}
-	instrument, err := FindInstrument(o.Symbol)
-	if err != nil {
-		return err
-	}
-	qty := d.Min(o.Qty.Sub(o.Filled), c.Volume.Mul(D("0.01")).Div(instrument.Step).Floor().Mul(instrument.Step))
-	if !qty.IsPositive() {
-		o.Status = "canceled"
-		o.Reserved = Zero
-		return nil
-	}
-	f := Fill{
-		ID:      o.ID + "/" + strconv.FormatInt(c.Time.Unix(), 10),
-		OrderID: o.ID,
-		Symbol:  o.Symbol,
-		Side:    o.Side,
-		Qty:     qty,
-		Price:   price,
-		Fees:    qty.Mul(price).Mul(Fraction(a.Policy.CostBPS)),
-		Time:    c.Time,
-	}
-	if err := a.ApplyFill(f); err != nil {
-		return err
-	}
-	if o.Open() {
-		o.Status = "canceled"
-		o.Reason = "Balance not executed (maximum participation 1%)"
-		o.Reserved = Zero
-	}
-	return nil
-}
 
 type RiskDecision struct {
 	Key      string    `json:"key"`

@@ -130,6 +130,15 @@ export interface Result {
     trades: number;
     win_rate: number;
     exposure_bars: number;
+    sharpe: number;
+    sortino: number;
+    calmar: number;
+    sqn: number;
+    annual_return_pct: number;
+    exposure_pct: number;
+    risk_free_annual_pct: number;
+    periods_per_year: number;
+    benchmark_return_pct: Decimal;
   };
   curve: Point[] | null;
   fills: Fill[] | null;
@@ -139,6 +148,33 @@ export interface Result {
   warnings: string[];
   engine_version: string;
   partition: string;
+  trade_pnl: Decimal[] | null;
+  windows?: BacktestWindow[];
+  robustness?: Robustness;
+}
+export interface BacktestWindow {
+  index: number;
+  bars: number;
+  trades: number;
+  return_pct: Decimal;
+  max_drawdown_pct: Decimal;
+  enough_trades: boolean;
+  note?: string;
+}
+export interface Robustness {
+  trials: number;
+  low_trades: boolean;
+  deflated_sharpe: number;
+  monte_carlo?: {
+    runs: number;
+    p5_return_pct: number;
+    p50_return_pct: number;
+    p95_return_pct: number;
+    probability_of_loss: number;
+    trades: number;
+  };
+  cost_stress_return_pct?: Decimal;
+  cost_stress_note?: string;
 }
 export interface Job {
   id: string;
@@ -188,3 +224,19 @@ export const date = (value: string) =>
   !value || value.startsWith("0001") ? "No update" : new Date(value).toLocaleString("en-US");
 export const alive = (value: string) =>
   value && !value.startsWith("0001") && Date.now() - new Date(value).getTime() < 45000;
+
+export interface ParamSpec {
+  name: "fast" | "slow" | "threshold" | "stop_bps" | "target_bps";
+  label: string;
+  type: "int" | "float";
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+}
+export interface KindSpec {
+  kind: string;
+  label: string;
+  description: string;
+  params: ParamSpec[];
+}

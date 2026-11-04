@@ -2,7 +2,11 @@ package tests
 
 import (
 	"flag"
+	"fmt"
+	"maps"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/AlexGalhardo/vukem/vukemtest"
 
@@ -151,4 +155,65 @@ func TestStrategyVersionsActivationAndReplayArchive(t *testing.T) {
 	c.PostJSON("/api/accounts/b3/control", map[string]any{"action": "reset", "confirm": "RESET"}).AssertOK()
 	vukemtest.AssertDatabaseCount(t, app, "artifacts", 1)
 	c.PostJSON("/api/accounts/us/control", map[string]any{"action": "reset", "confirm": "RESET"}).AssertUnprocessable()
+}
+
+func TestStrategyKindsSchemaIsServedAndEnforced(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	c.GetJSON("/api/strategy-kinds").AssertOK().AssertJSONPath("0.kind", "ma_cross")
+	base := map[string]any{
+		"name": "Schema test", "kind": "ma_cross", "symbol": "AAPL", "account_id": "us",
+		"fast": 2, "slow": 4, "threshold": 2, "stop_bps": 100, "target_bps": 200,
+	}
+	for field, bad := range map[string]any{"stop_bps": 9, "fast": 1, "slow": 501, "threshold": 0.05, "target_bps": 5001} {
+		input := maps.Clone(base)
+		input[field] = bad
+		c.PostJSON("/api/strategies", input).AssertUnprocessable()
+	}
+	c.PostJSON("/api/strategies", base).AssertCreated()
+}
+
+func TestValidationPartitionIsUsedOncePerStrategyVersion(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	var rows strings.Builder
+	rows.WriteString("time,open,high,low,close,volume\n")
+	price := 30.0
+	start := time.Date(2026, 10, 26, 10, 0, 0, 0, time.FixedZone("BRT", -3*3600))
+	for i := range 60 {
+		next := price + []float64{0.1, -0.05, 0.08, -0.12}[i%4]
+		fmt.Fprintf(
+			&rows,
+			"%s,%.2f,%.2f,%.2f,%.2f,100000\n",
+			start.Add(time.Duration(i)*5*time.Minute).Format(time.RFC3339),
+			price,
+			max(price, next)+0.05,
+			min(price, next)-0.05,
+			next,
+		)
+		price = next
+	}
+	imported := c.PostJSON("/api/datasets/import", map[string]any{
+		"symbol": "PETR4", "source": "fixture", "license": "internal test", "csv": rows.String(),
+	}).AssertCreated()
+	datasetID, _ := imported.JSONPath("id")
+	created := c.PostJSON("/api/strategies", map[string]any{
+		"name": "Validation once", "kind": "ma_cross", "symbol": "PETR4", "account_id": "b3", "dataset_id": datasetID,
+		"fast": 2, "slow": 5, "threshold": 2, "stop_bps": 100, "target_bps": 200,
+	}).AssertCreated()
+	strategyID, _ := created.JSONPath("id")
+	run := func(partition string, extra map[string]any) *vukemtest.Response {
+		in := map[string]any{"strategy_id": strategyID, "dataset_id": datasetID, "partition": partition}
+		maps.Copy(in, extra)
+		return c.PostJSON("/api/backtests", in)
+	}
+	run("test", nil).AssertStatus(202)
+	run("test", nil).AssertStatus(202)
+	run("validation", nil).AssertStatus(202)
+	run("validation", nil).AssertStatus(409)
+	run("validation", map[string]any{"repeat_validation": true}).AssertStatus(202)
+	run("walkforward", nil).AssertStatus(202)
+	run("holdout", nil).AssertUnprocessable()
 }

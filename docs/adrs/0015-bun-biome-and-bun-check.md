@@ -1,0 +1,37 @@
+# ADR-0015: Bun 1.4.4, Biome 2 and `bun check` for the frontend
+
+State: implemented on 2026-11-04 by owner instruction. Replaces the npm and `tsc` flow of the
+starter.
+
+## Context
+
+The starter built the frontend with Node and npm (`package-lock.json`, `npm ci`, `tsc --noEmit`).
+The owner's tooling standard is Bun, Biome 2 for lint and format, and the type checker that ships
+with Bun 1.4 (`bun check`), which reports the same errors as `tsc` and uses every CPU core.
+
+## Decision
+
+- `packageManager` is `bun@1.4.4`; the lockfile is `bun.lock`; installs use `--frozen-lockfile`.
+- The type check is `bun run typecheck`, which runs `bun check`. `typescript` is no longer a direct
+  dependency of the application.
+- Biome 2 (`biome.json`) lints and formats `resources/js`, `e2e` and the root configuration files.
+  Generated shadcn/ui components are excluded. markdownlint-cli2 lints Markdown.
+- The production image builds assets on `oven/bun:1.4.4-alpine`; the Go and runtime stages are
+  unchanged. The documentation site image builds on Node because Next.js runs on Node, and uses Bun
+  only to install and run scripts.
+- Versions are exact. An override pins a patched transitive dependency when an advisory requires it.
+
+## Alternatives
+
+- Keep npm: no change, but it diverges from the owner's standard and the other repositories.
+- `tsc` through Bun: works, but `bun check` is faster and needs no extra dependency.
+
+## Consequences
+
+CI uses `oven-sh/setup-bun` pinned by SHA. Dependabot watches the `bun` ecosystem. Playwright runs
+through `bunx`. A change of the Bun version updates the Dockerfile, CI and `packageManager` together.
+
+## Review trigger
+
+A `bun check` regression against `tsc` on a real error, or a Bun release that changes lockfile
+semantics.

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -247,6 +248,11 @@ func (h *Controller) Dataset(c *web.Ctx) error {
 	return c.JSON(200, ds)
 }
 
+// Kinds serves the strategy kinds and their parameter schema, the single source for forms and validation.
+func (h *Controller) Kinds(c *web.Ctx) error {
+	return c.JSON(200, trading.Kinds())
+}
+
 func (h *Controller) Strategy(c *web.Ctx) error {
 	var s trading.Strategy
 	if err := decode(c, &s); err != nil {
@@ -326,11 +332,13 @@ func (h *Controller) Backtest(c *web.Ctx) error {
 		StrategyID string `json:"strategy_id"`
 		DatasetID  string `json:"dataset_id"`
 		Partition  string `json:"partition"`
+		// RepeatValidation acknowledges that validation was already used on this strategy version.
+		RepeatValidation bool `json:"repeat_validation"`
 	}
 	if err := decode(c, &in); err != nil {
 		return err
 	}
-	if in.Partition != "train" && in.Partition != "test" && in.Partition != "all" {
+	if !slices.Contains([]string{"train", "test", "validation", "all", "walkforward"}, in.Partition) {
 		return errs.New(422, "Invalid partition")
 	}
 	var s trading.Strategy
@@ -340,6 +348,15 @@ func (h *Controller) Backtest(c *web.Ctx) error {
 	}
 	if err := h.Store.Get(c.Context(), "datasets", in.DatasetID, &ds); err != nil || ds.Symbol != s.Symbol {
 		return errs.New(422, "Incompatible dataset")
+	}
+	if in.Partition == "validation" && !in.RepeatValidation {
+		used, err := h.Store.ValidationUsed(c.Context(), s.ID)
+		if err != nil {
+			return err
+		}
+		if used {
+			return errs.New(409, "Validation was already used on this strategy version; create a new version instead")
+		}
 	}
 	var a trading.State
 	if err := h.Store.Get(c.Context(), "trading_accounts", s.AccountID, &a); err != nil {

@@ -35,9 +35,13 @@ Report with stated definitions: total and annualized return, volatility, Sharpe 
 4. Add robustness statistics: block-bootstrap Monte Carlo on trades, cost stress (double costs and slippage), and deflated Sharpe or probability of backtest overfitting when many variants were tried.
 5. Paper trading is the final out-of-sample test, and its results are compared with the backtest's expectation, not tuned against.
 
-## Known gaps in the current engine (candidates for the roadmap)
+## Status in the current engine
 
-- Partial fills over several bars and resting-order semantics.
-- Walk-forward runner and robustness statistics.
-- A look-ahead perturbation test in CI.
-- Parameter declarations as data (name, type, range, default) shared by backtester, UI and optimizer.
+Implemented and recorded in [ADR-0016](/docs/adrs/0016-fill-rules-and-validation-protocol): resting
+orders and partial fills over several bars, the train, test and validation partitions with a
+once-per-version validation guard, walk-forward windows, Sharpe, Sortino, Calmar, SQN and exposure with
+a stated risk-free rate, a block bootstrap, cost stress, the deflated Sharpe ratio, a look-ahead
+perturbation test, a golden-file test of the metrics, and strategy parameters declared as data.
+
+Still open: a fill model that walks the order book (needs book data), a parameter optimizer on top of
+the parameter schema, and survivorship-aware universes.

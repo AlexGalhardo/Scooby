@@ -21,6 +21,15 @@ type Metrics struct {
 	AverageLoss        d.Decimal `json:"average_loss"`
 	MaxDrawdownSeconds int64     `json:"max_drawdown_seconds"`
 
+	Sharpe            float64 `json:"sharpe"`
+	Sortino           float64 `json:"sortino"`
+	Calmar            float64 `json:"calmar"`
+	SQN               float64 `json:"sqn"`
+	AnnualReturnPct   float64 `json:"annual_return_pct"`
+	ExposurePct       float64 `json:"exposure_pct"`
+	RiskFreeAnnualPct float64 `json:"risk_free_annual_pct"`
+	PeriodsPerYear    float64 `json:"periods_per_year"`
+
 	ReturnPct      d.Decimal `json:"return_pct"`
 	MaxDrawdownPct d.Decimal `json:"max_drawdown_pct"`
 	Realized       d.Decimal `json:"realized"`
@@ -31,20 +40,98 @@ type Metrics struct {
 	ExposureBars   int       `json:"exposure_bars"`
 }
 type Result struct {
-	CalendarSource string   `json:"calendar_source"`
-	Metrics        Metrics  `json:"metrics"`
-	Curve          []Point  `json:"curve"`
-	Fills          []Fill   `json:"fills"`
-	DatasetHash    string   `json:"dataset_hash"`
-	Strategy       Strategy `json:"strategy"`
-	Policy         Policy   `json:"policy"`
-	Warnings       []string `json:"warnings"`
-	Final          State    `json:"-"`
-	EngineVersion  string   `json:"engine_version"`
-	Partition      string   `json:"partition"`
+	CalendarSource string      `json:"calendar_source"`
+	Metrics        Metrics     `json:"metrics"`
+	Curve          []Point     `json:"curve"`
+	Fills          []Fill      `json:"fills"`
+	DatasetHash    string      `json:"dataset_hash"`
+	Strategy       Strategy    `json:"strategy"`
+	Policy         Policy      `json:"policy"`
+	Warnings       []string    `json:"warnings"`
+	Final          State       `json:"-"`
+	EngineVersion  string      `json:"engine_version"`
+	Partition      string      `json:"partition"`
+	TradePnL       []d.Decimal `json:"trade_pnl"`
+	Windows        []Window    `json:"windows,omitempty"`
+	Robustness     *Robustness `json:"robustness,omitempty"`
 }
 
+// Backtest replays the strategy on a partition of the dataset and reports the result with its
+// robustness checks. Partitions: train (first 60%), test (next 20%), validation (last 20%), all, and
+// walkforward (all, plus consecutive windows).
 func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string) (Result, error) {
+	return BacktestTrials(ctx, ds, s, policy, partition, 1)
+}
+
+// BacktestTrials is Backtest for a configuration that is one of trials tried; the deflated Sharpe
+// ratio discounts the result for that.
+func BacktestTrials(
+	ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string, trials int,
+) (Result, error) {
+	run := partition
+	if partition == "walkforward" {
+		run = "all"
+	}
+	r, sr, n, skew, kurt, err := runBacktestStats(ctx, ds, s, policy, run)
+	if err != nil {
+		return r, err
+	}
+	r.Partition = partition
+	r.Robustness = robustness(ctx, ds, s, policy, run, r, trials, sr, n, skew, kurt)
+	if r.Robustness.LowTrades {
+		r.Warnings = append(r.Warnings, "Fewer than 30 trades: the statistics are weak.")
+	}
+	if partition == "walkforward" {
+		r.Windows = walkForward(ctx, ds, s, policy)
+		r.Warnings = append(r.Warnings, "Walk-forward windows start cold, each with its own warm-up.")
+	}
+	return r, nil
+}
+
+func runBacktest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string) (Result, error) {
+	r, _, _, _, _, err := runBacktestStats(ctx, ds, s, policy, partition)
+	return r, err
+}
+
+func walkForward(ctx context.Context, ds Dataset, s Strategy, policy Policy) []Window {
+	size := len(ds.Candles) / WalkForwardWindows
+	out := make([]Window, 0, WalkForwardWindows)
+	for w := range WalkForwardWindows {
+		end := (w + 1) * size
+		if w == WalkForwardWindows-1 {
+			end = len(ds.Candles)
+		}
+		sub := ds
+		sub.Candles = ds.Candles[w*size : end]
+		win := Window{Index: w + 1, Bars: len(sub.Candles)}
+		res, err := runBacktest(ctx, sub, s, policy, "all")
+		if err != nil {
+			win.Note = err.Error()
+			out = append(out, win)
+			continue
+		}
+		win.Trades = res.Metrics.Trades
+		win.ReturnPct = res.Metrics.ReturnPct
+		win.MaxDrawdownPct = res.Metrics.MaxDrawdownPct
+		win.Enough = win.Trades >= MinTradesPerWindow
+		out = append(out, win)
+	}
+	return out
+}
+
+func runBacktestStats(
+	ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string,
+) (Result, float64, int, float64, float64, error) {
+	r, err := backtestCore(ctx, ds, s, policy, partition)
+	if err != nil {
+		return r, 0, 0, 0, 0, err
+	}
+	inst, _ := FindInstrument(s.Symbol)
+	sr, n, skew, kurt := applyStats(&r, inst.Market, Initial())
+	return r, sr, n, skew, kurt, nil
+}
+
+func backtestCore(ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string) (Result, error) {
 	r := Result{
 		CalendarSource: ds.CalendarSource,
 		Curve:          []Point{},
@@ -69,16 +156,18 @@ func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partit
 		return r, errors.New("dataset does not match the symbol")
 	}
 	cs := ds.Candles
-	split := len(cs) * 7 / 10
+	trainEnd, testEnd := len(cs)*6/10, len(cs)*8/10
 	switch partition {
 	case "train":
-		cs = cs[:split]
+		cs = cs[:trainEnd]
 	case "test":
-		cs = cs[split:]
+		cs = cs[trainEnd:testEnd]
+	case "validation":
+		cs = cs[testEnd:]
 	case "all":
 		r.Warnings = append(r.Warnings, "Exploratory: uses the full period, not out-of-sample testing.")
 	default:
-		return r, errors.New("partition must be train, test or all")
+		return r, errors.New("partition must be train, test, validation or all")
 	}
 	if len(cs) < s.Slow+2 {
 		return r, errors.New("insufficient history for warmup and evaluation")
@@ -107,16 +196,23 @@ func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partit
 			a.DayStart = a.Equity()
 		}
 		if pending != "" {
+			// A resting or partly filled order stays open for the rest of its session (ADR 0016).
 			o := a.Order(pending)
-			if o != nil && MarketDay(i.Market, o.CreatedAt) == day {
+			switch {
+			case o == nil || !o.Open():
+				pending = ""
+			case MarketDay(i.Market, o.CreatedAt) != day:
+				o.Status = "expired"
+				o.Reserved = Zero
+				pending = ""
+			default:
 				if err := Simulate(&a, o, c); err != nil {
 					return r, err
 				}
-			} else if o != nil {
-				o.Status = "expired"
-				o.Reserved = Zero
+				if !o.Open() {
+					pending = ""
+				}
 			}
-			pending = ""
 		}
 		if !cycleOpen && a.Positions[s.Symbol].Qty.IsPositive() {
 			cycleOpen = true
@@ -164,6 +260,7 @@ func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partit
 		}
 		if cycleOpen && !a.Positions[s.Symbol].Qty.IsPositive() {
 			gain := a.Realized.Sub(cycleStart)
+			r.TradePnL = append(r.TradePnL, gain)
 			if gain.IsPositive() {
 				wins++
 				winTotal = winTotal.Add(gain)

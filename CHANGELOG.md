@@ -14,12 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Backtests: resting limit orders and partial fills over several bars, train/test/validation partitions (validation once per strategy version), walk-forward windows, Sharpe, Sortino, Calmar, SQN, block bootstrap, cost stress and deflated Sharpe, shown in the report.
+- Strategy parameters declared as data and served by `GET /api/strategy-kinds`; the strategy form renders from it.
+- ADR-0015 (Bun, Biome), ADR-0016 (fill rules, validation protocol), ADR-0017 (documentation site).
 - Risk protections: stop-loss streak lock, per-symbol cooldown and equity-drawdown halt, configurable in the risk form.
 - Close reason on every exit order; audit entries `risk.halt` and `risk.resume`; one-shot alerts for halts and stuck unknown orders.
 - The daily-loss halt lifts at the next market day.
 
 ### Changed
 
+- Backtest partitions are now train (first 60%), test (next 20%) and validation (last 20%); the old test partition was the last 30%.
+- Orders that the open does not reach rest instead of being canceled; a buy never prints above the bar's high.
 - Remaining `^` ranges in `package.json` pinned to exact versions.
 - Risk tests: default deny, mandatory stop, risk-per-trade sizing and the daily-loss kill switch.
 

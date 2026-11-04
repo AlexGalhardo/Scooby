@@ -350,7 +350,8 @@ func (s Store) ProcessJob(ctx context.Context) error {
 	}()
 	var result Result
 	if err == nil {
-		result, err = Backtest(runCtx, ds, job.Strategy, job.Policy, job.Partition)
+		trials, _ := s.Trials(runCtx, job.Strategy)
+		result, err = BacktestTrials(runCtx, ds, job.Strategy, job.Policy, job.Partition, trials)
 	}
 	status := "completed"
 	if err != nil {
@@ -577,4 +578,52 @@ func (s Store) ResetReplay(ctx context.Context) error {
 		}
 		return audit(ctx, tx, "owner", "simulation.reset", "b3", id)
 	})
+}
+
+// ValidationUsed reports whether the held-out validation partition was already run for this exact
+// strategy version. Validation is the final check on a candidate; running it again to tune the
+// candidate turns it into a training set.
+func (s Store) ValidationUsed(ctx context.Context, strategyID string) (bool, error) {
+	rows, err := s.DB.QueryContext(
+		ctx,
+		"SELECT payload FROM backtests WHERE status IN ('queued','running','completed')",
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var body string
+		if err := rows.Scan(&body); err != nil {
+			return false, err
+		}
+		var job Job
+		if json.Unmarshal([]byte(body), &job) == nil && job.Partition == "validation" && job.Strategy.ID == strategyID {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
+}
+
+// Trials counts the versions of a strategy configuration that were tried: same name, symbol and
+// account. The deflated Sharpe ratio uses it to discount selection among them.
+func (s Store) Trials(ctx context.Context, st Strategy) (int, error) {
+	rows, err := s.DB.QueryContext(ctx, "SELECT payload FROM strategies")
+	if err != nil {
+		return 1, err
+	}
+	defer rows.Close()
+	n := 0
+	for rows.Next() {
+		var body string
+		if err := rows.Scan(&body); err != nil {
+			return 1, err
+		}
+		var other Strategy
+		if json.Unmarshal([]byte(body), &other) == nil && other.Name == st.Name && other.Symbol == st.Symbol &&
+			other.AccountID == st.AccountID {
+			n++
+		}
+	}
+	return max(n, 1), rows.Err()
 }

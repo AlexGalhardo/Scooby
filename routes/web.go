@@ -58,6 +58,7 @@ func Web(r *router.Router, app *vukem.App) error {
 	r.Post("/api/datasets/import", h.Import).Use(required)
 	r.Post("/api/datasets/fetch", h.Fetch).Use(required)
 	r.Get("/api/datasets/{id}", h.Dataset).Use(required)
+	r.Get("/api/strategy-kinds", h.Kinds).Use(required)
 	r.Post("/api/strategies", h.Strategy).Use(required)
 	r.Post("/api/strategies/{id}/toggle", h.Toggle).Use(required)
 	r.Post("/api/backtests", h.Backtest).Use(required)

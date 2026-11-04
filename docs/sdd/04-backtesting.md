@@ -4,7 +4,7 @@
 > and [ADRs 0011–0013](../adrs/README.md). Local technical acceptance is distinct
 > from real OAuth/broker, Railway publication and prolonged financial observation.
 
-Status: proposed. Dataset, frequency, benchmark and costs pending.
+Status: implemented. The fill rules, partitions, statistics and robustness checks are fixed by [ADR-0016](../adrs/0016-fill-rules-and-validation-protocol.md).
 
 ## Contract of one run
 
