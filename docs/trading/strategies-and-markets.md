@@ -13,7 +13,7 @@ Hypotheses, not recommendations. Every strategy ships with entry, exit, stop, si
 | Market making | Quote both sides, skew by inventory | Order-book data, low latency | Adverse selection; not viable without book data |
 | Pairs and spread | Cointegrated pairs | Stationarity tests, borrow costs | Regime breaks |
 
-Already implemented: SMA crossover, Z-score reversion and breakout. Next candidates: opening-range breakout, VWAP reversion, ADX-filtered trend, grid and DCA (spot, capped inventory). Market making stays out of scope until order-book data and a validated fill model exist.
+Implemented: SMA crossover, Z-score reversion, range breakout, opening-range breakout, VWAP reversion, ADX-filtered trend and a DCA grid with capped inventory (spot). Market making stays out of scope until order-book data and a validated fill model exist.
 
 ## Strategy contract
 

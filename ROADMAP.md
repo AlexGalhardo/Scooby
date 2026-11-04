@@ -214,10 +214,10 @@ Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/st
 
 ### Phase 12: Strategy expansion
 
-- [ ] **12.1 Opening-range breakout** with session-aware bounds. Assert: backtest on the intraday sample runs and passes 9.2.
-- [ ] **12.2 VWAP reversion.** Assert: same.
-- [ ] **12.3 ADX-filtered trend.** Assert: same.
-- [ ] **12.4 Grid and DCA (spot)** with capped inventory and a range exit. Assert: inventory never exceeds the configured cap in a trending fixture.
+- [x] **12.1 Opening-range breakout** (`opening_range`: first `fast` bars of the session set the range; buys the first close above its high, exits below its low). Assert: `TestOpeningRangeBreakout`, plus `TestNoStrategyLooksAhead` over every kind.
+- [x] **12.2 VWAP reversion** (`vwap_reversion`: buys a close `threshold`% below the session VWAP, exits at the VWAP). Assert: `TestVWAPReversion`.
+- [x] **12.3 ADX-filtered trend** (`adx_trend`: Wilder +DI/-DI crossover while ADX is at least `threshold`). Assert: `TestADXTrendNeedsAStrongTrend`.
+- [x] **12.4 DCA grid (spot) with capped inventory** (`dca_grid`: buys dips in tranches spaced by `threshold`%, at most `fast` tranches, each sized at 1/`fast` of the risk budget, stop and target measured from the average cost). Assert: `TestDCAGridKeepsInventoryWithinTheCap`. The risk engine enforces the tranche cap and spacing, not the strategy.
 - [ ] **12.5 Market making** stays out of scope until order-book data and an accepted fill-rule ADR exist.
 
 ### Phase 13: Terminal UX

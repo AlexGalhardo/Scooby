@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Strategies: opening-range breakout, VWAP reversion, ADX-filtered trend and a DCA grid with capped inventory, declared in the parameter schema.
 - Backtests: resting limit orders and partial fills over several bars, train/test/validation partitions (validation once per strategy version), walk-forward windows, Sharpe, Sortino, Calmar, SQN, block bootstrap, cost stress and deflated Sharpe, shown in the report.
 - Strategy parameters declared as data and served by `GET /api/strategy-kinds`; the strategy form renders from it.
 - ADR-0015 (Bun, Biome), ADR-0016 (fill rules, validation protocol), ADR-0017 (documentation site).

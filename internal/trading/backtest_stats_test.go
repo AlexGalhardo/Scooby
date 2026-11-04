@@ -177,6 +177,7 @@ func TestNoStrategyLooksAhead(t *testing.T) {
 	for _, spec := range Kinds() {
 		s := fastStrategy()
 		s.Kind = spec.Kind
+		s = s.Defaults()
 		for i := s.Slow; i <= k; i++ {
 			if Signal(s, ds.Candles[:i+1]) != Signal(s, future.Candles[:i+1]) {
 				t.Fatalf("%s: the signal at bar %d changed with the future", spec.Kind, i)

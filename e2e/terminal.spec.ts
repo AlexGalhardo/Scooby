@@ -36,7 +36,7 @@ test("Google-only login, real navigation, CSV import and logout", async ({ page 
     .getByLabel("Dataset for replay")
     .selectOption({ label: "PETR4 · 64 candles · Synthetic E2E fixture" });
   await dialog.getByLabel("Fast window").fill("2");
-  await dialog.getByLabel("Slow window / lookback").fill("4");
+  await dialog.getByLabel("Slow window").fill("4");
   await dialog.getByRole("button", { name: "Create configuration" }).click();
   await expect(dialog.getByText("Configuration created and disabled.")).toBeVisible();
   await page.keyboard.press("Escape");

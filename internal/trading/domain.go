@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math"
 	"slices"
+	"sync"
 	"time"
 
 	d "github.com/shopspring/decimal"
@@ -169,6 +170,14 @@ func Signal(s Strategy, cs []Candle) string {
 		if cs[n-1].Close.LessThan(low) {
 			return "sell"
 		}
+	case "opening_range":
+		return openingRangeSignal(s, cs)
+	case "vwap_reversion":
+		return vwapSignal(s, cs)
+	case "adx_trend":
+		return adxSignal(s, cs)
+	case "dca_grid":
+		return dcaSignal(s, cs)
 	}
 	return "hold"
 }
@@ -223,6 +232,10 @@ type Position struct {
 	Mark    d.Decimal `json:"mark"`
 	Stop    d.Decimal `json:"stop"`
 	Target  d.Decimal `json:"target"`
+	// Tranches counts the entry orders that filled into this position; LastEntry is the price of the
+	// latest one. Both matter only to kinds that scale in.
+	Tranches  int       `json:"tranches"`
+	LastEntry d.Decimal `json:"last_entry"`
 }
 type Order struct {
 	ID         string    `json:"id"`
@@ -240,6 +253,8 @@ type Order struct {
 	BrokerID   string    `json:"broker_id"`
 	Reason     string    `json:"reason"`
 	Close      string    `json:"close_reason"`
+	StopBPS    int       `json:"stop_bps"`
+	TargetBPS  int       `json:"target_bps"`
 	Generation int64     `json:"generation"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
@@ -369,11 +384,25 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 			a.Halt(haltDailyLoss)
 			return nil, errors.New(a.Reason)
 		}
-		if p := a.Positions[s.Symbol]; p.Qty.IsPositive() {
-			return nil, errors.New("position already exists")
-		}
-		if len(a.Positions) >= a.Policy.MaxPositions {
+		held := a.Positions[s.Symbol]
+		spec, _ := FindKind(s.Kind)
+		riskShare := d.NewFromInt(1)
+		if held.Qty.IsPositive() {
+			if !spec.Scales {
+				return nil, errors.New("position already exists")
+			}
+			if held.Tranches >= s.Fast {
+				return nil, errors.New("inventory cap reached")
+			}
+			step := Fraction(int(math.Round(s.Threshold * 100)))
+			if price.GreaterThan(held.LastEntry.Mul(D("1").Sub(step))) {
+				return nil, errors.New("tranche spacing not reached")
+			}
+		} else if len(a.Positions) >= a.Policy.MaxPositions {
 			return nil, errors.New("position limit reached")
+		}
+		if spec.Scales {
+			riskShare = d.NewFromInt(int64(max(s.Fast, 1)))
 		}
 		limit = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS))).RoundCeil(2)
 		if s.StopBPS < MinStopBPS || !stop.IsPositive() || !stop.LessThan(limit) {
@@ -382,7 +411,7 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		perUnit := limit.Sub(stop).Add(limit.Mul(Fraction(2*a.Policy.CostBPS + a.Policy.SlippageBPS)))
 		remaining := d.Min(a.Cash, a.Equity().Mul(Fraction(a.Policy.ExposureBPS)).Sub(a.Exposure()))
 		qty = d.Min(
-			a.Equity().Mul(Fraction(a.Policy.RiskBPS)).Div(perUnit),
+			a.Equity().Mul(Fraction(a.Policy.RiskBPS)).Div(riskShare).Div(perUnit),
 			remaining.Div(limit.Mul(D("1").Add(Fraction(a.Policy.CostBPS)))),
 		)
 		qty = qty.Div(i.Step).Floor().Mul(i.Step)
@@ -407,6 +436,8 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		Target:     target,
 		Reserved:   reserve,
 		Close:      closeFor(side),
+		StopBPS:    s.StopBPS,
+		TargetBPS:  s.TargetBPS,
 		Status:     "approved",
 		Generation: a.Generation,
 		CreatedAt:  at,
@@ -445,12 +476,22 @@ func (a *State) ApplyFill(f Fill) error {
 		if value.Add(f.Fees).GreaterThan(a.Cash) {
 			return errors.New("insufficient cash")
 		}
+		scaling := p.Qty.IsPositive()
 		p.Average = p.Average.Mul(p.Qty).Add(value).Add(f.Fees).Div(p.Qty.Add(f.Qty))
 		p.Qty = p.Qty.Add(f.Qty)
 		p.Symbol = f.Symbol
 		p.Mark = f.Price
 		p.Stop = o.Stop
 		p.Target = o.Target
+		if scaling && o.StopBPS > 0 {
+			// Adding to a position moves the exit levels to the new average cost.
+			p.Stop = p.Average.Mul(D("1").Sub(Fraction(o.StopBPS))).RoundFloor(2)
+			p.Target = p.Average.Mul(D("1").Add(Fraction(o.TargetBPS))).RoundFloor(2)
+		}
+		if o.Filled.IsZero() {
+			p.Tranches++
+		}
+		p.LastEntry = f.Price
 		a.Cash = a.Cash.Sub(value).Sub(f.Fees)
 		a.Positions[f.Symbol] = p
 	} else {
@@ -500,12 +541,21 @@ func (a *State) Mark(symbol string, price d.Decimal) {
 	}
 }
 
+var marketZones sync.Map // zone name to *time.Location; loading a zone reads the tz database
+
+// MarketDay returns the calendar date of t in the market's time zone.
 func MarketDay(market string, t time.Time) string {
 	zone := "America/New_York"
 	if market == "B3" {
 		zone = "America/Sao_Paulo"
 	}
+	if cached, ok := marketZones.Load(zone); ok {
+		if loc, ok := cached.(*time.Location); ok {
+			return t.In(loc).Format("2006-01-02")
+		}
+	}
 	loc, _ := time.LoadLocation(zone)
+	marketZones.Store(zone, loc)
 	return t.In(loc).Format("2006-01-02")
 }
 
