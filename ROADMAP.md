@@ -82,7 +82,7 @@ Do not ask for tokens in chat; use secure provider variables. Never print secret
 - [x] Private `/`, `/login`, logout; no local password or sign-up surface.
 - [x] Responsive sidebar, theme, charts, empty, error and loading states.
 - [x] Server guards on pages and APIs; no credential in props or bundle.
-- [ ] Exercise real Google OAuth with the final domain and callback.
+- [~] Exercise real Google OAuth with the final domain and callback. Checked 2026-11-04 in production: `GET /auth/google/redirect` answers 302 to `accounts.google.com` with the client id, state, scope `openid email profile` and callback `https://scooby-web-production.up.railway.app/auth/google/callback`. **Open:** an interactive owner login to finish the round trip, and the final web domain (the callback must be registered in the Google console).
 
 **Audit assert:** the e2e login spec passes (`bun run test:e2e`); an unauthenticated request to `/api/snapshot` returns 401.
 
