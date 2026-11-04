@@ -40,5 +40,8 @@
     "markdownlint-cli2": "0.24.0",
     "tailwindcss": "4.3.3",
     "vite": "8.3.4"
+  },
+  "overrides": {
+    "re2js": "2.8.7"
   }
 }
