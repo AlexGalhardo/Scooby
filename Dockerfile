@@ -3,23 +3,17 @@
 # Railway, Fly, Render and plain Docker build it as is:
 # https://vukem.dev/docs/deployment/docker-and-railway
 
-FROM node:24.22.0-alpine3.24 AS assets
+FROM oven/bun:1.4.4-alpine AS assets
 WORKDIR /src
-COPY package.json package-lock.json* ./
-# The lockfile is a required build input: the image installs exactly the
-# versions the repository tracks. Without one npm and pnpm refuse, while bun
-# and yarn resolve fresh versions and say nothing, so the requirement is
-# stated here and is the same for every package manager. Generate it with
-# "npm install" and commit it; .dockerignore must not exclude it.
+COPY package.json bun.lock ./
+# The lockfile is a required build input: --frozen-lockfile fails the build
+# when bun.lock and package.json disagree, so the image installs exactly the
+# versions the repository tracks. .dockerignore must not exclude bun.lock.
 # Use ordinary layer caching: Railway cache mounts require a literal service ID,
 # which would bind this shared Dockerfile to either the web or engine service.
-RUN if ! ls package-lock.json* >/dev/null 2>&1; then \
-		echo "package-lock.json not found: run 'npm install', commit it, then build again" >&2; \
-		exit 1; \
-	fi \
-	&& npm ci --no-audit --no-fund
+RUN bun install --frozen-lockfile
 COPY . .
-RUN npm run build
+RUN bun run build
 
 FROM golang:1.27.3-alpine3.24 AS build
 WORKDIR /src
