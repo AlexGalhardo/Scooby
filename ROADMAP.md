@@ -8,13 +8,19 @@ Legend: `[x]` done and verified, `[~]` partly done (the note says what is missin
 
 ## 1. Resume point
 
-The personal **paper-only terminal is implemented**: Vukem web, an independent Go engine, backtesting, risk and adapters. Railway runs web, engine and PostgreSQL; the web is at <https://scooby-web-production.up.railway.app> (the service names still say `scooby`).
+The personal **paper-only terminal is implemented and published**: Vukem web, an independent Go engine, backtesting with realistic fills and overfitting checks, a risk engine with protections, seven strategy kinds, crypto and forex backtests, a data-provider interface, a read-only MCP endpoint, runbooks, and the documentation site at <https://trading.vukem.dev>. Railway runs web, worker, site and PostgreSQL, and a push to `main` deploys. CI covers Go lint, vet and tests with PostgreSQL, frontend lint, types and end-to-end tests, the site, the production image, vulnerabilities, secrets and a short fuzz run.
 
-On 2026-11-04 the project got its repository standards (lint, hooks, community files), moved the frontend to Bun 1.4.4 with `bun check` and Biome, added release and security workflows, and gained a researched knowledge base in [docs/trading/](docs/trading/README.md). Owner decisions are in [docs/brainstorming.md](docs/brainstorming.md).
+Owner decisions are in [docs/brainstorming.md](docs/brainstorming.md); the research behind the design is in [docs/trading/](docs/trading/README.md).
 
-**Next concrete action:** finish Phase 7 (English-only repository and renames), then Phase 8 (publish the documentation site at `trading.vukem.dev`).
+**Everything in the phases below that can be implemented in code is implemented.** What remains needs something only the owner or time can supply:
 
-Owner-side items that block validation, not coding: real Google OAuth, Alpaca Paper credentials, licensed B3 intraday data, Telegram alerts and a prolonged paper observation period. Real capital stays out of scope.
+- Real Google OAuth with the final domain, Alpaca Paper credentials, and Telegram alerts configured in production (Phases 1, 4, 5).
+- A licensed B3 intraday dataset and significant out-of-sample data (Phases 2, 3).
+- A prolonged paper-trading observation and the keep-or-disable decision per strategy (Phase 6).
+- A Binance testnet account for a crypto paper adapter (11.3), order-book data for market making (12.5), and a live feed for a push channel (13.6).
+- The OpenSSF best-practices badge registration (7.11) and the live-readiness gate (Phase 17), which is a decision, not a build.
+
+Real capital stays out of scope.
 
 ## 2. Onboarding for a new session
 
@@ -51,9 +57,10 @@ Do not ask for tokens in chat; use secure provider variables. Never print secret
 | `internal/trading` | Decimals, sizing, reservations, ledger, calendars, CSV, backtests, store |
 | `internal/engine` | Leader election, fencing, replay, dispatch, reconciliation |
 | `internal/adapters` | Alpaca paper, data and calendar; Telegram alerts |
+| `internal/providers` | Market-data provider interface, registry and the Binance and Alpaca adapters |
 | `resources/js` | Inertia React terminal; `components/ui` is generated shadcn/ui |
 | `site/` | Documentation site (Next.js); content generated from `docs/` |
-| `docs/` | Product, architecture, ADRs, SDDs, setup guides, trading knowledge base |
+| `docs/` | Product, architecture, ADRs, SDDs, setup guides, runbooks, MCP, trading knowledge base |
 | `.agents/` | Rules and skills for agents |
 | `.github/workflows/` | `ci`, `release`, `scorecard`, `codeql`, `pr-title`, `vuln` |
 
@@ -125,7 +132,7 @@ Do not ask for tokens in chat; use secure provider variables. Never print secret
 - [x] Railway project, services, variables and domain created; web and engine healthy.
 - [x] Daily PostgreSQL backup scheduled (provider retention six days).
 - [x] Deploy on push to `main` verified with the Bun Dockerfile (2026-11-04).
-- [ ] Confirm budget and region; add external monitoring.
+- [~] Confirm budget and region (owner). External monitoring is done: the `Uptime` workflow (item 14.2).
 - [ ] Validate the first backup run and a restore on the provider.
 - [ ] Test Google, broker and Telegram integrations in production.
 
@@ -171,7 +178,7 @@ Goal: `trading.vukem.dev` opens the technical documentation, with the same look 
 - [x] **8.4 CI job** for the site (lint, `check:mdx`, build). Assert: job green.
 - [x] **8.5 Railway `site` service** deployed after green CI. Assert: its Railway URL returns 200 and `/` redirects to `/docs/introduction`.
 - [x] **8.6 DNS:** `trading.vukem.dev` CNAME and Railway verification TXT created in the Vercel zone for `vukem.dev` on 2026-11-04; Railway reports the domain verified with a valid certificate. Assert: public resolvers return the Railway edge and `/` answers 307 to `/docs/introduction` over valid TLS.
-- [ ] **8.7 Last-updated metadata and sitemap** refreshed (`bun run last-updated`). Assert: `check:last-updated` passes.
+- [x] **8.7 Last-updated metadata and sitemap:** `site/content/last-updated.json` refreshed from the git history and `app/sitemap.ts` serves the pages. Assert: `bun run check:last-updated` passes right after `bun run last-updated` (67 pages). Refresh it before each release; it is not a CI gate because every documentation commit would otherwise need a second commit.
 
 ### Phase 8b: Known flaky test
 
@@ -218,7 +225,7 @@ Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/st
 - [x] **12.2 VWAP reversion** (`vwap_reversion`: buys a close `threshold`% below the session VWAP, exits at the VWAP). Assert: `TestVWAPReversion`.
 - [x] **12.3 ADX-filtered trend** (`adx_trend`: Wilder +DI/-DI crossover while ADX is at least `threshold`). Assert: `TestADXTrendNeedsAStrongTrend`.
 - [x] **12.4 DCA grid (spot) with capped inventory** (`dca_grid`: buys dips in tranches spaced by `threshold`%, at most `fast` tranches, each sized at 1/`fast` of the risk budget, stop and target measured from the average cost). Assert: `TestDCAGridKeepsInventoryWithinTheCap`. The risk engine enforces the tranche cap and spacing, not the strategy.
-- [ ] **12.5 Market making** stays out of scope until order-book data and an accepted fill-rule ADR exist.
+- [ ] **12.5 Market making** (deferred by decision, see [ADR-0016](docs/adrs/0016-fill-rules-and-validation-protocol.md)): needs order-book data and a validated queue model, neither of which exists.
 
 ### Phase 13: Terminal UX
 
@@ -255,7 +262,7 @@ Not planned. Reopen only with a new ADR covering isolation, authorization, billi
 No live adapter is built in this roadmap. Writing an ADR is the only allowed work until all of these hold:
 
 - [ ] Paper results over an agreed period match backtest expectations within a stated tolerance.
-- [ ] Risk gate, kill switch and reconciliation have failure-path tests in CI.
+- [x] Risk gate, kill switch and reconciliation have failure-path tests in CI: default deny, mandatory stop, daily-loss kill switch, protections, concurrent reservations, rollback, timeouts, partial fills and leader failover (`internal/trading`, `internal/engine`, `tests`). This item alone does not open the gate.
 - [ ] Live is enabled by a server-side flag separate from any agent or UI setting.
 - [ ] Credentials encrypted at rest and present only in the worker.
 - [ ] First-period limits (order size, daily loss) set deliberately low.

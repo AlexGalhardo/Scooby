@@ -66,3 +66,9 @@ record preserves its provenance.
 The owner authorized documenting now. The product implementation does not start
 at this stage. After each answer, update `grilling.md`, requirements, affected
 SDDs and ADRs. Never silently promote a recommendation to a decision.
+
+## Operations and extensions
+
+- [Runbooks](runbooks/README.md): incident response, restore and key rotation.
+- [Read-only MCP endpoint](mcp.md) and the [dependency policy](dependency-policy.md).
+- [Trading knowledge base](trading/README.md) and the [setup guides](setup-local-with-docker.md).
