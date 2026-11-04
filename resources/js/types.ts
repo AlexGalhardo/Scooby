@@ -179,8 +179,8 @@ export interface Snapshot {
   server_time: string;
 }
 export const money = (value: string | number, currency = "USD") =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(Number(value));
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(value));
 export const date = (value: string) =>
-  !value || value.startsWith("0001") ? "Sem atualização" : new Date(value).toLocaleString("pt-BR");
+  !value || value.startsWith("0001") ? "No update" : new Date(value).toLocaleString("en-US");
 export const alive = (value: string) =>
   value && !value.startsWith("0001") && Date.now() - new Date(value).getTime() < 45000;

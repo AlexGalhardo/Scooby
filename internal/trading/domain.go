@@ -40,7 +40,7 @@ func FindInstrument(symbol string) (Instrument, error) {
 			return i, nil
 		}
 	}
-	return Instrument{}, errors.New("ativo fora da watchlist")
+	return Instrument{}, errors.New("symbol outside the watchlist")
 }
 
 type Candle struct {
@@ -54,7 +54,7 @@ type Candle struct {
 
 func (c Candle) Validate() error {
 	if c.Time.IsZero() || !c.Open.IsPositive() || !c.Close.IsPositive() || !c.Low.IsPositive() || c.Volume.IsNegative() || c.Low.GreaterThan(c.High) || c.Open.GreaterThan(c.High) || c.Close.GreaterThan(c.High) || c.Open.LessThan(c.Low) || c.Close.LessThan(c.Low) {
-		return errors.New("candle inválido")
+		return errors.New("invalid candle")
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func (s Strategy) Validate() error {
 		return err
 	}
 	if !slices.Contains([]string{"ma_cross", "mean_reversion", "breakout"}, s.Kind) || s.Fast < 2 || s.Slow <= s.Fast || s.Slow > 500 || math.IsNaN(s.Threshold) || math.IsInf(s.Threshold, 0) || s.Threshold < 0.1 || s.Threshold > 10 || s.StopBPS < 10 || s.StopBPS > 2000 || s.TargetBPS < 10 || s.TargetBPS > 5000 {
-		return errors.New("parâmetros da estratégia inválidos")
+		return errors.New("invalid strategy parameters")
 	}
 	return nil
 }
@@ -171,7 +171,7 @@ type Policy struct {
 func DefaultPolicy() Policy { return Policy{50, 100, 5000, 3, 5, 5, 600} }
 func (p Policy) Validate() error {
 	if p.RiskBPS < 1 || p.RiskBPS > 100 || p.DailyLossBPS < 1 || p.DailyLossBPS > 500 || p.ExposureBPS < 100 || p.ExposureBPS > 10000 || p.MaxPositions < 1 || p.MaxPositions > 6 || p.CostBPS < 0 || p.CostBPS > 100 || p.SlippageBPS < 1 || p.SlippageBPS > 100 || p.MaxAgeSeconds < 60 || p.MaxAgeSeconds > 900 {
-		return errors.New("limites de risco inválidos")
+		return errors.New("invalid risk limits")
 	}
 	return nil
 }
@@ -245,7 +245,7 @@ type State struct {
 }
 
 func NewState(id, currency, mode string) State {
-	return State{ID: id, Currency: currency, Mode: mode, Cash: D("100000"), Initial: D("100000"), DayStart: D("100000"), Peak: D("100000"), Policy: DefaultPolicy(), Halted: true, Reason: "Aguardando configuração e ativação", Orders: []Order{}, Fills: []Fill{}, Positions: map[string]Position{}, Cursors: map[string]string{}}
+	return State{ID: id, Currency: currency, Mode: mode, Cash: D("100000"), Initial: D("100000"), DayStart: D("100000"), Peak: D("100000"), Policy: DefaultPolicy(), Halted: true, Reason: "Waiting for configuration and activation", Orders: []Order{}, Fills: []Fill{}, Positions: map[string]Position{}, Cursors: map[string]string{}}
 }
 func (a State) Equity() d.Decimal {
 	v := a.Cash
@@ -278,14 +278,14 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		return nil, err
 	}
 	if i.Currency != a.Currency {
-		return nil, errors.New("moeda incompatível")
+		return nil, errors.New("currency mismatch")
 	}
 	if !price.IsPositive() {
-		return nil, errors.New("preço inválido")
+		return nil, errors.New("invalid price")
 	}
 	for _, o := range a.Orders {
 		if o.Open() && o.Symbol == s.Symbol {
-			return nil, errors.New("ordem pendente no ativo")
+			return nil, errors.New("pending order on symbol")
 		}
 	}
 	qty := Zero
@@ -295,17 +295,17 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 	reserve := Zero
 	if side == "buy" {
 		if a.Halted {
-			return nil, errors.New("conta bloqueada")
+			return nil, errors.New("account blocked")
 		}
 		if a.DayStart.IsPositive() && a.Equity().LessThanOrEqual(a.DayStart.Mul(D("1").Sub(Fraction(a.Policy.DailyLossBPS)))) {
-			a.Halt("Limite de perda diária")
+			a.Halt("Daily loss limit")
 			return nil, errors.New(a.Reason)
 		}
 		if p := a.Positions[s.Symbol]; p.Qty.IsPositive() {
-			return nil, errors.New("posição já existente")
+			return nil, errors.New("position already exists")
 		}
 		if len(a.Positions) >= a.Policy.MaxPositions {
-			return nil, errors.New("limite de posições")
+			return nil, errors.New("position limit reached")
 		}
 		limit = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS))).RoundCeil(2)
 		perUnit := limit.Sub(stop).Add(limit.Mul(Fraction(2*a.Policy.CostBPS + a.Policy.SlippageBPS)))
@@ -317,10 +317,10 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		qty = a.Positions[s.Symbol].Qty
 		limit = price.Mul(D("1").Sub(Fraction(a.Policy.SlippageBPS))).RoundFloor(2)
 	} else {
-		return nil, errors.New("lado inválido")
+		return nil, errors.New("invalid side")
 	}
 	if !qty.IsPositive() {
-		return nil, errors.New("quantidade abaixo do mínimo")
+		return nil, errors.New("quantity below minimum")
 	}
 	o := Order{ID: ID(), Key: key, Symbol: s.Symbol, Side: side, Qty: qty, Limit: limit, Stop: stop, Target: target, Reserved: reserve, Status: "approved", Generation: a.Generation, CreatedAt: at, UpdatedAt: at}
 	a.Orders = append(a.Orders, o)
@@ -333,7 +333,7 @@ func (a *State) ApplyFill(f Fill) error {
 		}
 	}
 	if f.ID == "" || !f.Qty.IsPositive() || !f.Price.IsPositive() || f.Fees.IsNegative() {
-		return errors.New("fill inválido")
+		return errors.New("invalid fill")
 	}
 	index := -1
 	for i := range a.Orders {
@@ -343,17 +343,17 @@ func (a *State) ApplyFill(f Fill) error {
 		}
 	}
 	if index < 0 {
-		return errors.New("ordem desconhecida")
+		return errors.New("unknown order")
 	}
 	o := &a.Orders[index]
 	if f.Side != o.Side || f.Symbol != o.Symbol || o.Filled.Add(f.Qty).GreaterThan(o.Qty) {
-		return errors.New("fill excede intenção")
+		return errors.New("fill exceeds intent")
 	}
 	value := f.Qty.Mul(f.Price)
 	p := a.Positions[f.Symbol]
 	if f.Side == "buy" {
 		if value.Add(f.Fees).GreaterThan(a.Cash) {
-			return errors.New("caixa insuficiente")
+			return errors.New("insufficient cash")
 		}
 		p.Average = p.Average.Mul(p.Qty).Add(value).Add(f.Fees).Div(p.Qty.Add(f.Qty))
 		p.Qty = p.Qty.Add(f.Qty)
@@ -365,7 +365,7 @@ func (a *State) ApplyFill(f Fill) error {
 		a.Positions[f.Symbol] = p
 	} else {
 		if f.Qty.GreaterThan(p.Qty) {
-			return errors.New("venda excede posição")
+			return errors.New("sell exceeds position")
 		}
 		a.Cash = a.Cash.Add(value).Sub(f.Fees)
 		a.Realized = a.Realized.Add(f.Price.Sub(p.Average).Mul(f.Qty)).Sub(f.Fees)
@@ -424,7 +424,7 @@ func Simulate(a *State, o *Order, c Candle) error {
 		price = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS)))
 		if price.GreaterThan(o.Limit) || price.GreaterThan(c.High) {
 			o.Status = "canceled"
-			o.Reason = "Limite não alcançado na próxima barra"
+			o.Reason = "Limit not reached on the next bar"
 			o.Reserved = Zero
 			return nil
 		}
@@ -452,7 +452,7 @@ func Simulate(a *State, o *Order, c Candle) error {
 	}
 	if o.Open() {
 		o.Status = "canceled"
-		o.Reason = "Saldo não executado (participação máxima 1%)"
+		o.Reason = "Balance not executed (maximum participation 1%)"
 		o.Reserved = Zero
 	}
 	return nil

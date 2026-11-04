@@ -32,7 +32,7 @@ func Web(r *router.Router, app *vukem.App) error {
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			c := web.NewCtx(w, r, web.ServicesFrom(r.Context()))
-			inertia.Share(r.Context(), "appName", "Scooby")
+			inertia.Share(r.Context(), "appName", "vukem-trading")
 			inertia.Share(r.Context(), "auth", func(context.Context) (any, error) {
 				u, err := acc.Web.User(c)
 				if err != nil {

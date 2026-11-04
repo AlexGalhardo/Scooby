@@ -19,24 +19,24 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 		return Dataset{}, err
 	}
 	if strings.TrimSpace(source) == "" || strings.TrimSpace(license) == "" {
-		return Dataset{}, errors.New("origem e licença são obrigatórias")
+		return Dataset{}, errors.New("source and license are required")
 	}
 	if i.Market != "B3" {
-		return Dataset{}, errors.New("CSV é destinado ao replay B3; use o histórico Alpaca para EUA")
+		return Dataset{}, errors.New("CSV is for B3 replay; use Alpaca history for US")
 	}
 	raw, err := io.ReadAll(io.LimitReader(input, 10*1024*1024+1))
 	if err != nil {
 		return Dataset{}, err
 	}
 	if len(raw) > 10*1024*1024 {
-		return Dataset{}, errors.New("CSV excede 10 MiB")
+		return Dataset{}, errors.New("CSV exceeds 10 MiB")
 	}
 	hash := sha256.Sum256(raw)
 	ds := Dataset{CalendarSource: B3CalendarVersion, SessionCloses: map[string]time.Time{}, ID: ID(), Symbol: symbol, Source: source, License: license, Hash: hex.EncodeToString(hash[:]), Currency: i.Currency, Timeframe: 5, CreatedAt: time.Now().UTC(), Candles: []Candle{}}
 	r := csv.NewReader(strings.NewReader(string(raw)))
 	header, err := r.Read()
 	if err != nil || strings.Join(header, ",") != "time,open,high,low,close,volume" {
-		return ds, errors.New("cabeçalho: time,open,high,low,close,volume")
+		return ds, errors.New("invalid header; expected: time,open,high,low,close,volume")
 	}
 	for line := 2; ; line++ {
 		row, e := r.Read()
@@ -44,41 +44,41 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 			break
 		}
 		if e != nil || len(row) != 6 {
-			return ds, fmt.Errorf("linha %d inválida", line)
+			return ds, fmt.Errorf("invalid row %d", line)
 		}
 		t, e := time.Parse(time.RFC3339, row[0])
 		if e != nil {
-			return ds, fmt.Errorf("linha %d exige timestamp RFC3339 com offset", line)
+			return ds, fmt.Errorf("row %d requires RFC3339 timestamp with offset", line)
 		}
 		vals := make([]d.Decimal, 5)
 		for j := range vals {
 			if len(row[j+1]) > 32 {
-				return ds, fmt.Errorf("decimal excede limite na linha %d", line)
+				return ds, fmt.Errorf("decimal exceeds limit on row %d", line)
 			}
 			vals[j], e = d.NewFromString(row[j+1])
 			if e != nil || vals[j].Exponent() < -8 || vals[j].Exponent() > 12 || vals[j].Abs().GreaterThan(D("1000000000000")) {
-				return ds, fmt.Errorf("decimal inválido na linha %d", line)
+				return ds, fmt.Errorf("invalid decimal on row %d", line)
 			}
 		}
 		c := Candle{t.UTC(), vals[0], vals[1], vals[2], vals[3], vals[4]}
 		if e = c.Validate(); e != nil {
-			return ds, fmt.Errorf("linha %d: %w", line, e)
+			return ds, fmt.Errorf("row %d: %w", line, e)
 		}
 		if !Session(i.Market, c.Time) || c.Time.Second() != 0 || c.Time.Minute()%5 != 0 {
-			return ds, fmt.Errorf("linha %d fora da sessão/grade de 5 minutos (calendário B3 suportado: 2026)", line)
+			return ds, fmt.Errorf("row %d outside the 5-minute session grid (supported B3 calendar: 2026)", line)
 		}
 		if len(ds.Candles) > 0 && !c.Time.After(ds.Candles[len(ds.Candles)-1].Time) {
-			return ds, fmt.Errorf("linha %d duplicada ou fora de ordem", line)
+			return ds, fmt.Errorf("row %d duplicated or out of order", line)
 		}
 		_, end, _ := SessionBounds(i.Market, c.Time)
 		ds.SessionCloses[MarketDay(i.Market, c.Time)] = end
 		ds.Candles = append(ds.Candles, c)
 		if len(ds.Candles) > 100000 {
-			return ds, errors.New("máximo de 100000 candles")
+			return ds, errors.New("maximum of 100000 candles")
 		}
 	}
 	if len(ds.Candles) < 3 {
-		return ds, errors.New("mínimo de três candles")
+		return ds, errors.New("minimum of three candles")
 	}
 	return ds, nil
 }
@@ -87,7 +87,7 @@ func DatasetProblems(ds Dataset) []string {
 	for j := 1; j < len(ds.Candles); j++ {
 		prev, c := ds.Candles[j-1], ds.Candles[j]
 		if c.Time.Format("2006-01-02") == prev.Time.Format("2006-01-02") && c.Time.Sub(prev.Time) > 5*time.Minute {
-			issues = append(issues, "Gap em "+c.Time.Format(time.RFC3339))
+			issues = append(issues, "Gap at "+c.Time.Format(time.RFC3339))
 			if len(issues) >= 10 {
 				break
 			}

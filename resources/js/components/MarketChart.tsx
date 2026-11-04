@@ -70,7 +70,7 @@ export default function MarketChart({ candles, curve }: { candles?: Candle[]; cu
       ref={ref}
       role="img"
       className="w-full"
-      aria-label="Gráfico de mercado; valores detalhados nas tabelas"
+      aria-label="Market chart; detailed values in the tables"
     />
   );
 }

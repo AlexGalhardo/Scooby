@@ -35,15 +35,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import type { SharedProps } from "@/types";
 
 const navigation = [
-  ["/", "Visão geral", BarChart3],
-  ["/market", "Dados de mercado", CandlestickChart],
-  ["/strategies", "Estratégias", Layers],
-  ["/backtests", "Laboratório", FlaskConical],
-  ["/orders", "Ordens", ListOrdered],
-  ["/positions", "Posições", Activity],
-  ["/risk", "Controle de risco", ShieldCheck],
-  ["/audit", "Auditoria", ScrollText],
-  ["/settings", "Configurações", Settings2],
+  ["/", "Overview", BarChart3],
+  ["/market", "Market data", CandlestickChart],
+  ["/strategies", "Strategies", Layers],
+  ["/backtests", "Lab", FlaskConical],
+  ["/orders", "Orders", ListOrdered],
+  ["/positions", "Positions", Activity],
+  ["/risk", "Risk control", ShieldCheck],
+  ["/audit", "Audit", ScrollText],
+  ["/settings", "Settings", Settings2],
 ] as const;
 export default function AppLayout({ children }: { children: ReactNode }) {
   const page = usePage<SharedProps>();
@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <div>
                 <span className="text-xl font-semibold tracking-tight">
-                  scooby<span className="text-emerald-400">.</span>
+                  vukem-trading<span className="text-emerald-400">.</span>
                 </span>
                 <p className="text-[10px] uppercase tracking-[.2em] text-muted-foreground">
                   Quant trading terminal
@@ -80,7 +80,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarContent>
             <SidebarGroup>
               <p className="px-3 pb-3 text-[10px] uppercase tracking-widest text-muted-foreground">
-                Workspace pessoal
+                Personal workspace
               </p>
               <SidebarMenu>
                 {navigation.map(([href, label, Icon]) => (
@@ -100,9 +100,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </SidebarGroup>
             <div className="mx-4 mt-auto rounded-xl border border-emerald-400/15 bg-emerald-400/5 p-4">
               <ShieldCheck className="mb-2 size-5 text-emerald-400" />
-              <p className="text-xs font-medium">Ambiente de simulação</p>
+              <p className="text-xs font-medium">Simulation environment</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Brasil + EUA. Nenhuma ordem com capital real.
+                Brazil + US. No orders with real capital.
               </p>
             </div>
           </SidebarContent>
@@ -113,9 +113,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium">{user.name}</p>
-                <p className="truncate text-[10px] text-muted-foreground">Conta do proprietário</p>
+                <p className="truncate text-[10px] text-muted-foreground">Owner account</p>
               </div>
-              <Link href="/logout" method="post" as="button" aria-label="Sair">
+              <Link href="/logout" method="post" as="button" aria-label="Sign out">
                 <LogOut className="size-4 text-muted-foreground" />
               </Link>
             </div>
@@ -130,7 +130,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Badge variant="outline" className="border-emerald-400/30 text-emerald-500">
                 PAPER ONLY
               </Badge>
-              <Button variant="ghost" size="icon" onClick={toggle} aria-label="Alternar tema">
+              <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
                 {dark ? <Sun /> : <Moon />}
               </Button>
               <a
@@ -139,15 +139,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 target="_blank"
                 rel="noreferrer"
               >
-                Projeto <ArrowUpRight className="ml-1 size-3" />
+                Project <ArrowUpRight className="ml-1 size-3" />
               </a>
             </div>
           </header>
           <main className="mx-auto w-full max-w-[1600px] p-5 md:p-8">{children}</main>
           <footer className="mt-auto flex flex-wrap justify-between gap-2 border-t px-8 py-4 text-[10px] text-muted-foreground">
-            <span>SCOOBY / RESEARCH • SIMULATE • OBSERVE</span>
+            <span>VUKEM-TRADING / RESEARCH • SIMULATE • OBSERVE</span>
             <span>
-              Resultados simulados não garantem desempenho futuro.{" "}
+              Simulated results do not guarantee future performance.{" "}
               <a
                 href="https://www.tradingview.com/"
                 target="_blank"

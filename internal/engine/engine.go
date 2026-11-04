@@ -124,7 +124,7 @@ func (e Engine) Tick(ctx context.Context) error {
 		}
 		var ds trading.Dataset
 		if err := e.Store.Get(ctx, "datasets", s.DatasetID, &ds); err != nil {
-			e.halt(ctx, "b3", "Dataset de replay indisponível")
+			e.halt(ctx, "b3", "Replay dataset unavailable")
 			continue
 		}
 		if err := e.Replay(ctx, s, ds, 10); err != nil {
@@ -133,12 +133,12 @@ func (e Engine) Tick(ctx context.Context) error {
 	}
 	if e.Broker.Key != "" {
 		if err := e.Reconcile(ctx); err != nil {
-			e.halt(ctx, "us", "Falha na reconciliação Alpaca: "+err.Error())
+			e.halt(ctx, "us", "Alpaca reconciliation failed: "+err.Error())
 			return err
 		}
 		clock, err := e.Broker.Clock(ctx)
 		if err != nil {
-			e.halt(ctx, "us", "Calendário da corretora indisponível")
+			e.halt(ctx, "us", "Broker calendar unavailable")
 			return err
 		}
 		if !clock.Open || clock.NextClose.Sub(clock.Time) < 20*time.Minute {
@@ -166,7 +166,7 @@ func (e Engine) Tick(ctx context.Context) error {
 				}
 				ds, err := e.Broker.Bars(ctx, s.Symbol, time.Now().Add(-7*24*time.Hour), clock.Time)
 				if err != nil {
-					e.halt(ctx, "us", "Feed IEX indisponível")
+					e.halt(ctx, "us", "IEX feed unavailable")
 					continue
 				}
 				if err := e.SignalUS(ctx, s, ds, clock); err != nil {
@@ -198,7 +198,7 @@ func (e Engine) halt(ctx context.Context, id, reason string) {
 }
 func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Dataset, batch int) error {
 	if ds.Symbol != s.Symbol {
-		return errors.New("dataset de replay incompatível")
+		return errors.New("replay dataset incompatible")
 	}
 	inst, _ := trading.FindInstrument(s.Symbol)
 	return e.mutate(ctx, "b3", "engine", "tick", func(a *trading.State) error {
@@ -275,15 +275,15 @@ func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Datas
 }
 func (e Engine) SignalUS(ctx context.Context, s trading.Strategy, ds trading.Dataset, clock adapters.Clock) error {
 	if len(ds.Candles) < s.Slow+1 {
-		return errors.New("warmup insuficiente")
+		return errors.New("insufficient warmup")
 	}
 	last := ds.Candles[len(ds.Candles)-1]
 	if clock.Time.Sub(last.Time.Add(5*time.Minute)) > 10*time.Minute {
-		return errors.New("cotação obsoleta")
+		return errors.New("stale quote")
 	}
 	return e.mutate(ctx, "us", "engine", "tick", func(a *trading.State) error {
 		if clock.Time.Sub(last.Time.Add(5*time.Minute)) > time.Duration(a.Policy.MaxAgeSeconds)*time.Second {
-			a.Halt("Cotação obsoleta")
+			a.Halt("Stale quote")
 			return nil
 		}
 		day := trading.MarketDay("US", clock.Time)
@@ -319,7 +319,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 		return err
 	}
 	if account.ID == "" || account.Currency != "USD" || account.Status != "ACTIVE" || account.TradingBlocked {
-		return errors.New("conta paper indisponível")
+		return errors.New("paper account unavailable")
 	}
 	positions, err := e.Broker.Positions(ctx)
 	if err != nil {
@@ -345,7 +345,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 	}
 	return e.mutate(ctx, "us", "engine", "tick", func(a *trading.State) error {
 		if a.BrokerAccountID != "" && a.BrokerAccountID != account.ID {
-			a.Halt("Credenciais apontam para outra conta Alpaca; migração administrativa necessária")
+			a.Halt("Credentials point to another Alpaca account; administrative migration required")
 			return nil
 		}
 		a.BrokerAccountID = account.ID
@@ -357,7 +357,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 				}
 			}
 			if !found {
-				a.Halt("Ordem externa não reconhecida")
+				a.Halt("External order not recognized")
 				return nil
 			}
 		}
@@ -368,16 +368,16 @@ func (e Engine) Reconcile(ctx context.Context) error {
 				continue
 			}
 			if b.Symbol != o.Symbol || b.Side != o.Side || !b.Qty.Equal(o.Qty) {
-				a.Halt("Ordem divergente")
+				a.Halt("Order diverged")
 				return nil
 			}
 			if b.Filled.LessThan(o.Filled) {
-				a.Halt("Quantidade executada regrediu")
+				a.Halt("Filled quantity regressed")
 				return nil
 			}
 			if b.Filled.GreaterThan(o.Filled) {
 				if b.Average == nil {
-					return errors.New("fill sem preço")
+					return errors.New("fill without price")
 				}
 				delta := b.Filled.Sub(o.Filled)
 				price := b.Average.Mul(b.Filled).Sub(o.Average.Mul(o.Filled)).Div(delta)
@@ -406,7 +406,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 		for _, p := range positions {
 			expected, ok := a.Positions[p.Symbol]
 			if !ok || !expected.Qty.Equal(p.Qty) || p.Qty.IsNegative() {
-				a.Halt("Posição externa divergente: " + p.Symbol)
+				a.Halt("External position diverged: " + p.Symbol)
 				return nil
 			}
 			a.Mark(p.Symbol, p.Price)
@@ -414,7 +414,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 		}
 		for symbol := range a.Positions {
 			if !seen[symbol] {
-				a.Halt("Posição local ausente na corretora")
+				a.Halt("Local position missing at broker")
 				return nil
 			}
 		}
@@ -479,7 +479,7 @@ func (e Engine) Dispatch(ctx context.Context) error {
 			}
 			if err != nil {
 				x.Status = "unknown"
-				current.Halt("Ordem sem confirmação; reconciliação necessária")
+				current.Halt("Order without confirmation; reconciliation required")
 			} else {
 				x.BrokerID = b.ID
 				x.Status = "acknowledged"

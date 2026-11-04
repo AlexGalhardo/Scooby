@@ -18,7 +18,7 @@ import (
 // New builds the application; cmd/app and the tests call it.
 func New(opts ...vukem.Option) (*vukem.App, error) {
 	base := []vukem.Option{
-		vukem.WithName("Scooby"),
+		vukem.WithName("vukem-trading"),
 		vukem.WithEnvDefaults(map[string]string{"CACHE_STORE": "database", "SESSION_DRIVER": "database", "MAIL_MAILER": "log"}),
 		vukem.WithDatabaseDrivers(postgres.Driver()),
 		vukem.WithProviders(Providers()...),

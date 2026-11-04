@@ -100,7 +100,7 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 	if err := store.Get(t.Context(), "trading_accounts", "us", &state); err != nil {
 		t.Fatal(err)
 	}
-	if state.BrokerAccountID != "paper-account" || !strings.Contains(state.Reason, "outra conta") {
+	if state.BrokerAccountID != "paper-account" || !strings.Contains(state.Reason, "another Alpaca account") {
 		t.Fatal("credential switch mixed broker accounts")
 	}
 }

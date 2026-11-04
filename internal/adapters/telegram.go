@@ -19,7 +19,7 @@ func SendAlert(ctx context.Context, token, chat, message string) error {
 	if strings.ContainsAny(token, "/\r\n ?#") {
 		return fmt.Errorf("invalid Telegram token format")
 	}
-	payload, _ := json.Marshal(map[string]string{"chat_id": chat, "text": "Scooby PAPER: " + message})
+	payload, _ := json.Marshal(map[string]string{"chat_id": chat, "text": "vukem-trading PAPER: " + message})
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.telegram.org/bot"+token+"/sendMessage", bytes.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("alert request failed")

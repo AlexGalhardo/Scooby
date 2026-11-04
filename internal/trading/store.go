@@ -337,11 +337,11 @@ func (s Store) ToggleStrategy(ctx context.Context, id string, enabled bool) erro
 		}
 		if !enabled {
 			if p := a.Positions[strategy.Symbol]; p.Qty.IsPositive() {
-				return errors.New("posição aberta: mantenha a estratégia de proteção habilitada")
+				return errors.New("open position: keep the protection strategy enabled")
 			}
 			for _, o := range a.Orders {
 				if o.Open() && o.Symbol == strategy.Symbol {
-					return errors.New("ordem pendente no ativo")
+					return errors.New("pending order on symbol")
 				}
 			}
 		}
@@ -372,7 +372,7 @@ func (s Store) ToggleStrategy(ctx context.Context, id string, enabled bool) erro
 				return err
 			}
 			if conflict {
-				return errors.New("já existe estratégia ativa nesta conta/ativo; B3 permite um relógio de replay por vez")
+				return errors.New("an active strategy already exists for this account/symbol; B3 allows one replay clock at a time")
 			}
 		}
 		status := "disabled"
@@ -450,11 +450,11 @@ func (s Store) ResetReplay(ctx context.Context) error {
 			return err
 		}
 		if !a.Halted || len(a.Positions) > 0 {
-			return errors.New("bloqueie e encerre posições antes de iniciar novo replay")
+			return errors.New("block and close positions before starting a new replay")
 		}
 		for _, o := range a.Orders {
 			if o.Open() {
-				return errors.New("ordens abertas impedem novo replay")
+				return errors.New("open orders block a new replay")
 			}
 		}
 		id := "replay-" + ID()

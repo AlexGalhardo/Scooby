@@ -15,12 +15,12 @@ export async function api<T = Record<string, unknown>>(
   });
   if (response.status === 401) {
     window.location.assign("/login");
-    throw new Error("Sessão expirada");
+    throw new Error("Session expired");
   }
   const result = await response.json();
   if (!response.ok)
     throw new Error(
-      result.detail ?? result.message ?? result.title ?? `Falha HTTP ${response.status}`,
+      result.detail ?? result.message ?? result.title ?? `HTTP error ${response.status}`,
     );
   return result as T;
 }

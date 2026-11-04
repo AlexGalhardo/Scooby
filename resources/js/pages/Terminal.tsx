@@ -62,20 +62,20 @@ import {
 } from "@/types";
 
 const titles: Record<string, [string, string]> = {
-  overview: ["Visão geral", "Seu mercado. Suas regras. Todas as decisões em um só lugar."],
-  market: ["Dados de mercado", "Histórico com origem identificada. Sem dados inventados."],
-  strategies: ["Estratégias", "Transforme hipóteses em regras determinísticas e versionadas."],
-  backtests: ["Laboratório", "Teste, compare e avalie depois dos custos."],
-  orders: ["Ordens", "Do sinal à confirmação. Cada transição importa."],
-  positions: ["Posições", "Exposição segregada por conta, moeda e modalidade."],
-  risk: ["Controle de risco", "Defina limites antes de permitir novas exposições."],
-  audit: ["Auditoria", "Uma trilha persistente de decisões e ações."],
-  settings: ["Configurações", "Status das integrações e do ambiente de execução."],
+  overview: ["Overview", "Your market. Your rules. All decisions in one place."],
+  market: ["Market data", "History with identified source. No invented data."],
+  strategies: ["Strategies", "Turn hypotheses into deterministic, versioned rules."],
+  backtests: ["Lab", "Test, compare and evaluate after costs."],
+  orders: ["Orders", "From signal to confirmation. Every transition matters."],
+  positions: ["Positions", "Exposure segregated by account, currency and mode."],
+  risk: ["Risk control", "Set limits before allowing new exposures."],
+  audit: ["Audit", "A persistent trail of decisions and actions."],
+  settings: ["Settings", "Status of integrations and the execution environment."],
 };
 const kindName: Record<string, string> = {
-  ma_cross: "Cruzamento de médias",
-  mean_reversion: "Reversão à média",
-  breakout: "Rompimento",
+  ma_cross: "Moving average crossover",
+  mean_reversion: "Mean reversion",
+  breakout: "Breakout",
 };
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -166,8 +166,8 @@ function GridTable({ headers, rows }: { headers: string[]; rows: GridRow[] }) {
     </div>
   ) : (
     <Empty
-      title="Nenhum registro ainda"
-      detail="Os dados aparecerão aqui depois que você configurar uma estratégia e executar uma simulação."
+      title="No records yet"
+      detail="Data will appear here after you configure a strategy and run a simulation."
     />
   );
 }
@@ -214,7 +214,7 @@ export default function Terminal({ section }: { section: string }) {
       setSnapshot(await api<Snapshot>("/api/snapshot"));
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha de conexão");
+      setError(e instanceof Error ? e.message : "Connection failed");
     }
   }, []);
   useEffect(() => {
@@ -230,9 +230,9 @@ export default function Terminal({ section }: { section: string }) {
     try {
       await api(path, body);
       await refresh();
-      setNotice("Solicitação registrada.");
+      setNotice("Request recorded.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Falha ao executar ação");
+      setError(e instanceof Error ? e.message : "Failed to run action");
     } finally {
       setBusy(false);
     }
@@ -261,12 +261,12 @@ export default function Terminal({ section }: { section: string }) {
             <>
               <WifiOff />
               <p role="alert">{error}</p>
-              <Button onClick={() => void refresh()}>Tentar novamente</Button>
+              <Button onClick={() => void refresh()}>Try again</Button>
             </>
           ) : (
             <>
               <Loader2 className="animate-spin text-emerald-400" />
-              <p className="text-sm text-muted-foreground">Carregando seu workspace…</p>
+              <p className="text-sm text-muted-foreground">Loading your workspace…</p>
             </>
           )}
         </div>
@@ -277,13 +277,13 @@ export default function Terminal({ section }: { section: string }) {
   const controls = (a: Account) => (
     <div className="flex flex-wrap gap-2">
       <Confirm
-        title={a.halted ? "Retomar simulação" : "Bloquear novas entradas"}
+        title={a.halted ? "Resume simulation" : "Block new entries"}
         description={
           a.halted
-            ? "A engine continuará operando sem o navegador. Revise dados e limites antes de retomar."
-            : "Bloqueia novas entradas; ordens em voo e posições ainda precisam ser acompanhadas."
+            ? "The engine will keep running without the browser. Review data and limits before resuming."
+            : "Blocks new entries; in-flight orders and positions still need to be monitored."
         }
-        label={a.halted ? "Retomar PAPER" : "Bloquear"}
+        label={a.halted ? "Resume PAPER" : "Block"}
         disabled={busy}
         action={() =>
           act(`/api/accounts/${a.id}/control`, {
@@ -294,25 +294,25 @@ export default function Terminal({ section }: { section: string }) {
       />
       {a.id === "b3" && (
         <Confirm
-          title="Novo replay B3"
-          description="Arquiva o snapshot anterior, preservando fills e auditoria, e reinicia o capital fictício em R$ 100.000. Exige conta bloqueada e sem posições/ordens abertas."
-          label="Novo replay"
+          title="New B3 replay"
+          description="Archives the previous snapshot, preserving fills and audit, and resets the simulated capital to R$ 100,000. Requires a blocked account with no open positions or orders."
+          label="New replay"
           disabled={busy}
           action={() => act(`/api/accounts/${a.id}/control`, { action: "reset", confirm: "RESET" })}
         />
       )}
       <Confirm
-        title="Cancelar ordens abertas"
-        description="A conta será bloqueada. Cancelamentos externos permanecem pendentes até confirmação."
-        label="Cancelar ordens"
+        title="Cancel open orders"
+        description="The account will be blocked. External cancellations remain pending until confirmed."
+        label="Cancel orders"
         disabled={busy}
         action={() => act(`/api/accounts/${a.id}/control`, { action: "cancel" })}
       />
       {a.id === "us" && (
         <Confirm
-          title="Zerar posições paper"
-          description="Cria ordens de saída com base na posição reconciliada. Não garante execução nem encerramento imediato."
-          label="Zerar posições"
+          title="Flatten paper positions"
+          description="Creates exit orders based on the reconciled position. Does not guarantee immediate execution or closing."
+          label="Flatten positions"
           disabled={busy}
           action={() =>
             act(`/api/accounts/${a.id}/control`, { action: "flatten", confirm: "ZERAR" })
@@ -323,26 +323,21 @@ export default function Terminal({ section }: { section: string }) {
   );
   return (
     <>
-      <Head title={`${title} · Scooby`} />
+      <Head title={`${title} · vukem-trading`} />
       <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-2 text-[10px] font-medium uppercase tracking-[.2em] text-emerald-500">
-            Workspace / {section === "backtests" ? "Pesquisa quantitativa" : "Trading terminal"}
+            Workspace / {section === "backtests" ? "Quantitative research" : "Trading terminal"}
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={accountId} onChange={setAccount}>
-            <option value="b3">Brasil · BRL · Replay</option>
-            <option value="us">EUA · USD · Alpaca Paper</option>
+            <option value="b3">Brazil · BRL · Replay</option>
+            <option value="us">US · USD · Alpaca Paper</option>
           </Select>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => void refresh()}
-            aria-label="Atualizar"
-          >
+          <Button size="icon" variant="outline" onClick={() => void refresh()} aria-label="Refresh">
             <RefreshCw className="size-4" />
           </Button>
         </div>
@@ -353,7 +348,7 @@ export default function Terminal({ section }: { section: string }) {
           className="mb-4 flex justify-between rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-500"
         >
           {error}
-          <button type="button" onClick={() => setError("")} aria-label="Fechar alerta">
+          <button type="button" onClick={() => setError("")} aria-label="Close alert">
             ×
           </button>
         </div>
@@ -371,13 +366,13 @@ export default function Terminal({ section }: { section: string }) {
           <span
             className={`size-1.5 rounded-full ${alive(account.heartbeat) ? "bg-emerald-400" : "bg-amber-400"}`}
           />
-          <span>{alive(account.heartbeat) ? "Worker conectado" : "Aguardando worker"}</span>
+          <span>{alive(account.heartbeat) ? "Worker connected" : "Waiting for worker"}</span>
           <span className="text-muted-foreground">/</span>
           <Badge variant="secondary">
-            {account.mode === "simulation" ? "SIMULAÇÃO B3 · REPLAY" : "ALPACA PAPER · IEX"}
+            {account.mode === "simulation" ? "B3 SIMULATION · REPLAY" : "ALPACA PAPER · IEX"}
           </Badge>
           <span className="ml-auto text-muted-foreground">
-            {account.halted ? account.reason : "Novas entradas habilitadas"}
+            {account.halted ? account.reason : "New entries enabled"}
           </span>
         </div>
       )}
@@ -385,38 +380,38 @@ export default function Terminal({ section }: { section: string }) {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Stat
-              label="Patrimônio simulado"
+              label="Simulated equity"
               value={
                 account.id === "us" && account.reconciled_at.startsWith("0001")
                   ? "—"
                   : money(account.equity, currency)
               }
-              detail={`${currency} · conta segregada`}
+              detail={`${currency} · segregated account`}
             />
             <Stat
-              label="P&L realizado"
+              label="P&L realized"
               value={known ? money(account.realized, currency) : "—"}
-              detail="Com base nos fills registrados"
+              detail="Based on recorded fills"
               positive={Number(account.realized) >= 0}
             />
             <Stat
-              label="Exposição reservada + posições"
+              label="Reserved exposure + positions"
               value={known ? money(account.exposure, currency) : "—"}
-              detail="Inclui ordens pendentes"
+              detail="Includes pending orders"
             />
             <Stat
               label="Drawdown atual"
               value={known ? `${Number(account.drawdown).toFixed(2)}%` : "—"}
-              detail="Em relação ao pico observado"
+              detail="Relative to observed peak"
             />
           </div>
           <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
             <Card>
               <CardHeader className="flex-row items-start justify-between">
                 <div>
-                  <CardTitle>Explorar o histórico</CardTitle>
+                  <CardTitle>Explore history</CardTitle>
                   <CardDescription>
-                    Até 1.000 candles recentes do dataset selecionado
+                    Up to 1,000 recent candles from the selected dataset
                   </CardDescription>
                 </div>
                 <div className="max-w-48">
@@ -428,16 +423,16 @@ export default function Terminal({ section }: { section: string }) {
                   <MarketChart candles={candles} />
                 ) : (
                   <Empty
-                    title="Seu gráfico começa com dados"
-                    detail="Importe um histórico autorizado ou consulte a Alpaca Paper em Dados de mercado."
+                    title="Your chart starts with data"
+                    detail="Import an authorized history or query Alpaca Paper in Market data."
                   />
                 )}
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Estado operacional</CardTitle>
-                <CardDescription>Controle independente do navegador</CardDescription>
+                <CardTitle>Operational status</CardTitle>
+                <CardDescription>Control independent of the browser</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="flex items-center gap-3">
@@ -448,16 +443,16 @@ export default function Terminal({ section }: { section: string }) {
                   )}
                   <div>
                     <p className="text-sm">
-                      {account.halted ? "Entradas bloqueadas" : "Simulação ativa"}
+                      {account.halted ? "Entries blocked" : "Simulation active"}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {account.reason || "Monitoramento pelo worker Go"}
+                      {account.reason || "Monitored by the Go worker"}
                     </p>
                   </div>
                 </div>
                 <div className="space-y-2 border-y py-4 text-xs">
                   <p className="flex justify-between">
-                    <span className="text-muted-foreground">Estratégias habilitadas</span>
+                    <span className="text-muted-foreground">Strategies enabled</span>
                     {
                       snapshot.strategies.filter(
                         (s) => s.status === "enabled" && s.payload.account_id === account.id,
@@ -465,26 +460,26 @@ export default function Terminal({ section }: { section: string }) {
                     }
                   </p>
                   <p className="flex justify-between">
-                    <span className="text-muted-foreground">Caixa</span>
+                    <span className="text-muted-foreground">Cash</span>
                     {known ? money(account.cash, currency) : "—"}
                   </p>
                   <p className="flex justify-between">
-                    <span className="text-muted-foreground">P&L não realizado</span>
+                    <span className="text-muted-foreground">P&L unrealized</span>
                     {known ? money(account.unrealized, currency) : "—"}
                   </p>
                   <p className="text-muted-foreground">Heartbeat: {date(account.heartbeat)}</p>
                 </div>
                 {controls(account)}
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  IEX não representa o volume consolidado americano. Replay B3 usa dados históricos
-                  e fills internos.
+                  IEX does not represent US consolidated volume. B3 replay uses historical data and
+                  internal fills.
                 </p>
               </CardContent>
             </Card>
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>Últimas ordens</CardTitle>
+              <CardTitle>Latest orders</CardTitle>
             </CardHeader>
             <CardContent>
               <Orders account={account} act={act} />
@@ -498,29 +493,29 @@ export default function Terminal({ section }: { section: string }) {
             <ImportForm snapshot={snapshot} refresh={refresh} setError={setError} />
             <Card>
               <CardHeader>
-                <CardTitle>Histórico americano · IEX</CardTitle>
+                <CardTitle>US history · IEX</CardTitle>
                 <CardDescription>
-                  Usa as credenciais Alpaca no servidor. Respeita a janela recente restrita do plano
-                  básico.
+                  Uses the Alpaca credentials on the server. Respects the restricted recent window
+                  of the basic plan.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <FetchForm configured={snapshot.settings.alpaca_configured} act={act} busy={busy} />
                 <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
-                  Nenhuma assinatura é contratada automaticamente. A fonte B3 em tempo real ainda
-                  não está integrada.
+                  No subscription is purchased automatically. The real-time B3 source is not yet
+                  integrated.
                 </p>
               </CardContent>
             </Card>
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>Datasets disponíveis</CardTitle>
-              <CardDescription>Preservados com hash, origem, licença e período</CardDescription>
+              <CardTitle>Available datasets</CardTitle>
+              <CardDescription>Preserved with hash, source, license and period</CardDescription>
             </CardHeader>
             <CardContent>
               <GridTable
-                headers={["Ativo", "Fonte", "Candles", "Período", "Qualidade", "Visualizar"]}
+                headers={["Symbol", "Source", "Candles", "Period", "Quality", "View"]}
                 rows={snapshot.datasets.map((ds) =>
                   row(
                     ds.id,
@@ -538,7 +533,7 @@ export default function Terminal({ section }: { section: string }) {
                       <Status value="ready" />
                     ),
                     <Button size="sm" variant="outline" onClick={() => setDataset(ds.id)}>
-                      Gráfico
+                      Chart
                     </Button>,
                   ),
                 )}
@@ -546,7 +541,7 @@ export default function Terminal({ section }: { section: string }) {
               {candles.length > 0 && (
                 <div className="mt-6">
                   <p className="mb-3 text-xs text-muted-foreground">
-                    {snapshot.datasets.find((d) => d.id === datasetId)?.symbol} · últimos{" "}
+                    {snapshot.datasets.find((d) => d.id === datasetId)?.symbol} · last{" "}
                     {candles.length} candles
                   </p>
                   <MarketChart candles={candles} />
@@ -560,20 +555,20 @@ export default function Terminal({ section }: { section: string }) {
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Cada configuração é imutável; crie nova versão para alterar regras.
+              Each configuration is immutable; create a new version to change rules.
             </p>
             <Dialog>
               <DialogTrigger asChild>
                 <Button>
                   <Plus />
-                  Nova estratégia
+                  New strategy
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-h-[90vh] overflow-auto">
                 <DialogHeader>
-                  <DialogTitle>Nova configuração</DialogTitle>
+                  <DialogTitle>New configuration</DialogTitle>
                   <DialogDescription>
-                    Começa desabilitada. Ativar a estratégia não desbloqueia a conta.
+                    Starts disabled. Enabling the strategy does not unlock the account.
                   </DialogDescription>
                 </DialogHeader>
                 <StrategyForm snapshot={snapshot} refresh={refresh} />
@@ -593,21 +588,21 @@ export default function Terminal({ section }: { section: string }) {
                     </div>
                     <CardTitle className="pt-3">{s.name}</CardTitle>
                     <CardDescription>
-                      {kindName[s.kind]} · versão {s.version}
+                      {kindName[s.kind]} · version {s.version}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-5 grid grid-cols-2 gap-3 rounded-xl bg-muted/30 p-4 text-xs">
-                      <span className="text-muted-foreground">Janelas</span>
+                      <span className="text-muted-foreground">Windows</span>
                       <span>
                         {s.fast} / {s.slow}
                       </span>
-                      <span className="text-muted-foreground">Stop / alvo</span>
+                      <span className="text-muted-foreground">Stop / target</span>
                       <span>
                         {s.stop_bps / 100}% / {s.target_bps / 100}%
                       </span>
                       <span className="text-muted-foreground">Timeframe</span>
-                      <span>5 minutos · sessão regular</span>
+                      <span>5 minutes · regular session</span>
                     </div>
                     <Button
                       className="w-full"
@@ -619,7 +614,7 @@ export default function Terminal({ section }: { section: string }) {
                         })
                       }
                     >
-                      {status === "enabled" ? "Desabilitar" : "Habilitar estratégia"}
+                      {status === "enabled" ? "Disable" : "Enable strategy"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -628,8 +623,8 @@ export default function Terminal({ section }: { section: string }) {
           ) : (
             <Card>
               <Empty
-                title="Qual hipótese você quer testar?"
-                detail="Comece com médias móveis, reversão à média ou rompimento. Parâmetros e limites são validados no servidor."
+                title="Which hypothesis do you want to test?"
+                detail="Start with moving averages, mean reversion or breakout. Parameters and limits are validated on the server."
               />
             </Card>
           )}
@@ -639,10 +634,9 @@ export default function Terminal({ section }: { section: string }) {
         <div className="space-y-5">
           <Card>
             <CardHeader>
-              <CardTitle>Executar experimento</CardTitle>
+              <CardTitle>Run experiment</CardTitle>
               <CardDescription>
-                Job durável processado pelo worker. Treino e teste têm divisão temporal de 70% /
-                30%.
+                Durable job processed by the worker. Train and test use a 70% / 30%.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -651,22 +645,21 @@ export default function Terminal({ section }: { section: string }) {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de experimentos</CardTitle>
+              <CardTitle>Experiment history</CardTitle>
               <CardDescription>
-                Compare resultados líquidos e limites da amostra; não ajuste parâmetros no teste
-                final.
+                Compare net results and sample limits; do not tune parameters on the final test.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <GridTable
                 headers={[
-                  "Estratégia",
-                  "Partição",
+                  "Strategy",
+                  "Partition",
                   "Status",
-                  "Retorno",
+                  "Return",
                   "Drawdown",
-                  "Operações",
-                  "Relatório",
+                  "Trades",
+                  "Report",
                 ]}
                 rows={snapshot.backtests.map(({ id, payload: j, status }) =>
                   row(
@@ -691,7 +684,7 @@ export default function Terminal({ section }: { section: string }) {
                             }
                           }}
                         >
-                          Abrir
+                          Open
                         </Button>
                       )}
                       {["queued", "running"].includes(status) && (
@@ -700,7 +693,7 @@ export default function Terminal({ section }: { section: string }) {
                           variant="outline"
                           onClick={() => void act(`/api/backtests/${j.id}/cancel`, {})}
                         >
-                          Cancelar
+                          Cancel
                         </Button>
                       )}
                       {j.error && <span className="text-red-400">{j.error}</span>}
@@ -713,9 +706,9 @@ export default function Terminal({ section }: { section: string }) {
           <Dialog open={reportOpen} onOpenChange={setReportOpen}>
             <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-4xl">
               <DialogHeader>
-                <DialogTitle>{report?.strategy.name} · relatório</DialogTitle>
+                <DialogTitle>{report?.strategy.name} · report</DialogTitle>
                 <DialogDescription>
-                  Equity líquida e benchmark buy-and-hold. Partição: {report?.partition}
+                  Net equity and buy-and-hold benchmark. Partition: {report?.partition}
                 </DialogDescription>
               </DialogHeader>
               {report?.result && (
@@ -723,22 +716,22 @@ export default function Terminal({ section }: { section: string }) {
                   <MarketChart curve={report.result.curve ?? []} />
                   <div className="grid gap-3 sm:grid-cols-3">
                     <Stat
-                      label="Custos simulados"
+                      label="Simulated costs"
                       value={money(
                         report.result.metrics.costs,
                         report.strategy.account_id === "b3" ? "BRL" : "USD",
                       )}
-                      detail="Taxas configuradas em bps"
+                      detail="Fees configured in bps"
                     />
                     <Stat
                       label="Win rate"
                       value={`${report.result.metrics.win_rate.toFixed(1)}%`}
-                      detail={`${report.result.metrics.trades} operações encerradas`}
+                      detail={`${report.result.metrics.trades} closed trades`}
                     />
                     <Stat
-                      label="Exposição"
+                      label="Exposure"
                       value={String(report.result.metrics.exposure_bars)}
-                      detail="Candles com posição"
+                      detail="Candles with position"
                     />
                   </div>
                   <div className="space-y-2 text-xs text-muted-foreground">
@@ -756,16 +749,16 @@ export default function Terminal({ section }: { section: string }) {
                       const href = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = href;
-                      a.download = `scooby-backtest-${report.id}.json`;
+                      a.download = `vukem-trading-backtest-${report.id}.json`;
                       a.click();
                       URL.revokeObjectURL(href);
                     }}
                   >
                     <ArrowDownToLine />
-                    Exportar artefato JSON
+                    Export JSON artifact
                   </Button>
                   <GridTable
-                    headers={["Horário", "Ativo", "Lado", "Quantidade", "Preço", "Taxas"]}
+                    headers={["Time", "Symbol", "Side", "Quantity", "Price", "Fees"]}
                     rows={(report.result.fills ?? [])
                       .slice(-100)
                       .map((f) =>
@@ -781,9 +774,9 @@ export default function Terminal({ section }: { section: string }) {
       {section === "orders" && account && (
         <Card>
           <CardHeader>
-            <CardTitle>Ordens · {account.id.toUpperCase()}</CardTitle>
+            <CardTitle>Orders · {account.id.toUpperCase()}</CardTitle>
             <CardDescription>
-              Últimos 100 registros. Estado desconhecido mantém a reserva de risco.
+              Last 100 records. Unknown state keeps the risk reserve.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -795,21 +788,19 @@ export default function Terminal({ section }: { section: string }) {
         <div className="space-y-5">
           <Card>
             <CardHeader>
-              <CardTitle>Posições abertas</CardTitle>
-              <CardDescription>
-                Marcação atual e proteção definidas pela intenção de entrada
-              </CardDescription>
+              <CardTitle>Open positions</CardTitle>
+              <CardDescription>Current mark and protection set by the entry intent</CardDescription>
             </CardHeader>
             <CardContent>
               <GridTable
                 headers={[
-                  "Ativo",
-                  "Quantidade",
-                  "Preço médio",
-                  "Marcação",
+                  "Symbol",
+                  "Quantity",
+                  "Average price",
+                  "Mark",
                   "Stop",
-                  "Alvo",
-                  "P&L não realizado",
+                  "Target",
+                  "P&L unrealized",
                 ]}
                 rows={Object.values(account.positions).map((p) =>
                   row(
@@ -828,14 +819,14 @@ export default function Terminal({ section }: { section: string }) {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Execuções registradas</CardTitle>
+              <CardTitle>Recorded executions</CardTitle>
               <CardDescription>
-                Valores de exibição; a contabilidade usa decimais no servidor
+                Display values; accounting uses decimals on the server
               </CardDescription>
             </CardHeader>
             <CardContent>
               <GridTable
-                headers={["Horário", "Ativo", "Lado", "Quantidade", "Preço", "Taxas"]}
+                headers={["Time", "Symbol", "Side", "Quantity", "Price", "Fees"]}
                 rows={[...account.fills]
                   .reverse()
                   .map((f) =>
@@ -858,9 +849,9 @@ export default function Terminal({ section }: { section: string }) {
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <Card>
             <CardHeader>
-              <CardTitle>Política de risco · {account.id.toUpperCase()}</CardTitle>
+              <CardTitle>Risk policy · {account.id.toUpperCase()}</CardTitle>
               <CardDescription>
-                Bloqueie a conta para editar. Limites persistem entre reinícios.
+                Block the account to edit. Limits persist across restarts.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -870,20 +861,20 @@ export default function Terminal({ section }: { section: string }) {
           <Card className="border-amber-500/20">
             <CardHeader>
               <ShieldAlert className="mb-2 text-amber-500" />
-              <CardTitle>Controles operacionais</CardTitle>
+              <CardTitle>Operational controls</CardTitle>
               <CardDescription>
-                Bloquear novas entradas não significa que posições foram encerradas.
+                Blocking new entries does not mean positions were closed.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {controls(account)}
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Ordens em voo precisam de confirmação. Stops e alvos são observados pela engine, não
-                garantem preço ou proteção durante indisponibilidade. Para B3, o replay aplica
-                regras no relógio histórico.
+                In-flight orders need confirmation. Stops and targets are observed by the engine and
+                do not guarantee price or protection during downtime. For B3, replay applies rules
+                on the historical clock.
               </p>
               <p className="text-xs text-muted-foreground">
-                Reconciliação: {date(account.reconciled_at)}
+                Reconciliation: {date(account.reconciled_at)}
               </p>
             </CardContent>
           </Card>
@@ -892,12 +883,12 @@ export default function Terminal({ section }: { section: string }) {
       {section === "audit" && (
         <Card>
           <CardHeader>
-            <CardTitle>Eventos auditados</CardTitle>
-            <CardDescription>Últimos 100 eventos persistidos</CardDescription>
+            <CardTitle>Audited events</CardTitle>
+            <CardDescription>Last 100 persisted events</CardDescription>
           </CardHeader>
           <CardContent>
             <GridTable
-              headers={["Horário", "Ator", "Ação", "Conta / registro", "Detalhes"]}
+              headers={["Time", "Actor", "Action", "Account / record", "Details"]}
               rows={snapshot.audit.map((a) =>
                 row(
                   a.id,
@@ -912,7 +903,7 @@ export default function Terminal({ section }: { section: string }) {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Snapshot anterior (JSON)
+                      Previous snapshot (JSON)
                     </a>
                   ) : (
                     a.details
@@ -927,49 +918,49 @@ export default function Terminal({ section }: { section: string }) {
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Integrações</CardTitle>
+              <CardTitle>Integrations</CardTitle>
               <CardDescription>
-                Somente presença de configuração; segredos nunca são retornados ao navegador
+                Only configuration presence; secrets are never returned to the browser
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {[
                 ["Login Google", snapshot.settings.google_configured],
-                ["Proprietário autorizado", snapshot.settings.owner_configured],
+                ["Authorized owner", snapshot.settings.owner_configured],
                 ["Alpaca Paper", snapshot.settings.alpaca_configured],
               ].map(([label, ready]) => (
                 <div key={String(label)} className="flex justify-between border-b pb-3 text-sm">
                   <span>{label}</span>
-                  <Status value={ready ? "ready" : "não configurado"} />
+                  <Status value={ready ? "ready" : "not configured"} />
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                Configure credenciais e callback pelo ambiente Railway. B3 usa importação de
-                histórico autorizado.
+                Configure credentials and callback through the Railway environment. B3 uses
+                authorized history import.
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Contrato do ambiente</CardTitle>
-              <CardDescription>Escopo pessoal e exclusivamente simulado</CardDescription>
+              <CardTitle>Environment contract</CardTitle>
+              <CardDescription>Personal and exclusively simulated scope</CardDescription>
             </CardHeader>
             <CardContent>
               <GridTable
-                headers={["Configuração", "Valor"]}
+                headers={["Setting", "Value"]}
                 rows={[
-                  row("mode", "Modo", "Paper only"),
-                  row("feed", "Feed americano", "IEX"),
-                  row("timeframe", "Timeframe", "5 minutos"),
+                  row("mode", "Mode", "Paper only"),
+                  row("feed", "US feed", "IEX"),
+                  row("timeframe", "Timeframe", "5 minutes"),
                   row("engine", "Engine", snapshot.settings.engine_version),
-                  row("persistence", "Persistência", "PostgreSQL"),
-                  row("server-time", "Horário servidor", date(snapshot.server_time)),
+                  row("persistence", "Persistence", "PostgreSQL"),
+                  row("server-time", "Server time", date(snapshot.server_time)),
                 ]}
               />
               <div className="mt-5 flex gap-3 rounded-lg bg-muted/40 p-4 text-xs leading-relaxed text-muted-foreground">
-                <CircleHelp className="size-4 shrink-0" />A recuperação da conta requer procedimento
-                administrativo auditado. Alterar o email de configuração não substitui
-                automaticamente uma identidade já vinculada.
+                <CircleHelp className="size-4 shrink-0" />
+                Account recovery requires an audited administrative procedure. Changing the
+                configured email does not replace an already linked identity automatically.
               </div>
             </CardContent>
           </Card>
@@ -977,7 +968,7 @@ export default function Terminal({ section }: { section: string }) {
       )}
       <p className="mt-6 flex items-center gap-2 text-[10px] text-muted-foreground">
         <Wifi className="size-3" />
-        Snapshot: {date(snapshot.server_time)} · atualização a cada 10 segundos · {currency}
+        Snapshot: {date(snapshot.server_time)} · refresh every 10 seconds · {currency}
       </p>
     </>
   );
@@ -995,7 +986,7 @@ function DatasetSelect({
 }) {
   return (
     <Select {...props} value={value} onChange={onChange}>
-      <option value="">Selecione histórico</option>
+      <option value="">Select history</option>
       {snapshot.datasets.map((d) => (
         <option key={d.id} value={d.id}>
           {d.symbol} · {d.bars} candles · {d.source}
@@ -1032,7 +1023,7 @@ function Confirm({
         </DialogHeader>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Voltar
+            Back
           </Button>
           <Button
             disabled={disabled}
@@ -1041,7 +1032,7 @@ function Confirm({
               setOpen(false);
             }}
           >
-            Confirmar
+            Confirm
           </Button>
         </div>
       </DialogContent>
@@ -1057,13 +1048,13 @@ function Orders({
 }) {
   return (
     <GridTable
-      headers={["Horário", "Ativo", "Lado", "Qtd / executada", "Limite", "Estado", "Ação"]}
+      headers={["Time", "Symbol", "Side", "Qty / filled", "Limit", "State", "Action"]}
       rows={[...account.orders].reverse().map((o) =>
         row(
           o.id,
           date(o.created_at),
           <span className="font-mono">{o.symbol}</span>,
-          <Badge variant="outline">{o.side === "buy" ? "Compra" : "Venda"}</Badge>,
+          <Badge variant="outline">{o.side === "buy" ? "Buy" : "Sell"}</Badge>,
           `${o.qty} / ${o.filled}`,
           money(o.limit, account.currency),
           <span>
@@ -1082,7 +1073,7 @@ function Orders({
               variant="outline"
               onClick={() => void act(`/api/accounts/${account.id}/orders/${o.id}/cancel`, {})}
             >
-              Cancelar
+              Cancel
             </Button>
           ) : (
             "—"
@@ -1117,7 +1108,7 @@ function ImportForm({
         license,
         csv,
       });
-      setSuccess(`${result.bars} candles importados com hash e procedência.`);
+      setSuccess(`${result.bars} candles imported with hash and provenance.`);
       setCsv("");
       await refresh();
     } catch (e) {
@@ -1129,15 +1120,15 @@ function ImportForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Importar histórico CSV</CardTitle>
+        <CardTitle>Import CSV history</CardTitle>
         <CardDescription>
-          B3 2026 · timestamp com offset; time,open,high,low,close,volume
+          B3 2026 · timestamp with offset; time,open,high,low,close,volume
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Ativo">
+            <Field label="Symbol">
               <Select value={symbol} onChange={setSymbol}>
                 {snapshot.instruments
                   .filter((i) => i.market === "B3")
@@ -1146,7 +1137,7 @@ function ImportForm({
                   ))}
               </Select>
             </Field>
-            <Field label="Arquivo (até 1 MiB)">
+            <Field label="File (up to 1 MiB)">
               <Input
                 type="file"
                 accept=".csv,text/csv"
@@ -1154,7 +1145,7 @@ function ImportForm({
                   const f = e.target.files?.[0];
                   if (f) {
                     if (f.size > 1024 * 1024) {
-                      setError("Limite de upload: 1 MiB");
+                      setError("Upload limit: 1 MiB");
                       return;
                     }
                     setCsv(await f.text());
@@ -1163,25 +1154,25 @@ function ImportForm({
               />
             </Field>
           </div>
-          <Field label="Fonte / fornecedor">
+          <Field label="Source / vendor">
             <Input
               required
               maxLength={120}
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              placeholder="Fornecedor do histórico"
+              placeholder="History vendor"
             />
           </Field>
-          <Field label="Licença / autorização de uso">
+          <Field label="License / authorized use">
             <Input
               required
               maxLength={300}
               value={license}
               onChange={(e) => setLicense(e.target.value)}
-              placeholder="Identifique o contrato ou permissão de uso"
+              placeholder="Identify the contract or usage permission"
             />
           </Field>
-          <Field label="Conteúdo CSV">
+          <Field label="CSV content">
             <Textarea
               required
               rows={4}
@@ -1192,12 +1183,11 @@ function ImportForm({
             />
           </Field>
           <label className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-            <input type="checkbox" required className="mt-0.5" />
-            Confirmo autorização para armazenar e processar este histórico. Não estou apresentando
-            dados sintéticos como mercado real.
+            <input type="checkbox" required className="mt-0.5" />I confirm authorization to store
+            and process this history. I am not presenting synthetic data as real market data.
           </label>
           <Button disabled={busy}>
-            {busy ? <Loader2 className="animate-spin" /> : <Upload />}Importar e validar
+            {busy ? <Loader2 className="animate-spin" /> : <Upload />}Import and validate
           </Button>
           {success && (
             <p role="status" className="text-xs text-emerald-500">
@@ -1228,14 +1218,14 @@ function FetchForm({
         void act("/api/datasets/fetch", { symbol, days });
       }}
     >
-      <Field label="Ativo">
+      <Field label="Symbol">
         <Select value={symbol} onChange={setSymbol}>
           {["AAPL", "NVDA", "TSLA"].map((s) => (
             <option key={s}>{s}</option>
           ))}
         </Select>
       </Field>
-      <Field label="Período em dias (1–30)">
+      <Field label="Period in days (1–30)">
         <Input
           type="number"
           min={1}
@@ -1246,10 +1236,10 @@ function FetchForm({
       </Field>
       <Button disabled={!configured || busy}>
         <RefreshCw />
-        Buscar candles IEX
+        Fetch IEX candles
       </Button>
       {!configured && (
-        <p className="text-xs text-amber-500">Alpaca Paper ainda não configurada no servidor.</p>
+        <p className="text-xs text-amber-500">Alpaca Paper is not yet configured on the server.</p>
       )}
     </form>
   );
@@ -1279,7 +1269,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
     try {
       await api("/api/strategies", s);
       await refresh();
-      setStatus("Configuração criada e desabilitada.");
+      setStatus("Configuration created and disabled.");
     } catch (e) {
       setStatus(String(e));
     } finally {
@@ -1288,7 +1278,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
   }
   return (
     <form className="grid gap-4" onSubmit={submit}>
-      <Field label="Nome">
+      <Field label="Name">
         <Input
           required
           minLength={3}
@@ -1297,7 +1287,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
           onChange={(e) => change("name", e.target.value)}
         />
       </Field>
-      <Field label="Família">
+      <Field label="Family">
         <Select value={s.kind} onChange={(v) => change("kind", v)}>
           {Object.entries(kindName).map(([k, v]) => (
             <option key={k} value={k}>
@@ -1307,7 +1297,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Conta">
+        <Field label="Account">
           <Select
             value={s.account_id}
             onChange={(v) =>
@@ -1318,7 +1308,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
             <option value="us">Alpaca Paper</option>
           </Select>
         </Field>
-        <Field label="Ativo">
+        <Field label="Symbol">
           <Select value={s.symbol} onChange={(v) => setS({ ...s, symbol: v, dataset_id: "" })}>
             {snapshot.instruments
               .filter((i) => (i.market === "B3") === (s.account_id === "b3"))
@@ -1329,7 +1319,7 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
         </Field>
       </div>
       {s.account_id === "b3" && (
-        <Field label="Dataset para replay">
+        <Field label="Dataset for replay">
           <DatasetSelect
             snapshot={{
               ...snapshot,
@@ -1343,11 +1333,11 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
       <div className="grid grid-cols-2 gap-3">
         {(
           [
-            ["fast", "Janela rápida", 2, 499],
-            ["slow", "Janela lenta / lookback", 3, 500],
+            ["fast", "Fast window", 2, 499],
+            ["slow", "Slow window / lookback", 3, 500],
             ["threshold", "Z-score", 0.1, 10],
             ["stop_bps", "Stop (bps)", 10, 2000],
-            ["target_bps", "Alvo (bps)", 10, 5000],
+            ["target_bps", "Target (bps)", 10, 5000],
           ] as const
         ).map(([key, label, min, max]) => (
           <Field key={key} label={label}>
@@ -1364,10 +1354,10 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        100 bps = 1%. Sinais somente em candles encerrados; versão imutável.
+        100 bps = 1%. Signals only on closed candles; immutable version.
       </p>
       <Button disabled={busy}>
-        {busy ? <Loader2 className="animate-spin" /> : <Plus />}Criar configuração
+        {busy ? <Loader2 className="animate-spin" /> : <Plus />}Create configuration
       </Button>
       {status && (
         <p role="status" className="text-xs">
@@ -1398,7 +1388,7 @@ function BacktestForm({
         void act("/api/backtests", { strategy_id: strategy, dataset_id: dataset, partition });
       }}
     >
-      <Field label="Estratégia">
+      <Field label="Strategy">
         <Select
           value={strategy}
           onChange={(v) => {
@@ -1406,7 +1396,7 @@ function BacktestForm({
             setDataset("");
           }}
         >
-          <option value="">Selecione</option>
+          <option value="">Select</option>
           {snapshot.strategies.map((s) => (
             <option key={s.id} value={s.id}>
               {s.payload.name} · {s.payload.symbol}
@@ -1424,17 +1414,17 @@ function BacktestForm({
           onChange={setDataset}
         />
       </Field>
-      <Field label="Partição temporal">
+      <Field label="Time partition">
         <Select value={partition} onChange={setPartition}>
-          <option value="test">Teste final · últimos 30%</option>
-          <option value="train">Desenvolvimento · primeiros 70%</option>
-          <option value="all">Exploratório · todo período</option>
+          <option value="test">Final test · last 30%</option>
+          <option value="train">Development · first 70%</option>
+          <option value="all">Exploratory · full period</option>
         </Select>
       </Field>
       <div className="flex items-end">
         <Button className="w-full" disabled={!strategy || !dataset || busy}>
           <FlaskConical />
-          Enfileirar backtest
+          Enqueue backtest
         </Button>
       </div>
     </form>
@@ -1460,13 +1450,13 @@ function RiskForm({
     >
       {(
         [
-          ["risk_bps", "Risco por operação (bps)", 1, 100],
-          ["daily_loss_bps", "Perda diária máxima (bps)", 1, 500],
-          ["exposure_bps", "Exposição máxima (bps)", 100, 10000],
-          ["max_positions", "Máximo de posições", 1, 6],
-          ["cost_bps", "Custos simulados por lado (bps)", 0, 100],
-          ["slippage_bps", "Slippage / limite (bps)", 1, 100],
-          ["max_age_seconds", "Idade máxima do preço (segundos)", 60, 900],
+          ["risk_bps", "Risk per trade (bps)", 1, 100],
+          ["daily_loss_bps", "Max daily loss (bps)", 1, 500],
+          ["exposure_bps", "Max exposure (bps)", 100, 10000],
+          ["max_positions", "Max positions", 1, 6],
+          ["cost_bps", "Simulated costs per side (bps)", 0, 100],
+          ["slippage_bps", "Slippage / limit (bps)", 1, 100],
+          ["max_age_seconds", "Max price age (seconds)", 60, 900],
         ] as const
       ).map(([key, label, min, max]) => (
         <Field key={key} label={label}>
@@ -1483,11 +1473,11 @@ function RiskForm({
         </Field>
       ))}
       <p className="text-xs leading-relaxed text-muted-foreground sm:col-span-2">
-        50 bps = 0,5%. A perda diária considera patrimônio marcado e custos. Limites não são
-        garantias de perda máxima: gaps e indisponibilidade podem excedê-los.
+        50 bps = 0.5%. Daily loss considers marked equity and costs. Limits are not guarantees of
+        maximum loss: gaps and downtime may exceed them.
       </p>
       <Button disabled={!account.halted || busy} className="sm:col-span-2">
-        Salvar política e registrar auditoria
+        Save policy and record audit
       </Button>
     </form>
   );

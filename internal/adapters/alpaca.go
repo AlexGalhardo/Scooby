@@ -22,7 +22,7 @@ type Alpaca struct {
 
 func (a Alpaca) request(ctx context.Context, method, path string, input, output any, data bool) error {
 	if a.Key == "" || a.Secret == "" {
-		return errors.New("credenciais Alpaca Paper ausentes")
+		return errors.New("Alpaca Paper credentials missing")
 	}
 	host := "https://paper-api.alpaca.markets"
 	if data {
@@ -49,7 +49,7 @@ func (a Alpaca) request(ctx context.Context, method, path string, input, output 
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("broker sem confirmação: %w", err)
+		return fmt.Errorf("broker without confirmation: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -129,14 +129,14 @@ func (a Alpaca) Cancel(ctx context.Context, id string) error {
 func (a Alpaca) Bars(ctx context.Context, symbol string, start, end time.Time) (trading.Dataset, error) {
 	i, err := trading.FindInstrument(symbol)
 	if err != nil || i.Market != "US" {
-		return trading.Dataset{}, errors.New("ativo inválido para Alpaca")
+		return trading.Dataset{}, errors.New("invalid symbol for Alpaca")
 	}
 	params := url.Values{"timeframe": {"5Min"}, "start": {start.UTC().Format(time.RFC3339)}, "end": {end.UTC().Format(time.RFC3339)}, "feed": {"iex"}, "adjustment": {"raw"}, "limit": {"10000"}}
 	calendar, err := a.Calendar(ctx, start, end)
 	if err != nil {
 		return trading.Dataset{}, err
 	}
-	ds := trading.Dataset{CalendarSource: "Alpaca exchange calendar", SessionCloses: calendar, ID: trading.ID(), Symbol: symbol, Currency: "USD", Timeframe: 5, Source: "Alpaca IEX", License: "Uso da conta Alpaca; confirmar termos contratados", CreatedAt: time.Now().UTC(), Candles: []trading.Candle{}}
+	ds := trading.Dataset{CalendarSource: "Alpaca exchange calendar", SessionCloses: calendar, ID: trading.ID(), Symbol: symbol, Currency: "USD", Timeframe: 5, Source: "Alpaca IEX", License: "Alpaca account use; confirm contracted terms", CreatedAt: time.Now().UTC(), Candles: []trading.Candle{}}
 	for page := 0; page < 20; page++ {
 		var response struct {
 			Bars []struct {
@@ -160,7 +160,7 @@ func (a Alpaca) Bars(ctx context.Context, symbol string, start, end time.Time) (
 			sessionClose, exists := calendar[trading.MarketDay("US", c.Time)]
 			if exists && trading.Session("US", c.Time) && !c.Time.Add(5*time.Minute).After(end) && !c.Time.Add(5*time.Minute).After(sessionClose) {
 				if len(ds.Candles) > 0 && !c.Time.After(ds.Candles[len(ds.Candles)-1].Time) {
-					return ds, errors.New("candles duplicados/fora de ordem")
+					return ds, errors.New("candles duplicated/out of order")
 				}
 				ds.Candles = append(ds.Candles, c)
 			}
@@ -169,12 +169,12 @@ func (a Alpaca) Bars(ctx context.Context, symbol string, start, end time.Time) (
 			break
 		}
 		if len(ds.Candles) > 100000 || page == 19 {
-			return ds, errors.New("histórico excede limite; selecione período menor")
+			return ds, errors.New("history exceeds limit; select a shorter period")
 		}
 		params.Set("page_token", response.Next)
 	}
 	if len(ds.Candles) < 3 {
-		return ds, errors.New("histórico IEX insuficiente no período")
+		return ds, errors.New("insufficient IEX history for the period")
 	}
 	ds.Hash = trading.DatasetHash(ds.Candles)
 	return ds, nil
@@ -198,7 +198,7 @@ func (a Alpaca) Calendar(ctx context.Context, start, end time.Time) (map[string]
 	for _, row := range rows {
 		close, err := time.ParseInLocation("2006-01-02 15:04", row.Date+" "+row.Close, zone)
 		if err != nil {
-			return nil, errors.New("calendário inválido")
+			return nil, errors.New("invalid calendar")
 		}
 		out[row.Date] = close.UTC()
 	}

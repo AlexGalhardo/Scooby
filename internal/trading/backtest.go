@@ -44,7 +44,7 @@ type Result struct {
 }
 
 func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string) (Result, error) {
-	r := Result{CalendarSource: ds.CalendarSource, Curve: []Point{}, Warnings: []string{"Simulação: OHLC não revela sequência intrabar; stop tem prioridade sobre alvo.", "Custos em bps; impostos não incluídos. Sem garantia de rentabilidade.", "Benchmark bruto buy-and-hold; posições remanescentes são encerradas no final da amostra."}, DatasetHash: ds.Hash, Strategy: s, Policy: policy, EngineVersion: BuildVersion, Partition: partition}
+	r := Result{CalendarSource: ds.CalendarSource, Curve: []Point{}, Warnings: []string{"Simulation: OHLC does not reveal intrabar sequence; stop takes priority over target.", "Costs in bps; taxes not included. No profitability guarantee.", "Gross buy-and-hold benchmark; remaining positions are closed at the end of the sample."}, DatasetHash: ds.Hash, Strategy: s, Policy: policy, EngineVersion: BuildVersion, Partition: partition}
 	if err := s.Validate(); err != nil {
 		return r, err
 	}
@@ -52,7 +52,7 @@ func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partit
 		return r, err
 	}
 	if ds.Symbol != s.Symbol {
-		return r, errors.New("dataset não corresponde ao ativo")
+		return r, errors.New("dataset does not match the symbol")
 	}
 	cs := ds.Candles
 	split := len(cs) * 7 / 10
@@ -62,12 +62,12 @@ func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partit
 	case "test":
 		cs = cs[split:]
 	case "all":
-		r.Warnings = append(r.Warnings, "Exploratório: usa o período completo, não é teste fora da amostra.")
+		r.Warnings = append(r.Warnings, "Exploratory: uses the full period, not out-of-sample testing.")
 	default:
-		return r, errors.New("partição deve ser train, test ou all")
+		return r, errors.New("partition must be train, test or all")
 	}
 	if len(cs) < s.Slow+2 {
-		return r, errors.New("histórico insuficiente para warmup e avaliação")
+		return r, errors.New("insufficient history for warmup and evaluation")
 	}
 	i, _ := FindInstrument(s.Symbol)
 	a := NewState("backtest", i.Currency, "backtest")

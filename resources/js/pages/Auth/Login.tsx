@@ -4,33 +4,33 @@ import { Button } from "@/components/ui/button";
 export default function Login({ configured }: { configured: boolean }) {
   return (
     <>
-      <Head title="Entrar · Scooby" />
+      <Head title="Sign in · vukem-trading" />
       <div className="grid min-h-dvh bg-background lg:grid-cols-2">
         <section className="relative hidden flex-col justify-between overflow-hidden border-r bg-[#0b1514] p-14 text-white lg:flex">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(52,211,153,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(52,211,153,.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
           <div className="relative flex items-center gap-3">
             <Terminal className="text-emerald-400" />
             <span className="text-2xl font-semibold tracking-tight">
-              scooby<span className="text-emerald-400">.</span>
+              vukem-trading<span className="text-emerald-400">.</span>
             </span>
           </div>
           <div className="relative max-w-lg">
             <p className="mb-5 text-xs uppercase tracking-[.3em] text-emerald-400">
-              Seu laboratório quantitativo
+              Your quant lab
             </p>
             <h1 className="text-5xl leading-[1.12] font-medium tracking-tight xl:text-6xl">
-              Menos intuição.
+              Less intuition.
               <br />
-              Mais <span className="text-emerald-400">evidência.</span>
+              More <span className="text-emerald-400">evidence.</span>
             </h1>
             <p className="mt-7 max-w-md text-base leading-relaxed text-zinc-400">
-              Desenvolva suas estratégias. Entenda os riscos. Teste suas hipóteses antes de qualquer
-              exposição.
+              Develop your strategies. Understand the risks. Test your hypotheses before any
+              exposure.
             </p>
             <div className="mt-10 flex gap-6 text-xs text-zinc-400">
-              <span>01 / Brasil & EUA</span>
+              <span>01 / Brazil & US</span>
               <span>02 / Paper trading</span>
-              <span>03 / Controle de risco</span>
+              <span>03 / Risk control</span>
             </div>
             <svg
               className="mt-12 w-full text-emerald-400/40"
@@ -45,10 +45,12 @@ export default function Login({ configured }: { configured: boolean }) {
               />
             </svg>
             <p className="text-[10px] text-zinc-600">
-              Ilustração. Não representa resultados financeiros.
+              Illustration. Does not represent financial results.
             </p>
           </div>
-          <p className="relative text-[11px] text-zinc-500">TERMINAL PESSOAL / ACESSO RESTRITO</p>
+          <p className="relative text-[11px] text-zinc-500">
+            PERSONAL TERMINAL / RESTRICTED ACCESS
+          </p>
         </section>
         <section className="flex items-center justify-center p-8">
           <div className="w-full max-w-sm">
@@ -56,11 +58,13 @@ export default function Login({ configured }: { configured: boolean }) {
               <LockKeyhole className="size-5 text-emerald-500" />
             </div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              Bem-vindo ao Scooby
+              Welcome to vukem-trading
             </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight">Entre no seu workspace</h2>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+              Sign in to your workspace
+            </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Acesse com a conta Google autorizada pelo proprietário do terminal.
+              Sign in with the Google account authorized by the terminal owner.
             </p>
             <Button asChild disabled={!configured} className="mt-8 h-12 w-full">
               <a
@@ -76,7 +80,7 @@ export default function Login({ configured }: { configured: boolean }) {
                     d="M21.6 12.2c0-.7-.1-1.5-.2-2.2H12v4.2h5.4c-.3 1.3-1 2.3-2 2.9v2.4h3.2c1.9-1.7 3-4.2 3-7.3ZM12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.4c-.9.6-2 .9-3.4.9-2.6 0-4.9-1.8-5.7-4.2H3v2.5C4.6 19.7 8 22 12 22ZM6.3 13.9A6 6 0 0 1 6 12c0-.7.1-1.3.3-1.9V7.6H3A10 10 0 0 0 2 12c0 1.6.4 3.1 1 4.4l3.3-2.5ZM12 5.9c1.5 0 2.8.5 3.9 1.5l2.9-2.9A10 10 0 0 0 12 2c-4 0-7.4 2.3-9 5.6l3.3 2.5c.8-2.4 3.1-4.2 5.7-4.2Z"
                   />
                 </svg>
-                Continuar com Google
+                Continue with Google
                 <ArrowRight className="ml-auto size-4" />
               </a>
             </Button>
@@ -85,14 +89,14 @@ export default function Login({ configured }: { configured: boolean }) {
                 role="status"
                 className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-600"
               >
-                Login aguardando configuração OAuth e conta autorizada no servidor.
+                Login waiting for OAuth configuration and an authorized account on the server.
               </p>
             )}
             <div className="mt-10 flex items-start gap-3 border-t pt-5 text-xs leading-relaxed text-muted-foreground">
               <ShieldCheck className="size-4 shrink-0 text-emerald-500" />
               <p>
-                Somente simulação. O login não concede acesso à corretora. Credenciais permanecem no
-                servidor.
+                Simulation only. Login does not grant brokerage access. Credentials stay on the
+                server.
               </p>
             </div>
           </div>

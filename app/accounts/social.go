@@ -41,7 +41,7 @@ func NewSocial(app *vukem.App) (*social.Social, error) {
 func (a *Accounts) FindOrCreateFromSocial(ctx context.Context, su social.User) (models.User, error) {
 	var u models.User
 	if su.Provider != "google" || su.ID == "" || !su.EmailVerified {
-		return u, errs.New(403, "Conta Google não autorizada")
+		return u, errs.New(403, "Google account not authorized")
 	}
 	err := a.DB.Tx(ctx, func(tx *database.Tx) error {
 		var subject string
@@ -55,14 +55,14 @@ func (a *Accounts) FindOrCreateFromSocial(ctx context.Context, su social.User) (
 		}
 		if subject != "" {
 			if subject != su.ID {
-				return errs.New(403, "Conta Google não autorizada")
+				return errs.New(403, "Google account not authorized")
 			}
 			var err error
 			u, err = orm.QueryOf[models.User](tx).Find(ctx, uid)
 			return err
 		}
 		if strings.TrimSpace(a.OwnerEmail) == "" || !strings.EqualFold(strings.TrimSpace(su.Email), strings.TrimSpace(a.OwnerEmail)) {
-			return errs.New(403, "Conta Google não autorizada")
+			return errs.New(403, "Google account not authorized")
 		}
 		if uid > 0 {
 			var err error
@@ -93,7 +93,7 @@ func (a *Accounts) FindOrCreateFromSocial(ctx context.Context, su social.User) (
 		return nil
 	})
 	if errors.Is(err, sql.ErrNoRows) {
-		return u, errs.New(503, "Migrations pendentes")
+		return u, errs.New(503, "Pending migrations")
 	}
 	return u, err
 }
