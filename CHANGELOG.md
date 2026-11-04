@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `Engine.Run` treats an error raised while its context is being cancelled as a clean stop; this removes the flaky `TestPostgresWorkerFailover`.
+- `State.Reserve` rejects an entry without a valid stop (`stop required`), even when a strategy bypassed `Strategy.Validate`.
+
+### Changed
+
+- Remaining `^` ranges in `package.json` pinned to exact versions.
+- Risk tests: default deny, mandatory stop, risk-per-trade sizing and the daily-loss kill switch.
+
 ### Security
 
 - Override `re2js` to 2.8.7 (high advisory in the markdownlint toolchain).

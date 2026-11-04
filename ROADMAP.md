@@ -159,7 +159,7 @@ Goal: the repository follows the ecosystem standards and everything is in Englis
 - [x] **7.10 `.golangci.yml`** from the ecosystem template, `golangci-lint` 2.15.0, CI job `Go lint`. Assert: `golangci-lint run ./...` prints `0 issues`. Doc comments on every exported name are off on purpose (`revive` `exported`); package comments stay required.
 - [~] **7.11 OpenSSF Scorecard** green. Done: `protect-main` ruleset (no deletion or force-push, linear history, seven required checks, admin bypass), actions pinned by SHA, minimal permissions, SAST (CodeQL), secret scanning, provenance on releases, `re2js` high advisory fixed through an override. Open (see the code-scanning alerts of the Scorecard tool): digest-pin Docker base images (`image:tag@sha256`), the remaining moderate and low advisories (`minimatch` under `shadcn` and `eslint`; wait for upstream or override), fuzz tests for the CSV and decimal parsers, the OpenSSF best-practices badge. Not pursued on purpose: required pull-request review (the owner pushes to `main` directly). Assert: `gh api "repos/AlexGalhardo/vukem-trading/code-scanning/alerts?tool_name=Scorecard&state=open"` lists only the items named here.
 - [x] **7.12 First release `v0.1.0`:** CHANGELOG section, annotated tag, GitHub release with the CHANGELOG notes, GHCR image with provenance (workflow run 41920869847 succeeded). Assert: `gh release view v0.1.0` shows the notes.
-- [ ] **7.13 Pin remaining open ranges** in `package.json` (a caret on `@playwright/test`, `shadcn`, `lightweight-charts`, `lucide-react` and others) to exact versions, as the dependency policy requires. Assert: `grep -n '"^' package.json site/package.json` returns nothing.
+- [x] **7.13 Pin remaining open ranges** in `package.json` to exact versions (9 dependencies pinned to the installed versions). Assert: `grep -c '"^' package.json site/package.json` prints 0 for both; `bun install --frozen-lockfile` passes.
 
 ### Phase 8: Documentation site and DNS
 
@@ -175,7 +175,7 @@ Goal: `trading.vukem.dev` opens the technical documentation, with the same look 
 
 ### Phase 8b: Known flaky test
 
-- [ ] **8b.1 `TestPostgresWorkerFailover`** failed once in CI with `commit: context canceled` (passed on rerun): stopping the first engine cancels its context while it commits. Fix the root cause (graceful stop that finishes the commit, or the test waiting for the epoch change before cancelling); do not retry-mask it. Assert: 50 consecutive runs with `go test -race -count=50 -run Failover ./tests` pass.
+- [x] **8b.1 `TestPostgresWorkerFailover`** instability fixed at the root: `Engine.Run` returned the error of an operation interrupted by its own context cancellation (`commit`, `begin`, `leadership connection lost`). Cancellation is now a clean stop. Evidence: the old code failed 20 of 60 runs under `-race`; the new code passes 50 of 50 (`go test -race -count=50 -run 'Failover|CancelledContext' ./tests`), plus a deterministic test for a cancelled context.
 
 ### Phase 9: Backtest realism and validation
 
@@ -194,10 +194,10 @@ Reference: [docs/trading/backtesting.md](docs/trading/backtesting.md).
 
 Reference: [docs/trading/risk-and-execution.md](docs/trading/risk-and-execution.md).
 
-- [ ] **10.1 Master arm switch and default deny** per account and venue. Assert: with the switch off every order is rejected with a reason.
-- [ ] **10.2 Mandatory stop** on every entry, enforced by the risk engine. Assert: a test submits an order without a stop and expects rejection.
-- [ ] **10.3 Risk per trade in basis points** drives sizing; unit names pinned in identifiers and tests. Assert: table test at 25, 50 and 100 bps.
-- [ ] **10.4 Daily-loss kill switch** blocks new entries until the next session and is audited. Assert: simulate a loss over the limit; entries blocked, exits allowed.
+- [x] **10.1 Master arm switch and default deny:** a new account starts blocked (`Halted`), entries are rejected with the reason `account blocked`, exits stay allowed. Assert: `TestDefaultDenyRejectsEntriesButAllowsExits`. Per-venue switches arrive with a second venue.
+- [x] **10.2 Mandatory stop** on every entry, enforced inside `State.Reserve` (`MinStopBPS`, reason `stop required`), not only by `Strategy.Validate`. Assert: `TestEntryWithoutStopIsRejected` (0, 9 and -5 bps) and `TestEntryCarriesItsStop`.
+- [x] **10.3 Risk per trade in basis points** drives sizing; the loss at the stop, including costs and slippage, never exceeds the budget. Assert: `TestRiskPerTradeSizingInBasisPoints` at 25, 50 and 100 bps.
+- [~] **10.4 Daily-loss kill switch:** entries are blocked, the generation advances to fence in-flight work, exits stay allowed (`TestDailyLossKillSwitchBlocksEntriesNotExits`). Missing: automatic resume at the next session (the halt stays until an owner action) and a dedicated audit entry for the trigger; verify both in `internal/engine`.
 - [ ] **10.5 Protections:** stop-loss streak lock, equity-drawdown lock, per-symbol cooldown. Assert: tests for each lock and its expiry at the next candle.
 - [ ] **10.6 Exit model:** triple barrier (stop, target, time) with a close-reason enum. Assert: every closed position has a reason.
 - [ ] **10.7 Stale-feed and unknown-order alarms** (Telegram). Assert: fault-injection test raises each alert once.

@@ -149,3 +149,22 @@ func TestPostgresWorkerFailover(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestPostgresWorkerCancelledContextIsACleanStop(t *testing.T) {
+	dsn := os.Getenv("TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("dedicated PostgreSQL required")
+	}
+	u, err := url.Parse(dsn)
+	if err != nil || !strings.HasSuffix(u.Path, "_test") {
+		t.Fatal("dedicated *_test database required")
+	}
+	app := vukemtest.New(t, bootstrap.New, vukemtest.Options{Env: map[string]string{"DATABASE_URL": dsn}})
+	db, _ := app.DB()
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	e := engine.Engine{Store: trading.Store{DB: db}, Log: slog.Default()}
+	if err := e.Run(ctx); err != nil {
+		t.Fatalf("a cancelled context must stop the worker cleanly, got %v", err)
+	}
+}

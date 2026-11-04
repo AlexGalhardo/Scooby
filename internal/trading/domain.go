@@ -87,6 +87,10 @@ type Dataset struct {
 	Candles        []Candle             `json:"candles"`
 	CreatedAt      time.Time            `json:"created_at"`
 }
+
+// MinStopBPS is the smallest stop distance, in basis points, the risk engine accepts for an entry.
+const MinStopBPS = 10
+
 type Strategy struct {
 	ID        string  `json:"id"`
 	Name      string  `json:"name"`
@@ -113,7 +117,7 @@ func (s Strategy) Validate() error {
 		math.IsInf(s.Threshold, 0) ||
 		s.Threshold < 0.1 ||
 		s.Threshold > 10 ||
-		s.StopBPS < 10 ||
+		s.StopBPS < MinStopBPS ||
 		s.StopBPS > 2000 ||
 		s.TargetBPS < 10 ||
 		s.TargetBPS > 5000 {
@@ -363,6 +367,9 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 			return nil, errors.New("position limit reached")
 		}
 		limit = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS))).RoundCeil(2)
+		if s.StopBPS < MinStopBPS || !stop.IsPositive() || !stop.LessThan(limit) {
+			return nil, errors.New("stop required")
+		}
 		perUnit := limit.Sub(stop).Add(limit.Mul(Fraction(2*a.Policy.CostBPS + a.Policy.SlippageBPS)))
 		remaining := d.Min(a.Cash, a.Equity().Mul(Fraction(a.Policy.ExposureBPS)).Sub(a.Exposure()))
 		qty = d.Min(

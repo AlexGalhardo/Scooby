@@ -26,7 +26,18 @@ type Engine struct {
 	Epoch   map[string]int64
 }
 
+// Run drives the engine until ctx ends. An error produced while ctx is being cancelled (a commit
+// interrupted during boot, for example) is a normal shutdown, not a failure.
 func (e Engine) Run(ctx context.Context) error {
+	err := e.run(ctx)
+	if err != nil && ctx.Err() != nil {
+		e.Log.Info("engine stopped during shutdown", "error", err)
+		return nil //nolint:nilerr // an error raised while ctx is being cancelled is a normal shutdown
+	}
+	return err
+}
+
+func (e Engine) run(ctx context.Context) error {
 	if e.Store.DB.Dialect().Name() != "postgres" {
 		return errors.New("worker requires PostgreSQL leadership locks")
 	}
