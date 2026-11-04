@@ -152,7 +152,7 @@ Goal: the repository follows the ecosystem standards and everything is in Englis
 - [x] **7.5 Workflows:** `ci`, `release` (CHANGELOG-driven, GHCR image, provenance), `scorecard`, `codeql`, `pr-title`, `vuln`. Assert: YAML parses; CI green on `main`.
 - [x] **7.6 Agent files:** `AGENTS.md`, `CLAUDE.md`, `.agents/rules`, `.agents/skills`. Assert: files exist and AGENTS.md links resolve.
 - [x] **7.7 Documentation translated** to English with renamed files. Assert: `grep -rP "[áàâãéêíóôõúç]" docs` returns nothing.
-- [~] **7.8 Code strings translated** (UI, messages, comments, e2e). Assert: the same grep over `app internal cmd resources/js e2e` returns nothing and `go test ./...`, `bun run test:e2e` pass.
+- [x] **7.8 Code strings translated** (UI, messages, comments, e2e). Assert: the same grep over `app internal cmd resources/js e2e` returns nothing; `go test ./...` and CI e2e pass (2026-11-04).
 - [ ] **7.9 Rename `Scooby` to `vukem-trading`:**
   - [ ] Go module path and imports (`github.com/AlexGalhardo/Scooby`); assert: `go build ./...`.
   - [ ] Compose project, database and user names, CI service names; assert: `docker compose config`.
@@ -166,12 +166,16 @@ Goal: the repository follows the ecosystem standards and everything is in Englis
 Goal: `trading.vukem.dev` opens the technical documentation, with the same look as vukem.dev.
 
 - [x] **8.1 Site shell** copied from the vukem site and rebranded (`site/`). Assert: `cd site && bun run build`.
-- [~] **8.2 Content sync:** `bun run sync:docs` generates `content/docs` and `navigation.ts` from `docs/`. Assert: `bun run check:mdx` passes.
-- [ ] **8.3 Site Dockerfile** (`site/Dockerfile`, context repository root, pinned Bun and Node images, non-root). Assert: `docker build -f site/Dockerfile .` succeeds.
-- [ ] **8.4 CI job** for the site (lint, `check:mdx`, build). Assert: job green.
-- [ ] **8.5 Railway `site` service** deployed after green CI. Assert: its Railway URL returns 200 and `/` redirects to `/docs/introduction`.
+- [x] **8.2 Content sync:** `bun run sync:docs` generates `content/docs` and `navigation.ts` from `docs/`. Assert: `bun run check:mdx` passes (54 pages).
+- [x] **8.3 Site Dockerfile** (`site/Dockerfile`, context repository root, pinned Bun and Node images, non-root). Assert: `docker build -f site/Dockerfile .` succeeds.
+- [x] **8.4 CI job** for the site (lint, `check:mdx`, build). Assert: job green.
+- [x] **8.5 Railway `site` service** deployed after green CI. Assert: its Railway URL returns 200 and `/` redirects to `/docs/introduction`.
 - [ ] **8.6 DNS:** `trading.vukem.dev` CNAME shown, reviewed and applied by the owner. Assert: `curl -I https://trading.vukem.dev` returns 200 or 308 with a valid certificate.
 - [ ] **8.7 Last-updated metadata and sitemap** refreshed (`bun run last-updated`). Assert: `check:last-updated` passes.
+
+### Phase 8b: Known flaky test
+
+- [ ] **8b.1 `TestPostgresWorkerFailover`** failed once in CI with `commit: context canceled` (passed on rerun): stopping the first engine cancels its context while it commits. Fix the root cause (graceful stop that finishes the commit, or the test waiting for the epoch change before cancelling); do not retry-mask it. Assert: 50 consecutive runs with `go test -race -count=50 -run Failover ./tests` pass.
 
 ### Phase 9: Backtest realism and validation
 
