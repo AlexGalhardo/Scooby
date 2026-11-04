@@ -1,22 +1,48 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
-    "includes": ["resources/js/**", "e2e/**", "*.ts", "*.json", "!resources/js/components/ui"]
+    "includes": [
+      "resources/js/**",
+      "e2e/**",
+      "*.ts",
+      "*.json",
+      "!resources/js/components/ui",
+      "!resources/js/gen"
+    ]
   },
   "formatter": {
     "enabled": true,
     "useEditorconfig": true,
     "lineWidth": 100
   },
-  "javascript": { "formatter": { "quoteStyle": "double" } },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
       "preset": "recommended",
-      "correctness": { "noUnusedVariables": "error", "noUnusedImports": "error" },
-      "suspicious": { "noExplicitAny": "error" }
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
+      }
     }
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } }
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
 }

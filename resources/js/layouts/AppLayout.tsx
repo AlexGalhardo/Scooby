@@ -1,4 +1,4 @@
-import { Link, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 import {
   Activity,
   ArrowUpRight,
@@ -15,7 +15,8 @@ import {
   Sun,
   Terminal,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
+import { CommandPalette } from "@/components/CommandPalette";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +49,22 @@ const navigation = [
 export default function AppLayout({ children }: { children: ReactNode }) {
   const page = usePage<SharedProps>();
   const user = page.props.auth?.user;
+  const commands = useMemo(
+    () => [
+      ...navigation.map(([href, label]) => ({
+        id: href,
+        label,
+        run: () => router.visit(href),
+      })),
+      {
+        id: "theme",
+        label: "Toggle light and dark theme",
+        hint: "Theme",
+        run: () => document.getElementById("theme-toggle")?.click(),
+      },
+    ],
+    [],
+  );
   const [dark, setDark] = useState(
     () => typeof document === "undefined" || document.documentElement.classList.contains("dark"),
   );
@@ -60,6 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
   return (
     <TooltipProvider>
+      <CommandPalette commands={commands} />
       <SidebarProvider>
         <Sidebar variant="inset">
           <SidebarHeader className="p-5 pb-7">
@@ -130,7 +148,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Badge variant="outline" className="border-emerald-400/30 text-emerald-500">
                 PAPER ONLY
               </Badge>
-              <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
+              <Button
+                id="theme-toggle"
+                variant="ghost"
+                size="icon"
+                onClick={toggle}
+                aria-label="Toggle theme"
+              >
                 {dark ? <Sun /> : <Moon />}
               </Button>
               <a

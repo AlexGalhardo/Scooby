@@ -122,11 +122,50 @@ func (e Engine) run(ctx context.Context) error {
 	}
 }
 
+// CheckAlerts evaluates the owner's price alerts against the latest closes. A fired alert is persisted
+// as inactive before it is sent, so a failure to save never sends it twice.
+func (e Engine) CheckAlerts(ctx context.Context) {
+	prefs, err := e.Store.Preferences(ctx)
+	if err != nil {
+		e.Log.Error("alerts: cannot read preferences", "error", err)
+		return
+	}
+	var symbols []string
+	for _, a := range prefs.Alerts {
+		if a.Active {
+			symbols = append(symbols, a.Symbol)
+		}
+	}
+	if len(symbols) == 0 {
+		return
+	}
+	prices, err := e.Store.LastPrices(ctx, symbols...)
+	if err != nil {
+		e.Log.Error("alerts: cannot read prices", "error", err)
+		return
+	}
+	var fired []string
+	err = e.Store.UpdatePreferences(ctx, func(p *trading.Preferences) error {
+		fired = p.Evaluate(prices, time.Now().UTC())
+		return nil
+	})
+	if err != nil {
+		e.Log.Error("alerts: cannot persist fired alerts", "error", err)
+		return
+	}
+	for _, msg := range fired {
+		if e.Alert != nil {
+			e.Alert(ctx, msg)
+		}
+	}
+}
+
 func (e Engine) Tick(ctx context.Context) error {
 	strategies, err := e.Store.ActiveStrategies(ctx)
 	if err != nil {
 		return err
 	}
+	e.CheckAlerts(ctx)
 	for _, id := range []string{"b3", "us"} {
 		var fresh []string
 		if err := e.mutate(ctx, id, "engine", "tick", func(a *trading.State) error {

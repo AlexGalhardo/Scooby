@@ -11,6 +11,10 @@ Synthesis of [eTape](etape.md), [OpenTerminal](openterminal.md), [OpenStock](ope
 5. **Fast entry (paper):** hotkey order templates sized by percentage of buying power or position, chart risk entry that sizes from a loss budget.
 6. **Alerts:** threshold alerts with a checker interval and a delivery channel (Telegram exists).
 
+## Status
+
+Implemented: the safety strip, the command palette and page shortcuts, the saved workspace, the watchlist with a coverage view, one-key paper tickets, alerts, and a canvas tape and ladder fed by the poll. See [ADR-0019](../adrs/0019-workspace-ticket-and-wire-types.md). Not yet: a streaming push channel and agent surfaces.
+
 ## Frontend engineering rules
 
 - High-frequency data (tape, ladder) is drawn on canvas outside React state; push updates over SSE or WebSocket, with polling as fallback.

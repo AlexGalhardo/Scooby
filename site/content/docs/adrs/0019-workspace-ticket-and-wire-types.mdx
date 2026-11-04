@@ -1,0 +1,53 @@
+---
+title: "ADR-0019: server-side workspace, order ticket and generated wire types"
+description: "State: implemented on 2026-11-04. Background: docs/trading/terminal-and-agents.md, docs/trading/etape.md."
+---
+State: implemented on 2026-11-04. Background: [docs/trading/terminal-and-agents.md](/docs/trading/terminal-and-agents),
+[docs/trading/etape.md](/docs/reference-projects/etape).
+
+## Context
+
+The terminal is a set of pages. The owner wants a safety strip that is always visible, keyboard-first
+navigation, one-key paper orders, a watchlist with price alerts, and TypeScript types that cannot drift
+from the Go structs.
+
+## Decision
+
+- **Workspace.** The owner's account, ticket symbol, watchlist (at most 20 symbols), price alerts (at
+  most 50) and order templates (at most 6) are stored on the server in the `preferences` table
+  (`GET` and `PUT /api/preferences`, validated). Server-side storage lets the engine read the alerts and
+  makes the workspace follow the owner across browsers.
+- **Order ticket.** A template (hotkey, side, share of cash, stop and target distances) becomes a paper
+  order through `State.Ticket`, which calls the same `Reserve` as a strategy entry and then trims the size
+  to the template's cash share. The order is never larger than the risk budget or the cash share. Only
+  the `b3` and `us` accounts accept tickets; research markets only backtest. Hotkeys fire outside text
+  fields and while no dialog is open.
+- **Alerts.** The engine evaluates active alerts on every tick against the latest close of the freshest
+  dataset. A fired alert is stored inactive in a row-locked transaction before it is sent through the
+  existing Telegram path, so it fires once and never overwrites an edit by the owner.
+- **Safety strip.** Every page shows the account state (armed or blocked with the reason), daily loss,
+  drawdown and exposure against their limits, open orders, and a kill-switch button.
+- **Command palette.** Ctrl or Cmd plus K opens it; Alt plus 1 to 9 jumps to a page.
+- **Wire types.** `internal/trading/wire.go` renders the TypeScript declarations of the API structs from
+  their JSON tags into `resources/js/gen/wire.ts`. A Go test fails when the file is stale, and the
+  frontend re-exports these types, so a Go change that breaks the UI fails `bun check`.
+- **Tape and ladder** are canvas surfaces fed by an effect, not React state.
+
+## Alternatives
+
+- Browser storage for the workspace: simple, but the engine could not read alerts and the workspace would
+  not follow the owner.
+- A drag-and-drop widget grid: heavier, and the pages already separate concerns; the saved workspace holds
+  what the owner actually changes.
+- Hand-written types: what drifted before.
+
+## Consequences
+
+The data feed is still polled every ten seconds, so the tape and ladder repaint at that rate; a push
+channel (SSE) is a separate decision. Ticket orders on the B3 replay account fill only while a replay
+advances.
+
+## Review trigger
+
+A streaming feed is added, a second user is admitted, or the template model needs conditions beyond a
+cash share.

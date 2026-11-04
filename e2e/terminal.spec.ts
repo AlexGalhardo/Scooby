@@ -78,3 +78,56 @@ test("Google-only login, real navigation, CSV import and logout", async ({ page 
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
+
+async function signIn(page: import("@playwright/test").Page) {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Continue with Google" }).click();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+}
+
+test("command palette and numbered shortcuts move between pages", async ({ page }) => {
+  await signIn(page);
+  await page.keyboard.press("Control+k");
+  await page.getByLabel("Search commands").fill("risk");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/risk$/);
+  await expect(page.getByRole("heading", { name: "Risk control", exact: true })).toBeVisible();
+  await page.keyboard.press("Alt+1");
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("the workspace is saved on the server and survives a reload", async ({ page }) => {
+  await signIn(page);
+  const saved = () =>
+    page.waitForResponse(
+      (r) => r.url().endsWith("/api/preferences") && r.request().method() === "PUT",
+    );
+  const account = page.getByLabel("Account", { exact: true });
+  let wait = saved();
+  await account.selectOption("us");
+  await wait;
+  await page.reload();
+  await expect(page.getByLabel("Account", { exact: true })).toHaveValue("us");
+  wait = saved();
+  await page.getByLabel("Account", { exact: true }).selectOption("b3");
+  await wait;
+});
+
+test("the safety bar states the account status and ticket hotkeys call the risk engine", async ({
+  page,
+}) => {
+  await signIn(page);
+  await expect(page.getByRole("region", { name: "Safety status" })).toContainText("Blocked");
+  const bodies: string[] = [];
+  await page.route("**/api/accounts/b3/ticket", async (route) => {
+    bodies.push(route.request().postData() ?? "");
+    await route.fulfill({ status: 201, contentType: "application/json", body: "{}" });
+  });
+  await page.getByRole("heading", { name: "Overview" }).click();
+  await page.keyboard.press("b");
+  await expect.poll(() => bodies.length).toBe(1);
+  expect(JSON.parse(bodies[0])).toEqual({ key: "b", symbol: "PETR4" });
+  await page.keyboard.press("Shift+B");
+  await expect.poll(() => bodies.length).toBe(2);
+  expect(JSON.parse(bodies[1]).key).toBe("shift+b");
+});

@@ -25,6 +25,7 @@ import {
   useState,
 } from "react";
 import MarketChart from "@/components/MarketChart";
+import { TapeLadder } from "@/components/TapeLadder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { OrderTicket, SafetyBar, WatchPanel } from "@/components/workbench";
 import { api } from "@/lib/api";
 import {
   type Account,
@@ -59,6 +61,7 @@ import {
   money,
   type ParamSpec,
   type Policy,
+  type Preferences,
   type Snapshot,
   type Strategy,
 } from "@/types";
@@ -74,6 +77,7 @@ const titles: Record<string, [string, string]> = {
   audit: ["Audit", "A persistent trail of decisions and actions."],
   settings: ["Settings", "Status of integrations and the execution environment."],
 };
+type NumericKey = "fast" | "slow" | "threshold" | "stop_bps" | "target_bps";
 const accountOf = (market: string) =>
   market === "B3" ? "b3" : market === "US" ? "us" : "research";
 const firstSymbol: Record<string, string> = { b3: "PETR4", us: "AAPL", research: "BTCUSDT" };
@@ -240,7 +244,8 @@ export default function Terminal({ section }: { section: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  const [accountId, setAccount] = useState("b3");
+  const [accountId, setAccountState] = useState("b3");
+  const [prefs, setPrefs] = useState<Preferences>();
   const [datasetId, setDataset] = useState("");
   const [candles, setCandles] = useState<Candle[]>([]);
   const [report, setReport] = useState<Job>();
@@ -260,6 +265,29 @@ export default function Terminal({ section }: { section: string }) {
     }, 10000);
     return () => clearInterval(timer);
   }, [refresh]);
+  useEffect(() => {
+    let active = true;
+    api<Preferences>("/api/preferences")
+      .then((p) => {
+        if (!active) return;
+        setPrefs(p);
+        setAccountState(p.account);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+  const savePrefs = (next: Preferences) => {
+    setPrefs(next);
+    void api("/api/preferences", next, undefined, "PUT").catch((e) =>
+      setError(e instanceof Error ? e.message : "Could not save the workspace"),
+    );
+  };
+  const setAccount = (id: string) => {
+    setAccountState(id);
+    if (prefs) savePrefs({ ...prefs, account: id });
+  };
   const act = async (path: string, body: unknown) => {
     setBusy(true);
     setNotice("");
@@ -273,6 +301,27 @@ export default function Terminal({ section }: { section: string }) {
       setBusy(false);
     }
   };
+  const placeTicket = (key: string) => {
+    if (prefs && (accountId === "b3" || accountId === "us"))
+      void act(`/api/accounts/${accountId}/ticket`, { key, symbol: prefs.symbol });
+  };
+  useEffect(() => {
+    if (!prefs) return;
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName)))
+        return;
+      if (document.querySelector("[role=dialog]")) return;
+      const combo = (e.shiftKey ? "shift+" : "") + e.key.toLowerCase();
+      if ((prefs?.templates ?? []).some((t) => t.key === combo)) {
+        e.preventDefault();
+        placeTicket(combo);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
   useEffect(() => {
     if (!datasetId) {
       setCandles([]);
@@ -369,7 +418,7 @@ export default function Terminal({ section }: { section: string }) {
           <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={accountId} onChange={setAccount}>
+          <Select value={accountId} onChange={setAccount} aria-label="Account">
             <option value="b3">Brazil · BRL · Replay</option>
             <option value="us">US · USD · Alpaca Paper</option>
             <option value="research">Research · crypto and FX · backtests only</option>
@@ -411,6 +460,34 @@ export default function Terminal({ section }: { section: string }) {
           <span className="ml-auto text-muted-foreground">
             {account.halted ? account.reason : "New entries enabled"}
           </span>
+        </div>
+      )}
+      {account && <SafetyBar account={account} act={act} busy={busy} />}
+      {prefs && snapshot && (section === "overview" || section === "orders") && (
+        <div className="mb-6">
+          <OrderTicket prefs={prefs} accountId={accountId} place={placeTicket} busy={busy} />
+        </div>
+      )}
+      {prefs && snapshot && section === "market" && (
+        <div className="mb-6 grid gap-5 xl:grid-cols-2">
+          <WatchPanel
+            instruments={snapshot.instruments}
+            datasets={snapshot.datasets}
+            coverage={snapshot.coverage}
+            prefs={prefs}
+            save={savePrefs}
+          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Tape and ladder</CardTitle>
+              <CardDescription>
+                Latest closes of the selected dataset and the volume traded at each price level
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TapeLadder candles={candles} />
+            </CardContent>
+          </Card>
         </div>
       )}
       {section === "overview" && account && (
@@ -837,7 +914,7 @@ export default function Terminal({ section }: { section: string }) {
                     />
                   )}
                   <div className="space-y-2 text-xs text-muted-foreground">
-                    {report.result.warnings.map((w) => (
+                    {(report.result.warnings ?? []).map((w) => (
                       <p key={w}>• {w}</p>
                     ))}
                     <p className="break-all">Dataset SHA256: {report.result.dataset_hash}</p>
@@ -1479,8 +1556,8 @@ function StrategyForm({ snapshot, refresh }: { snapshot: Snapshot; refresh: () =
               min={p.min}
               max={p.max}
               required
-              value={s[p.name]}
-              onChange={(e) => change(p.name, Number(e.target.value))}
+              value={s[p.name as NumericKey]}
+              onChange={(e) => change(p.name as NumericKey, Number(e.target.value))}
             />
           </Field>
         ))}

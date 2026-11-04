@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"maps"
 	"strings"
 	"testing"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/AlexGalhardo/vukem-trading/app/commands"
 	"github.com/AlexGalhardo/vukem-trading/bootstrap"
+	"github.com/AlexGalhardo/vukem-trading/internal/engine"
 	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
@@ -265,4 +268,114 @@ func TestFetchRefusesMarketsWithoutAProvider(t *testing.T) {
 	c.GetJSON("/api/snapshot").AssertOK()
 	c.PostJSON("/api/datasets/fetch", map[string]any{"symbol": "PETR4", "days": 5}).AssertUnprocessable()
 	c.PostJSON("/api/datasets/fetch", map[string]any{"symbol": "AAPL", "days": 5}).AssertUnprocessable()
+}
+
+func TestPreferencesPersistAndAreValidated(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/preferences").AssertOK().AssertJSONPath("account", "b3")
+	prefs := trading.DefaultPreferences()
+	prefs.Account, prefs.Symbol = "us", "AAPL"
+	prefs.Watchlist = []string{"AAPL", "NVDA", "BTCUSDT"}
+	c.PutJSON("/api/preferences", prefs).AssertOK()
+	c.GetJSON("/api/preferences").AssertOK().AssertJSONPath("account", "us").AssertJSONCount("watchlist", 3)
+	bad := prefs
+	bad.Watchlist = []string{"AAPL", "NOPE"}
+	c.PutJSON("/api/preferences", bad).AssertUnprocessable()
+	c.GetJSON("/api/preferences").AssertOK().AssertJSONCount("watchlist", 3)
+}
+
+func TestEngineFiresAPriceAlertOnceAndPersistsIt(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	db, err := app.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := trading.Store{DB: db}
+	ctx := t.Context()
+	at := time.Date(2026, 11, 4, 15, 0, 0, 0, time.UTC)
+	candles := []trading.Candle{
+		{
+			Time:   at,
+			Open:   trading.D("100"),
+			High:   trading.D("101"),
+			Low:    trading.D("99"),
+			Close:  trading.D("100"),
+			Volume: trading.D("1000"),
+		},
+		{
+			Time:   at.Add(5 * time.Minute),
+			Open:   trading.D("100"),
+			High:   trading.D("212"),
+			Low:    trading.D("99"),
+			Close:  trading.D("210"),
+			Volume: trading.D("1000"),
+		},
+	}
+	ds := trading.Dataset{ID: "alerts-ds", Symbol: "AAPL", Candles: candles, CreatedAt: at}
+	if err := store.Create(ctx, "datasets", ds.ID, "ready", "test", ds); err != nil {
+		t.Fatal(err)
+	}
+	prefs := trading.DefaultPreferences()
+	prefs.Alerts = []trading.PriceAlert{
+		{ID: "up", Symbol: "AAPL", Direction: "above", Price: trading.D("200"), Active: true},
+		{ID: "never", Symbol: "AAPL", Direction: "below", Price: trading.D("50"), Active: true},
+	}
+	if err := store.SavePreferences(ctx, prefs); err != nil {
+		t.Fatal(err)
+	}
+	var sent []string
+	e := engine.Engine{
+		Store: store,
+		Log:   slog.Default(),
+		Alert: func(_ context.Context, msg string) { sent = append(sent, msg) },
+	}
+	e.CheckAlerts(ctx)
+	e.CheckAlerts(ctx)
+	if len(sent) != 1 || !strings.Contains(sent[0], "AAPL is above 200") {
+		t.Fatalf("expected exactly one alert, got %v", sent)
+	}
+	saved, err := store.Preferences(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if saved.Alerts[0].Active || saved.Alerts[0].TriggeredAt.IsZero() || !saved.Alerts[1].Active {
+		t.Fatalf("the fired alert must be stored as inactive and the other left alone: %+v", saved.Alerts)
+	}
+}
+
+func TestTicketPlacesAPaperOrderThroughTheRiskEngine(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	db, err := app.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := trading.Store{DB: db}
+	c.PostJSON("/api/datasets/import", map[string]any{
+		"symbol": "PETR4", "source": "fixture", "license": "internal test", "csv": trading.SampleCSV(),
+	}).AssertCreated()
+	body := map[string]any{"key": "b", "symbol": "PETR4"}
+	c.PostJSON("/api/accounts/b3/ticket", body).AssertUnprocessable() // the account starts blocked
+	if err := store.Mutate(t.Context(), "b3", "test", "arm", func(a *trading.State) error {
+		a.Halted, a.Reason = false, ""
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	placed := c.PostJSON("/api/accounts/b3/ticket", body).AssertCreated().AssertJSONPath("status", "approved")
+	if side, _ := placed.JSONPath("side"); side != "buy" {
+		t.Fatalf("the template buys, got %v", side)
+	}
+	c.PostJSON("/api/accounts/b3/ticket", map[string]any{"key": "nope", "symbol": "PETR4"}).AssertUnprocessable()
+	c.PostJSON("/api/accounts/b3/ticket", map[string]any{"key": "b", "symbol": "AAPL"}).AssertUnprocessable()
+	c.PostJSON("/api/accounts/research/ticket", body).AssertNotFound()
+	var state trading.State
+	if err := store.Get(t.Context(), "trading_accounts", "b3", &state); err != nil {
+		t.Fatal(err)
+	}
+	if len(state.Orders) != 1 || !state.Exposure().IsPositive() {
+		t.Fatalf("exactly one reserved order expected, got %d", len(state.Orders))
+	}
 }

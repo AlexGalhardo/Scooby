@@ -224,14 +224,14 @@ Reference: [docs/trading/openbb.md](docs/trading/openbb.md) and [docs/trading/st
 
 Reference: [docs/trading/terminal-and-agents.md](docs/trading/terminal-and-agents.md).
 
-- [ ] **13.1 Safety bar:** arm switch, kill switch, account state banner, live risk panel. Assert: e2e asserts the banner changes when the account is blocked.
-- [ ] **13.2 Command palette and numbered shortcuts.** Assert: e2e opens a page through the palette.
-- [ ] **13.3 Saved workspace layout** per user. Assert: layout survives a reload.
-- [ ] **13.4 Watchlist** with a size cap and a coverage-matrix view.
-- [ ] **13.5 Paper hotkey order templates** sized by percentage of buying power. Assert: e2e places a paper order with a hotkey.
-- [ ] **13.6 Canvas tape and ladder** for streamed data. Assert: no React state updates per tick (profiling note in the PR).
-- [ ] **13.7 Generated TypeScript wire types** from Go structs with a drift check in CI. Assert: CI fails when a Go struct changes without regenerating.
-- [ ] **13.8 Alerts:** thresholds with a checker interval and Telegram delivery. Assert: fault-injection test.
+- [x] **13.1 Safety bar** on every page: armed or blocked with the reason, daily loss, drawdown, exposure and open orders against their limits, and a kill-switch button. Assert: the e2e test `the safety bar states the account status and ticket hotkeys call the risk engine`.
+- [x] **13.2 Command palette** (Ctrl or Cmd plus K) and Alt plus 1 to 9 page shortcuts. Assert: the e2e test `command palette and numbered shortcuts move between pages`.
+- [x] **13.3 Saved workspace** per owner on the server (account, ticket symbol, watchlist, alerts, order templates), see [ADR-0019](docs/adrs/0019-workspace-ticket-and-wire-types.md). The terminal is page-based, so the workspace holds what the owner changes rather than a widget grid. Assert: the e2e test `the workspace is saved on the server and survives a reload`, `TestPreferencesPersistAndAreValidated`.
+- [x] **13.4 Watchlist** capped at 20 symbols, with the last close and the data mode of each market from the coverage matrix. Assert: `TestPreferencesRejectBadWorkspaces` (the cap) and the Market data page.
+- [x] **13.5 Paper hotkey order templates** (`b`, `shift+b`, `x` by default) sized by a share of cash and still capped by the risk budget. Assert: `TestTicketNeverExceedsTheCashShareOrTheRiskBudget`, `TestTicketPlacesAPaperOrderThroughTheRiskEngine`; the e2e hotkey test stubs the ticket request, because the e2e server has no engine worker to arm an account.
+- [~] **13.6 Canvas tape and ladder** (`components/TapeLadder.tsx`): drawn from an effect, never from React state. Missing: a push channel (SSE or WebSocket); data still arrives by the ten-second poll, so the tape repaints at that rate.
+- [x] **13.7 Generated TypeScript wire types** from the Go structs (`internal/trading/wire.go` to `resources/js/gen/wire.ts`). Assert: `TestWireTypesAreCurrent` fails when the file is stale; regenerate with `go test ./internal/trading -run Wire -update`. A Go change that breaks the UI also fails `bun check`.
+- [x] **13.8 Alerts:** price thresholds stored in the workspace, checked by the engine on every tick (15 seconds) and delivered through the Telegram path, each exactly once. Assert: `TestAlertsFireOnceWhenThePriceCrosses`, `TestEngineFiresAPriceAlertOnceAndPersistsIt`.
 
 ### Phase 14: Observability and operations
 

@@ -119,6 +119,8 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 				"fills":         fills,
 				"policy":        a.Policy,
 				"cursors":       a.Cursors,
+				"day_start":     a.DayStart,
+				"peak":          a.Peak,
 			},
 		)
 	}
@@ -133,23 +135,26 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 			return err
 		}
 		var first, last time.Time
+		lastClose := trading.Zero
 		if len(ds.Candles) > 0 {
 			first = ds.Candles[0].Time
 			last = ds.Candles[len(ds.Candles)-1].Time
+			lastClose = ds.Candles[len(ds.Candles)-1].Close
 		}
 		meta = append(
 			meta,
 			map[string]any{
-				"id":       ds.ID,
-				"symbol":   ds.Symbol,
-				"currency": ds.Currency,
-				"source":   ds.Source,
-				"hash":     ds.Hash,
-				"license":  ds.License,
-				"bars":     len(ds.Candles),
-				"first":    first,
-				"last":     last,
-				"problems": trading.DatasetProblems(ds),
+				"id":         ds.ID,
+				"symbol":     ds.Symbol,
+				"currency":   ds.Currency,
+				"source":     ds.Source,
+				"hash":       ds.Hash,
+				"license":    ds.License,
+				"bars":       len(ds.Candles),
+				"first":      first,
+				"last":       last,
+				"last_close": lastClose,
+				"problems":   trading.DatasetProblems(ds),
 			},
 		)
 	}
@@ -272,6 +277,80 @@ func (h *Controller) Dataset(c *web.Ctx) error {
 		ds.Candles = ds.Candles[len(ds.Candles)-1000:]
 	}
 	return c.JSON(200, ds)
+}
+
+// Preferences returns the owner's saved workspace.
+func (h *Controller) Preferences(c *web.Ctx) error {
+	p, err := h.Store.Preferences(c.Context())
+	if err != nil {
+		return err
+	}
+	return c.JSON(200, p)
+}
+
+// SavePreferences replaces the saved workspace after validating it.
+func (h *Controller) SavePreferences(c *web.Ctx) error {
+	var p trading.Preferences
+	if err := decode(c, &p); err != nil {
+		return err
+	}
+	if err := h.Store.SavePreferences(c.Context(), p); err != nil {
+		return bad(err)
+	}
+	return c.JSON(200, p)
+}
+
+// Ticket places a paper order from one of the owner's templates, through the risk engine.
+func (h *Controller) Ticket(c *web.Ctx) error {
+	id := c.Param("id")
+	if id != "b3" && id != "us" {
+		return errs.New(404, "Orders can only be placed on a paper account")
+	}
+	var in struct {
+		Key    string `json:"key"`
+		Symbol string `json:"symbol"`
+	}
+	if err := decode(c, &in); err != nil {
+		return err
+	}
+	inst, err := trading.FindInstrument(in.Symbol)
+	if err != nil || accountFor(inst.Market) != id {
+		return errs.New(422, "Symbol does not match the account")
+	}
+	prefs, err := h.Store.Preferences(c.Context())
+	if err != nil {
+		return err
+	}
+	var tmpl *trading.OrderTemplate
+	for i := range prefs.Templates {
+		if prefs.Templates[i].Key == in.Key {
+			tmpl = &prefs.Templates[i]
+		}
+	}
+	if tmpl == nil {
+		return errs.New(422, "Unknown order template")
+	}
+	prices, err := h.Store.LastPrices(c.Context(), in.Symbol)
+	if err != nil {
+		return err
+	}
+	price, ok := prices[in.Symbol]
+	if !ok {
+		return errs.New(422, "No price for the symbol: import or fetch a dataset first")
+	}
+	var placed trading.Order
+	err = h.Store.Mutate(c.Context(), id, "owner", "ticket", func(a *trading.State) error {
+		o, err := a.Ticket(*tmpl, in.Symbol, price, "ticket/"+trading.ID(), time.Now().UTC())
+		if err != nil {
+			return err
+		}
+		placed = *o
+		return nil
+	})
+	if err != nil {
+		return bad(err)
+	}
+	return c.JSON(201, placed)
 }
 
 // Kinds serves the strategy kinds and their parameter schema, the single source for forms and validation.

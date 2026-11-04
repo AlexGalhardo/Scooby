@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Terminal: an always-visible safety strip, a command palette with Alt+digit page shortcuts, a server-side workspace (watchlist, price alerts, order templates), one-key paper order tickets sized by cash share and risk budget, and a canvas tape and ladder.
+- Engine: price alerts evaluated on every tick and sent once through Telegram.
+- TypeScript wire types generated from the Go structs, with a test that fails on drift; ADR-0019.
 - Data providers: a `Provider` interface and registry with fail-fast credentials, a Binance adapter for crypto candles and the Alpaca IEX adapter behind the same interface.
 - Crypto (BTCUSDT, ETHUSDT) and spot forex (EURUSD, USDBRL) for backtests under a `research` account, with 24/7 and Monday-to-Friday sessions and tick-accurate price rounding.
 - A market coverage matrix in the snapshot and Settings; ADR-0018.
