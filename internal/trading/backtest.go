@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	d "github.com/shopspring/decimal"
 	"time"
+
+	d "github.com/shopspring/decimal"
 )
 
 type Point struct {
@@ -44,7 +45,20 @@ type Result struct {
 }
 
 func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partition string) (Result, error) {
-	r := Result{CalendarSource: ds.CalendarSource, Curve: []Point{}, Warnings: []string{"Simulation: OHLC does not reveal intrabar sequence; stop takes priority over target.", "Costs in bps; taxes not included. No profitability guarantee.", "Gross buy-and-hold benchmark; remaining positions are closed at the end of the sample."}, DatasetHash: ds.Hash, Strategy: s, Policy: policy, EngineVersion: BuildVersion, Partition: partition}
+	r := Result{
+		CalendarSource: ds.CalendarSource,
+		Curve:          []Point{},
+		Warnings: []string{
+			"Simulation: OHLC does not reveal intrabar sequence; stop takes priority over target.",
+			"Costs in bps; taxes not included. No profitability guarantee.",
+			"Gross buy-and-hold benchmark; remaining positions are closed at the end of the sample.",
+		},
+		DatasetHash:   ds.Hash,
+		Strategy:      s,
+		Policy:        policy,
+		EngineVersion: BuildVersion,
+		Partition:     partition,
+	}
 	if err := s.Validate(); err != nil {
 		return r, err
 	}
@@ -121,10 +135,29 @@ func Backtest(ctx context.Context, ds Dataset, s Strategy, policy Policy, partit
 				exit = c.Close
 			}
 			if exit.IsPositive() {
-				o := Order{ID: ID(), Key: fmt.Sprint(idx, "/exit"), Symbol: s.Symbol, Side: "sell", Qty: p.Qty, Status: "approved", CreatedAt: c.Time}
+				o := Order{
+					ID:        ID(),
+					Key:       fmt.Sprint(idx, "/exit"),
+					Symbol:    s.Symbol,
+					Side:      "sell",
+					Qty:       p.Qty,
+					Status:    "approved",
+					CreatedAt: c.Time,
+				}
 				a.Orders = append(a.Orders, o)
 				price := exit.Mul(D("1").Sub(Fraction(policy.SlippageBPS)))
-				if err := a.ApplyFill(Fill{ID: o.ID, OrderID: o.ID, Symbol: s.Symbol, Side: "sell", Qty: p.Qty, Price: price, Fees: p.Qty.Mul(price).Mul(Fraction(policy.CostBPS)), Time: c.Time}); err != nil {
+				if err := a.ApplyFill(
+					Fill{
+						ID:      o.ID,
+						OrderID: o.ID,
+						Symbol:  s.Symbol,
+						Side:    "sell",
+						Qty:     p.Qty,
+						Price:   price,
+						Fees:    p.Qty.Mul(price).Mul(Fraction(policy.CostBPS)),
+						Time:    c.Time,
+					},
+				); err != nil {
 					return r, err
 				}
 			}

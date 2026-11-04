@@ -5,14 +5,16 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
+
 	"github.com/AlexGalhardo/vukem"
-	"github.com/AlexGalhardo/vukem-trading/app/models"
 	"github.com/AlexGalhardo/vukem/database"
 	"github.com/AlexGalhardo/vukem/errs"
 	"github.com/AlexGalhardo/vukem/orm"
 	"github.com/AlexGalhardo/vukem/social"
-	"strings"
-	"time"
+
+	"github.com/AlexGalhardo/vukem-trading/app/models"
 )
 
 func NewSocial(app *vukem.App) (*social.Social, error) {
@@ -23,10 +25,29 @@ func NewSocial(app *vukem.App) (*social.Social, error) {
 	s := social.New(key).WithPreviousKeys(app.DerivePreviousKeys("social.state", 32)...)
 	s.InsecureCookies = !app.Config.IsProduction()
 	if id := app.Source.Get("SOCIAL_GOOGLE_CLIENT_ID"); id != "" {
-		s.Use(social.Google(social.Config{ClientID: id, ClientSecret: app.Source.Get("SOCIAL_GOOGLE_CLIENT_SECRET"), RedirectURL: strings.TrimSuffix(app.Config.URL, "/") + "/auth/google/callback"}))
+		s.Use(
+			social.Google(
+				social.Config{
+					ClientID:     id,
+					ClientSecret: app.Source.Get("SOCIAL_GOOGLE_CLIENT_SECRET"),
+					RedirectURL:  strings.TrimSuffix(app.Config.URL, "/") + "/auth/google/callback",
+				},
+			),
+		)
 	}
 	if app.Kind == vukem.KindTest && app.Source.Get("SOCIAL_FAKE_ID") != "" {
-		s.Use(social.Fake("google", "/auth/google/callback", social.User{ID: app.Source.Get("SOCIAL_FAKE_ID"), Email: app.Source.Get("SOCIAL_FAKE_EMAIL"), Name: "Owner", EmailVerified: app.Source.Get("SOCIAL_FAKE_EMAIL_VERIFIED") == "true"}))
+		s.Use(
+			social.Fake(
+				"google",
+				"/auth/google/callback",
+				social.User{
+					ID:            app.Source.Get("SOCIAL_FAKE_ID"),
+					Email:         app.Source.Get("SOCIAL_FAKE_EMAIL"),
+					Name:          "Owner",
+					EmailVerified: app.Source.Get("SOCIAL_FAKE_EMAIL_VERIFIED") == "true",
+				},
+			),
+		)
 	}
 	c, err := app.Cache()
 	if err != nil {
@@ -61,7 +82,8 @@ func (a *Accounts) FindOrCreateFromSocial(ctx context.Context, su social.User) (
 			u, err = orm.QueryOf[models.User](tx).Find(ctx, uid)
 			return err
 		}
-		if strings.TrimSpace(a.OwnerEmail) == "" || !strings.EqualFold(strings.TrimSpace(su.Email), strings.TrimSpace(a.OwnerEmail)) {
+		if strings.TrimSpace(a.OwnerEmail) == "" ||
+			!strings.EqualFold(strings.TrimSpace(su.Email), strings.TrimSpace(a.OwnerEmail)) {
 			return errs.New(403, "Google account not authorized")
 		}
 		if uid > 0 {
@@ -76,7 +98,12 @@ func (a *Accounts) FindOrCreateFromSocial(ctx context.Context, su social.User) (
 				return err
 			}
 		} else {
-			u = models.User{Name: su.Name, Email: strings.ToLower(su.Email), Password: rand.Text() + rand.Text(), EmailVerifiedAt: orm.NullTime{Null: sql.Null[time.Time]{V: time.Now().UTC(), Valid: true}}}
+			u = models.User{
+				Name:            su.Name,
+				Email:           strings.ToLower(su.Email),
+				Password:        rand.Text() + rand.Text(),
+				EmailVerifiedAt: orm.NullTime{Null: sql.Null[time.Time]{V: time.Now().UTC(), Valid: true}},
+			}
 			if err := orm.Create(ctx, tx, &u); err != nil {
 				return err
 			}

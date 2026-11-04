@@ -12,7 +12,7 @@ paths:
 - No package-level mutable state, no `init()` registration, no reflection-based DI or discovery.
 - Accept small interfaces defined by the consumer; return concrete types.
 - Prefer stdlib: `net/http` ServeMux, `log/slog`, `slices`, `maps`, `iter`, `crypto/rand`, `os.Root`, `embed`.
-- Every exported identifier has a doc comment starting with its name and ending with a period.
+- Every package has a package comment. Exported identifiers get a doc comment starting with their name only when the name does not already say it (the `revive` `exported` rule is off on purpose: no obvious comments).
 - Use modern Go: `for i := range n`, `min`/`max`, `errors.AsType`, `t.Context()`, `b.Loop()`, `new(expr)`.
 - Windows 11 is a first-class target: `filepath` for OS paths, close files/roots/DB handles before deleting (use `t.Cleanup`), accept CRLF input, no `sh`/`bash` in code paths, no cgo.
 - Comment only the *why*; known limits use `// shortcut: <limit>, <when to upgrade>`.

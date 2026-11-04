@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"github.com/AlexGalhardo/vukem"
-	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
-	"github.com/AlexGalhardo/vukem-trading/internal/engine"
-	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/AlexGalhardo/vukem"
+
+	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
+	"github.com/AlexGalhardo/vukem-trading/internal/engine"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
 type Worker struct{}
@@ -18,7 +20,7 @@ type Worker struct{}
 func (Worker) Name() string        { return "trading:work" }
 func (Worker) Description() string { return "Run paper trading, reconciliation and backtest jobs" }
 func (Worker) Flags(*flag.FlagSet) {}
-func (Worker) Run(ctx context.Context, app *vukem.App, args []string) error {
+func (Worker) Run(ctx context.Context, app *vukem.App, _ []string) error {
 	db, err := app.DB()
 	if err != nil {
 		return err
@@ -33,7 +35,7 @@ func (Worker) Run(ctx context.Context, app *vukem.App, args []string) error {
 	if port == "" {
 		port = "3001"
 	}
-	listener, err := net.Listen("tcp", ":"+port)
+	listener, err := (&net.ListenConfig{}).Listen(workerCtx, "tcp", ":"+port)
 	if err != nil {
 		return err
 	}
@@ -42,15 +44,21 @@ func (Worker) Run(ctx context.Context, app *vukem.App, args []string) error {
 		ok := true
 		for _, id := range []string{"b3", "us"} {
 			var a trading.State
-			if err := store.Get(r.Context(), "trading_accounts", id, &a); err != nil || time.Since(a.Heartbeat) > 45*time.Second {
+			if err := store.Get(
+				r.Context(),
+				"trading_accounts",
+				id,
+				&a,
+			); err != nil ||
+				time.Since(a.Heartbeat) > 45*time.Second {
 				ok = false
 			}
 		}
 		if !ok {
-			http.Error(w, "not ready", 503)
+			http.Error(w, "not ready", http.StatusServiceUnavailable)
 			return
 		}
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ready"))
 	})
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second}
@@ -68,5 +76,7 @@ func (Worker) Run(ctx context.Context, app *vukem.App, args []string) error {
 		if err := adapters.SendAlert(ctx, app.Source.Get("TELEGRAM_BOT_TOKEN"), app.Source.Get("TELEGRAM_CHAT_ID"), message); err != nil {
 			app.Log.Warn("alert failed", "error", err)
 		}
-	}}).Run(workerCtx)
+	}}).Run(
+		workerCtx,
+	)
 }

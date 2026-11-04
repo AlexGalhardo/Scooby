@@ -156,7 +156,7 @@ Goal: the repository follows the ecosystem standards and everything is in Englis
 - [x] **7.9 Rename `Scooby` to `vukem-trading`:** module path and imports, ldflags, env examples, image tag, comments and docs. Assert: `go build ./...`, `go vet ./...` and `go test ./...` pass; `grep -rI Scooby` finds only the items below.
   - Kept on purpose: the PostgreSQL fixture user, password and database `scooby` (Compose and CI) and the Compose project name, because renaming them orphans local volumes and would change the secret-scanner rule for that fixture value. Rename them together in a dedicated change if wanted.
   - Railway services are already named `web`, `worker` and `site`; the Railway domain keeps its `scooby-web-production` hostname until a custom domain replaces it.
-- [ ] **7.10 `.golangci.yml`** from the ecosystem template and `golangci-lint run` clean. Assert: the command exits 0.
+- [x] **7.10 `.golangci.yml`** from the ecosystem template, `golangci-lint` 2.15.0, CI job `Go lint`. Assert: `golangci-lint run ./...` prints `0 issues`. Doc comments on every exported name are off on purpose (`revive` `exported`); package comments stay required.
 - [ ] **7.11 OpenSSF Scorecard** badge green: branch protection ruleset on `main`, pinned actions, signed releases. Assert: the Scorecard viewer for the repository shows no failing critical check.
 - [ ] **7.12 First release `v0.1.0`:** CHANGELOG section, tag, release notes, GHCR image. Assert: the Release workflow publishes and `gh release view v0.1.0` shows the notes.
 

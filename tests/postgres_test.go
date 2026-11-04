@@ -2,19 +2,22 @@ package tests
 
 import (
 	"context"
-	"fmt"
-	"github.com/AlexGalhardo/vukem-trading/bootstrap"
-	"github.com/AlexGalhardo/vukem-trading/internal/engine"
-	"github.com/AlexGalhardo/vukem-trading/internal/trading"
-	"github.com/AlexGalhardo/vukem/vukemtest"
+	"errors"
 	"log/slog"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/AlexGalhardo/vukem/vukemtest"
+
+	"github.com/AlexGalhardo/vukem-trading/bootstrap"
+	"github.com/AlexGalhardo/vukem-trading/internal/engine"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
 func TestPostgresConcurrencyAndRollback(t *testing.T) {
@@ -44,12 +47,18 @@ func TestPostgresConcurrencyAndRollback(t *testing.T) {
 	})
 	var success atomic.Int64
 	var wg sync.WaitGroup
-	for j := 0; j < 16; j++ {
+	for j := range 16 {
 		wg.Add(1)
 		go func(j int) {
 			defer wg.Done()
 			err := store.Mutate(t.Context(), id, "test", "reserve", func(a *trading.State) error {
-				_, err := a.Reserve(trading.Strategy{Symbol: "AAPL", StopBPS: 100, TargetBPS: 200}, "buy", fmt.Sprint(j), trading.D("100"), time.Now())
+				_, err := a.Reserve(
+					trading.Strategy{Symbol: "AAPL", StopBPS: 100, TargetBPS: 200},
+					"buy",
+					strconv.Itoa(j),
+					trading.D("100"),
+					time.Now(),
+				)
 				return err
 			})
 			if err == nil {
@@ -68,7 +77,13 @@ func TestPostgresConcurrencyAndRollback(t *testing.T) {
 		t.Fatal("lost or duplicated intention")
 	}
 	before := a.Cash
-	err = store.Mutate(t.Context(), id, "test", "rollback", func(a *trading.State) error { a.Cash = trading.Zero; return fmt.Errorf("failure before commit") })
+	err = store.Mutate(
+		t.Context(),
+		id,
+		"test",
+		"rollback",
+		func(a *trading.State) error { a.Cash = trading.Zero; return errors.New("failure before commit") },
+	)
 	if err == nil {
 		t.Fatal("expected rollback")
 	}

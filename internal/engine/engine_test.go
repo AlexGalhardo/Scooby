@@ -3,18 +3,19 @@ package engine_test
 import (
 	"encoding/json"
 	"errors"
-	"github.com/AlexGalhardo/vukem-trading/bootstrap"
-	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
-	"github.com/AlexGalhardo/vukem-trading/internal/engine"
-	"github.com/AlexGalhardo/vukem-trading/internal/trading"
-	"github.com/AlexGalhardo/vukem/vukemtest"
-	d "github.com/shopspring/decimal"
 	"io"
 	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/AlexGalhardo/vukem/vukemtest"
+
+	"github.com/AlexGalhardo/vukem-trading/bootstrap"
+	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
+	"github.com/AlexGalhardo/vukem-trading/internal/engine"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
 type transport func(*http.Request) (*http.Response, error)
@@ -33,7 +34,13 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 		a.Initial = a.Cash
 		a.DayStart = a.Cash
 		a.Halted = false
-		o, err := a.Reserve(trading.Strategy{Symbol: "AAPL", StopBPS: 100, TargetBPS: 200}, "buy", "signal", trading.D("100"), time.Now())
+		o, err := a.Reserve(
+			trading.Strategy{Symbol: "AAPL", StopBPS: 100, TargetBPS: 200},
+			"buy",
+			"signal",
+			trading.D("100"),
+			time.Now(),
+		)
 		if err == nil {
 			order = *o
 		}
@@ -44,28 +51,54 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 	sends := 0
 	accountID := "paper-account"
 	filled := order.Qty.Div(trading.D("2")).Floor()
-	remote := adapters.BrokerOrder{ID: "broker-order", ClientID: order.ID, Symbol: "AAPL", Side: "buy", Qty: order.Qty, Filled: filled, Average: ptr(trading.D("100")), Status: "partially_filled", Updated: time.Now()}
-	broker := adapters.Alpaca{Key: "test", Secret: "test", Client: &http.Client{Transport: transport(func(r *http.Request) (*http.Response, error) {
-		if r.Method == "POST" {
-			sends++
-			return nil, errors.New("timeout after server accepted")
-		}
-		var body any
-		switch r.URL.Path {
-		case "/v2/account":
-			body = map[string]any{"id": accountID, "cash": "50000", "equity": "100000", "currency": "USD", "status": "ACTIVE"}
-		case "/v2/positions":
-			body = []map[string]any{{"symbol": "AAPL", "qty": filled.String(), "avg_entry_price": "100", "current_price": "100"}}
-		case "/v2/orders":
-			body = []adapters.BrokerOrder{remote}
-		case "/v2/orders:by_client_order_id":
-			body = remote
-		default:
-			t.Fatalf("unexpected path %s", r.URL.Path)
-		}
-		b, _ := json.Marshal(body)
-		return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(string(b)))}, nil
-	})}}
+	remote := adapters.BrokerOrder{
+		ID:       "broker-order",
+		ClientID: order.ID,
+		Symbol:   "AAPL",
+		Side:     "buy",
+		Qty:      order.Qty,
+		Filled:   filled,
+		Average:  new(trading.D("100")),
+		Status:   "partially_filled",
+		Updated:  time.Now(),
+	}
+	broker := adapters.Alpaca{
+		Key:    "test",
+		Secret: "test",
+		Client: &http.Client{Transport: transport(func(r *http.Request) (*http.Response, error) {
+			if r.Method == http.MethodPost {
+				sends++
+				return nil, errors.New("timeout after server accepted")
+			}
+			var body any
+			switch r.URL.Path {
+			case "/v2/account":
+				body = map[string]any{
+					"id":       accountID,
+					"cash":     "50000",
+					"equity":   "100000",
+					"currency": "USD",
+					"status":   "ACTIVE",
+				}
+			case "/v2/positions":
+				body = []map[string]any{
+					{"symbol": "AAPL", "qty": filled.String(), "avg_entry_price": "100", "current_price": "100"},
+				}
+			case "/v2/orders":
+				body = []adapters.BrokerOrder{remote}
+			case "/v2/orders:by_client_order_id":
+				body = remote
+			default:
+				t.Fatalf("unexpected path %s", r.URL.Path)
+			}
+			b, _ := json.Marshal(body)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{},
+				Body:       io.NopCloser(strings.NewReader(string(b))),
+			}, nil
+		})},
+	}
 	e := engine.Engine{Store: store, Broker: broker, Log: slog.Default()}
 	if err := e.Dispatch(t.Context()); err == nil {
 		t.Fatal("timeout must remain unknown")
@@ -90,7 +123,9 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 	if err := store.Get(t.Context(), "trading_accounts", "us", &state); err != nil {
 		t.Fatal(err)
 	}
-	if len(state.Fills) != 1 || !state.Positions["AAPL"].Qty.Equal(filled) || state.Orders[0].Status != "partially_filled" || !state.Halted {
+	if len(state.Fills) != 1 || !state.Positions["AAPL"].Qty.Equal(filled) ||
+		state.Orders[0].Status != "partially_filled" ||
+		!state.Halted {
 		t.Fatal("partial/duplicate reconciliation failed")
 	}
 	accountID = "other-account"
@@ -104,4 +139,3 @@ func TestTimeoutAfterSendNeverResubmitsAndReconcilesPartial(t *testing.T) {
 		t.Fatal("credential switch mixed broker accounts")
 	}
 }
-func ptr(v d.Decimal) *d.Decimal { return &v }

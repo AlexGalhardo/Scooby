@@ -2,16 +2,18 @@ package routes
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/AlexGalhardo/vukem"
-	"github.com/AlexGalhardo/vukem-trading/app/accounts"
-	"github.com/AlexGalhardo/vukem-trading/app/controllers/terminal"
-	"github.com/AlexGalhardo/vukem-trading/resources"
 	"github.com/AlexGalhardo/vukem/auth"
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/middleware"
 	"github.com/AlexGalhardo/vukem/router"
 	"github.com/AlexGalhardo/vukem/web"
-	"net/http"
+
+	"github.com/AlexGalhardo/vukem-trading/app/accounts"
+	"github.com/AlexGalhardo/vukem-trading/app/controllers/terminal"
+	"github.com/AlexGalhardo/vukem-trading/resources"
 )
 
 func Web(r *router.Router, app *vukem.App) error {
@@ -36,6 +38,7 @@ func Web(r *router.Router, app *vukem.App) error {
 			inertia.Share(r.Context(), "auth", func(context.Context) (any, error) {
 				u, err := acc.Web.User(c)
 				if err != nil {
+					//nolint:nilerr // an anonymous visitor is not an error
 					return map[string]any{"user": nil}, nil
 				}
 				return map[string]any{"user": map[string]any{"id": u.ID, "name": u.Name, "email": u.Email}}, nil

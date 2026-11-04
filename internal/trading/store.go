@@ -6,18 +6,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/AlexGalhardo/vukem/database"
+	"strconv"
 	"time"
+
+	"github.com/AlexGalhardo/vukem/database"
 )
 
-type Store struct{ DB *database.DB }
-type Record struct {
-	ID        string          `json:"id"`
-	Payload   json.RawMessage `json:"payload"`
-	Version   int64           `json:"version"`
-	UpdatedAt string          `json:"updated_at"`
-	Status    string          `json:"status"`
-}
+type (
+	Store  struct{ DB *database.DB }
+	Record struct {
+		ID        string          `json:"id"`
+		Payload   json.RawMessage `json:"payload"`
+		Version   int64           `json:"version"`
+		UpdatedAt string          `json:"updated_at"`
+		Status    string          `json:"status"`
+	}
+)
 
 func validTable(t string) bool {
 	return t == "trading_accounts" || t == "datasets" || t == "strategies" || t == "backtests" || t == "artifacts"
@@ -32,13 +36,22 @@ func (s Store) Initialize(ctx context.Context) error {
 			a.Peak = Zero
 		}
 		b, _ := json.Marshal(a)
-		_, err := s.DB.ExecContext(ctx, s.q("INSERT INTO trading_accounts (id,payload,version,updated_at,status) VALUES (?,?,0,?,'halted') ON CONFLICT (id) DO NOTHING"), a.ID, string(b), time.Now().UTC().Format(time.RFC3339))
+		_, err := s.DB.ExecContext(
+			ctx,
+			s.q(
+				"INSERT INTO trading_accounts (id,payload,version,updated_at,status) VALUES (?,?,0,?,'halted') ON CONFLICT (id) DO NOTHING",
+			),
+			a.ID,
+			string(b),
+			time.Now().UTC().Format(time.RFC3339),
+		)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
+
 func (s Store) List(ctx context.Context, table string, limit int) ([]Record, error) {
 	if !validTable(table) {
 		return nil, errors.New("invalid table")
@@ -50,7 +63,10 @@ func (s Store) List(ctx context.Context, table string, limit int) ([]Record, err
 	if table == "strategies" {
 		order = "CASE WHEN status='enabled' THEN 0 ELSE 1 END, updated_at DESC"
 	}
-	rows, err := s.DB.QueryContext(ctx, fmt.Sprintf("SELECT id,payload,version,updated_at,status FROM %s ORDER BY %s LIMIT %d", table, order, limit))
+	rows, err := s.DB.QueryContext(
+		ctx,
+		fmt.Sprintf("SELECT id,payload,version,updated_at,status FROM %s ORDER BY %s LIMIT %d", table, order, limit),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +83,7 @@ func (s Store) List(ctx context.Context, table string, limit int) ([]Record, err
 	}
 	return out, rows.Err()
 }
+
 func (s Store) Get(ctx context.Context, table, id string, out any) error {
 	if !validTable(table) {
 		return errors.New("invalid table")
@@ -77,6 +94,7 @@ func (s Store) Get(ctx context.Context, table, id string, out any) error {
 	}
 	return json.Unmarshal([]byte(body), out)
 }
+
 func (s Store) Create(ctx context.Context, table, id, status, actor string, value any) error {
 	if !validTable(table) {
 		return errors.New("invalid table")
@@ -97,8 +115,20 @@ func (s Store) Create(ctx context.Context, table, id, status, actor string, valu
 		return audit(ctx, tx, actor, "create."+table, id, "Created immutable record")
 	})
 }
+
 func audit(ctx context.Context, tx *database.Tx, actor, action, account, details string) error {
-	_, err := tx.ExecContext(ctx, database.Rebind(tx.Dialect(), "INSERT INTO audit_events (actor,action,account_id,details,created_at) VALUES (?,?,?,?,?)"), actor, action, account, details, time.Now().UTC().Format(time.RFC3339))
+	_, err := tx.ExecContext(
+		ctx,
+		database.Rebind(
+			tx.Dialect(),
+			"INSERT INTO audit_events (actor,action,account_id,details,created_at) VALUES (?,?,?,?,?)",
+		),
+		actor,
+		action,
+		account,
+		details,
+		time.Now().UTC().Format(time.RFC3339),
+	)
 	return err
 }
 
@@ -137,7 +167,17 @@ func (s Store) Mutate(ctx context.Context, id, actor, action string, fn func(*St
 		if a.Halted {
 			status = "halted"
 		}
-		res, err := tx.ExecContext(ctx, s.q("UPDATE trading_accounts SET payload=?,version=version+1,updated_at=?,status=? WHERE id=? AND version=?"), string(b), time.Now().UTC().Format(time.RFC3339), status, id, version)
+		res, err := tx.ExecContext(
+			ctx,
+			s.q(
+				"UPDATE trading_accounts SET payload=?,version=version+1,updated_at=?,status=? WHERE id=? AND version=?",
+			),
+			string(b),
+			time.Now().UTC().Format(time.RFC3339),
+			status,
+			id,
+			version,
+		)
 		if err != nil {
 			return err
 		}
@@ -146,7 +186,7 @@ func (s Store) Mutate(ctx context.Context, id, actor, action string, fn func(*St
 			return errors.New("concurrent update; retry")
 		}
 		if actor != "engine" || action != "tick" {
-			details := "Generation " + fmt.Sprint(a.Generation)
+			details := "Generation " + strconv.FormatInt(a.Generation, 10)
 			if action == "risk.policy" {
 				b, _ := json.Marshal(map[string]any{"before": oldPolicy, "after": a.Policy, "generation": a.Generation})
 				details = string(b)
@@ -156,6 +196,7 @@ func (s Store) Mutate(ctx context.Context, id, actor, action string, fn func(*St
 		return nil
 	})
 }
+
 func (s Store) Status(ctx context.Context, table, id, status, actor string) error {
 	if !validTable(table) {
 		return errors.New("invalid table")
@@ -190,7 +231,10 @@ type AuditEvent struct {
 }
 
 func (s Store) Audit(ctx context.Context) ([]AuditEvent, error) {
-	rows, err := s.DB.QueryContext(ctx, "SELECT id,actor,action,account_id,details,created_at FROM audit_events ORDER BY id DESC LIMIT 100")
+	rows, err := s.DB.QueryContext(
+		ctx,
+		"SELECT id,actor,action,account_id,details,created_at FROM audit_events ORDER BY id DESC LIMIT 100",
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -205,6 +249,7 @@ func (s Store) Audit(ctx context.Context) ([]AuditEvent, error) {
 	}
 	return out, rows.Err()
 }
+
 func (s Store) ActiveStrategies(ctx context.Context) ([]Strategy, error) {
 	rows, err := s.DB.QueryContext(ctx, "SELECT payload FROM strategies WHERE status='enabled' ORDER BY id")
 	if err != nil {
@@ -242,14 +287,20 @@ type Job struct {
 
 func (s Store) ProcessJob(ctx context.Context) error {
 	var id, raw string
-	err := s.DB.QueryRowContext(ctx, "SELECT id,payload FROM backtests WHERE status='queued' ORDER BY updated_at LIMIT 1").Scan(&id, &raw)
+	err := s.DB.QueryRowContext(ctx, "SELECT id,payload FROM backtests WHERE status='queued' ORDER BY updated_at LIMIT 1").
+		Scan(&id, &raw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	res, err := s.DB.ExecContext(ctx, s.q("UPDATE backtests SET status='running',updated_at=? WHERE id=? AND status='queued'"), time.Now().UTC().Format(time.RFC3339), id)
+	res, err := s.DB.ExecContext(
+		ctx,
+		s.q("UPDATE backtests SET status='running',updated_at=? WHERE id=? AND status='queued'"),
+		time.Now().UTC().Format(time.RFC3339),
+		id,
+	)
 	if err != nil {
 		return err
 	}
@@ -308,7 +359,14 @@ func (s Store) ProcessJob(ctx context.Context) error {
 	if e != nil {
 		return e
 	}
-	_, e = s.DB.ExecContext(ctx, s.q("UPDATE backtests SET payload=?,status=?,updated_at=? WHERE id=? AND status='running'"), string(b), status, time.Now().UTC().Format(time.RFC3339), id)
+	_, e = s.DB.ExecContext(
+		ctx,
+		s.q("UPDATE backtests SET payload=?,status=?,updated_at=? WHERE id=? AND status='running'"),
+		string(b),
+		status,
+		time.Now().UTC().Format(time.RFC3339),
+		id,
+	)
 	return e
 }
 
@@ -346,40 +404,49 @@ func (s Store) ToggleStrategy(ctx context.Context, id string, enabled bool) erro
 			}
 		}
 		if enabled {
-			rows, err := tx.QueryContext(ctx, "SELECT id,payload FROM strategies WHERE status='enabled'")
-			if err != nil {
-				return err
-			}
 			conflict := false
-			for rows.Next() {
-				var otherID, body string
-				if err := rows.Scan(&otherID, &body); err != nil {
-					rows.Close()
+			err := func() error {
+				rows, err := tx.QueryContext(ctx, "SELECT id,payload FROM strategies WHERE status='enabled'")
+				if err != nil {
 					return err
 				}
-				var other Strategy
-				if err := json.Unmarshal([]byte(body), &other); err != nil {
-					rows.Close()
-					return err
+				defer rows.Close()
+				for rows.Next() {
+					var otherID, body string
+					if err := rows.Scan(&otherID, &body); err != nil {
+						return err
+					}
+					var other Strategy
+					if err := json.Unmarshal([]byte(body), &other); err != nil {
+						return err
+					}
+					if otherID != id && other.AccountID == strategy.AccountID &&
+						(a.ID == "b3" || other.Symbol == strategy.Symbol) {
+						conflict = true
+					}
 				}
-				if otherID != id && other.AccountID == strategy.AccountID && (a.ID == "b3" || other.Symbol == strategy.Symbol) {
-					conflict = true
-				}
-			}
-			err = rows.Err()
-			rows.Close()
+				return rows.Err()
+			}()
 			if err != nil {
 				return err
 			}
 			if conflict {
-				return errors.New("an active strategy already exists for this account/symbol; B3 allows one replay clock at a time")
+				return errors.New(
+					"an active strategy already exists for this account/symbol; B3 allows one replay clock at a time",
+				)
 			}
 		}
 		status := "disabled"
 		if enabled {
 			status = "enabled"
 		}
-		_, err := tx.ExecContext(ctx, s.q("UPDATE strategies SET status=?,version=version+1,updated_at=? WHERE id=?"), status, time.Now().UTC().Format(time.RFC3339), id)
+		_, err := tx.ExecContext(
+			ctx,
+			s.q("UPDATE strategies SET status=?,version=version+1,updated_at=? WHERE id=?"),
+			status,
+			time.Now().UTC().Format(time.RFC3339),
+			id,
+		)
 		if err != nil {
 			return err
 		}
@@ -397,28 +464,29 @@ func (s Store) CreateStrategy(ctx context.Context, st *Strategy) error {
 		if err := tx.QueryRowContext(ctx, q, st.AccountID).Scan(&account); err != nil {
 			return err
 		}
-		rows, err := tx.QueryContext(ctx, "SELECT payload FROM strategies")
-		if err != nil {
-			return err
-		}
 		st.Version = 1
-		for rows.Next() {
-			var body string
-			if err := rows.Scan(&body); err != nil {
-				rows.Close()
+		err := func() error {
+			rows, err := tx.QueryContext(ctx, "SELECT payload FROM strategies")
+			if err != nil {
 				return err
 			}
-			var other Strategy
-			if err := json.Unmarshal([]byte(body), &other); err != nil {
-				rows.Close()
-				return err
+			defer rows.Close()
+			for rows.Next() {
+				var body string
+				if err := rows.Scan(&body); err != nil {
+					return err
+				}
+				var other Strategy
+				if err := json.Unmarshal([]byte(body), &other); err != nil {
+					return err
+				}
+				if other.Name == st.Name && other.Symbol == st.Symbol && other.AccountID == st.AccountID &&
+					other.Version >= st.Version {
+					st.Version = other.Version + 1
+				}
 			}
-			if other.Name == st.Name && other.Symbol == st.Symbol && other.AccountID == st.AccountID && other.Version >= st.Version {
-				st.Version = other.Version + 1
-			}
-		}
-		err = rows.Err()
-		rows.Close()
+			return rows.Err()
+		}()
 		if err != nil {
 			return err
 		}
@@ -426,11 +494,17 @@ func (s Store) CreateStrategy(ctx context.Context, st *Strategy) error {
 		if err != nil {
 			return err
 		}
-		_, err = tx.ExecContext(ctx, s.q("INSERT INTO strategies(id,payload,version,updated_at,status) VALUES (?,?,0,?,'disabled')"), st.ID, string(body), time.Now().UTC().Format(time.RFC3339))
+		_, err = tx.ExecContext(
+			ctx,
+			s.q("INSERT INTO strategies(id,payload,version,updated_at,status) VALUES (?,?,0,?,'disabled')"),
+			st.ID,
+			string(body),
+			time.Now().UTC().Format(time.RFC3339),
+		)
 		if err != nil {
 			return err
 		}
-		return audit(ctx, tx, "owner", "strategy.create", st.AccountID, st.ID+" version "+fmt.Sprint(st.Version))
+		return audit(ctx, tx, "owner", "strategy.create", st.AccountID, st.ID+" version "+strconv.Itoa(st.Version))
 	})
 }
 
@@ -459,7 +533,13 @@ func (s Store) ResetReplay(ctx context.Context) error {
 		}
 		id := "replay-" + ID()
 		now := time.Now().UTC().Format(time.RFC3339)
-		if _, err := tx.ExecContext(ctx, s.q("INSERT INTO artifacts(id,payload,version,updated_at,status) VALUES (?,?,0,?,'replay')"), id, raw, now); err != nil {
+		if _, err := tx.ExecContext(
+			ctx,
+			s.q("INSERT INTO artifacts(id,payload,version,updated_at,status) VALUES (?,?,0,?,'replay')"),
+			id,
+			raw,
+			now,
+		); err != nil {
 			return err
 		}
 		next := NewState("b3", "BRL", "simulation")
@@ -468,7 +548,15 @@ func (s Store) ResetReplay(ctx context.Context) error {
 		next.Heartbeat = a.Heartbeat
 		next.Policy = a.Policy
 		body, _ := json.Marshal(next)
-		res, err := tx.ExecContext(ctx, s.q("UPDATE trading_accounts SET payload=?,version=version+1,updated_at=?,status='halted' WHERE id='b3' AND version=?"), string(body), now, version)
+		res, err := tx.ExecContext(
+			ctx,
+			s.q(
+				"UPDATE trading_accounts SET payload=?,version=version+1,updated_at=?,status='halted' WHERE id='b3' AND version=?",
+			),
+			string(body),
+			now,
+			version,
+		)
 		if err != nil {
 			return err
 		}

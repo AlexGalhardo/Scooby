@@ -6,7 +6,10 @@ import (
 
 func terminalSchema() schema.Migration {
 	return schema.Migration{ID: "20261103140000_create_terminal", Up: func(s *schema.Schema) error {
-		if err := s.Create("owner_identity", func(t *schema.Table) { t.Integer("id").Primary(); t.String("subject"); t.BigInteger("user_id") }); err != nil {
+		if err := s.Create(
+			"owner_identity",
+			func(t *schema.Table) { t.Integer("id").Primary(); t.String("subject"); t.BigInteger("user_id") },
+		); err != nil {
 			return err
 		}
 		if err := s.Raw("INSERT INTO owner_identity (id,subject,user_id) VALUES (1,'',0)"); err != nil {

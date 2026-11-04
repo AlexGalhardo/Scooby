@@ -6,7 +6,22 @@ import "time"
 // reviewed exchange calendar is added. Sources are recorded in docs/web-research.nd.
 const B3CalendarVersion = "B3 equities 2026 / OC005 + OC055 / reviewed 2026-11-03"
 
-var b3Holidays = map[string]bool{"2026-01-01": true, "2026-02-16": true, "2026-02-17": true, "2026-04-03": true, "2026-04-21": true, "2026-05-01": true, "2026-06-04": true, "2026-09-07": true, "2026-10-12": true, "2026-11-02": true, "2026-11-20": true, "2026-12-24": true, "2026-12-25": true, "2026-12-31": true}
+var b3Holidays = map[string]bool{
+	"2026-01-01": true,
+	"2026-02-16": true,
+	"2026-02-17": true,
+	"2026-04-03": true,
+	"2026-04-21": true,
+	"2026-05-01": true,
+	"2026-06-04": true,
+	"2026-09-07": true,
+	"2026-10-12": true,
+	"2026-11-02": true,
+	"2026-11-20": true,
+	"2026-12-24": true,
+	"2026-12-25": true,
+	"2026-12-31": true,
+}
 
 func SessionBounds(market string, at time.Time) (time.Time, time.Time, bool) {
 	zone := "America/New_York"
@@ -39,18 +54,21 @@ func SessionBounds(market string, at time.Time) (time.Time, time.Time, bool) {
 	end := time.Date(t.Year(), t.Month(), t.Day(), closeHour, closeMinute, 0, 0, loc)
 	return start, end, true
 }
+
 func Session(market string, t time.Time) bool {
 	start, end, ok := SessionBounds(market, t)
 	return ok && !t.Before(start) && t.Before(end)
 }
+
 func Closing(market string, t time.Time) bool {
 	_, end, ok := SessionBounds(market, t)
 	return !ok || !t.Before(end.Add(-15*time.Minute))
 }
+
 func (ds Dataset) ClosingAt(t time.Time) bool {
 	inst, _ := FindInstrument(ds.Symbol)
-	if close, ok := ds.SessionCloses[MarketDay(inst.Market, t)]; ok {
-		return !t.Before(close.Add(-15 * time.Minute))
+	if closeAt, ok := ds.SessionCloses[MarketDay(inst.Market, t)]; ok {
+		return !t.Before(closeAt.Add(-15 * time.Minute))
 	}
 	return Closing(inst.Market, t)
 }

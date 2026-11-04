@@ -4,11 +4,12 @@ package trading
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
-	d "github.com/shopspring/decimal"
 	"math"
 	"slices"
+	"strconv"
 	"time"
+
+	d "github.com/shopspring/decimal"
 )
 
 var BuildVersion = "development"
@@ -32,7 +33,14 @@ type Instrument struct {
 	Tick     d.Decimal `json:"tick"`
 }
 
-var Instruments = []Instrument{{"PETR4", "B3", "BRL", D("100"), D("0.01")}, {"VALE3", "B3", "BRL", D("100"), D("0.01")}, {"ITUB4", "B3", "BRL", D("100"), D("0.01")}, {"AAPL", "US", "USD", D("1"), D("0.01")}, {"NVDA", "US", "USD", D("1"), D("0.01")}, {"TSLA", "US", "USD", D("1"), D("0.01")}}
+var Instruments = []Instrument{
+	{"PETR4", "B3", "BRL", D("100"), D("0.01")},
+	{"VALE3", "B3", "BRL", D("100"), D("0.01")},
+	{"ITUB4", "B3", "BRL", D("100"), D("0.01")},
+	{"AAPL", "US", "USD", D("1"), D("0.01")},
+	{"NVDA", "US", "USD", D("1"), D("0.01")},
+	{"TSLA", "US", "USD", D("1"), D("0.01")},
+}
 
 func FindInstrument(symbol string) (Instrument, error) {
 	for _, i := range Instruments {
@@ -53,7 +61,13 @@ type Candle struct {
 }
 
 func (c Candle) Validate() error {
-	if c.Time.IsZero() || !c.Open.IsPositive() || !c.Close.IsPositive() || !c.Low.IsPositive() || c.Volume.IsNegative() || c.Low.GreaterThan(c.High) || c.Open.GreaterThan(c.High) || c.Close.GreaterThan(c.High) || c.Open.LessThan(c.Low) || c.Close.LessThan(c.Low) {
+	if c.Time.IsZero() || !c.Open.IsPositive() || !c.Close.IsPositive() || !c.Low.IsPositive() ||
+		c.Volume.IsNegative() ||
+		c.Low.GreaterThan(c.High) ||
+		c.Open.GreaterThan(c.High) ||
+		c.Close.GreaterThan(c.High) ||
+		c.Open.LessThan(c.Low) ||
+		c.Close.LessThan(c.Low) {
 		return errors.New("invalid candle")
 	}
 	return nil
@@ -93,11 +107,21 @@ func (s Strategy) Validate() error {
 	if _, err := FindInstrument(s.Symbol); err != nil {
 		return err
 	}
-	if !slices.Contains([]string{"ma_cross", "mean_reversion", "breakout"}, s.Kind) || s.Fast < 2 || s.Slow <= s.Fast || s.Slow > 500 || math.IsNaN(s.Threshold) || math.IsInf(s.Threshold, 0) || s.Threshold < 0.1 || s.Threshold > 10 || s.StopBPS < 10 || s.StopBPS > 2000 || s.TargetBPS < 10 || s.TargetBPS > 5000 {
+	if !slices.Contains([]string{"ma_cross", "mean_reversion", "breakout"}, s.Kind) || s.Fast < 2 || s.Slow <= s.Fast ||
+		s.Slow > 500 ||
+		math.IsNaN(s.Threshold) ||
+		math.IsInf(s.Threshold, 0) ||
+		s.Threshold < 0.1 ||
+		s.Threshold > 10 ||
+		s.StopBPS < 10 ||
+		s.StopBPS > 2000 ||
+		s.TargetBPS < 10 ||
+		s.TargetBPS > 5000 {
 		return errors.New("invalid strategy parameters")
 	}
 	return nil
 }
+
 func mean(cs []Candle) float64 {
 	v := 0.
 	for _, c := range cs {
@@ -170,7 +194,16 @@ type Policy struct {
 
 func DefaultPolicy() Policy { return Policy{50, 100, 5000, 3, 5, 5, 600} }
 func (p Policy) Validate() error {
-	if p.RiskBPS < 1 || p.RiskBPS > 100 || p.DailyLossBPS < 1 || p.DailyLossBPS > 500 || p.ExposureBPS < 100 || p.ExposureBPS > 10000 || p.MaxPositions < 1 || p.MaxPositions > 6 || p.CostBPS < 0 || p.CostBPS > 100 || p.SlippageBPS < 1 || p.SlippageBPS > 100 || p.MaxAgeSeconds < 60 || p.MaxAgeSeconds > 900 {
+	if p.RiskBPS < 1 || p.RiskBPS > 100 || p.DailyLossBPS < 1 || p.DailyLossBPS > 500 || p.ExposureBPS < 100 ||
+		p.ExposureBPS > 10000 ||
+		p.MaxPositions < 1 ||
+		p.MaxPositions > 6 ||
+		p.CostBPS < 0 ||
+		p.CostBPS > 100 ||
+		p.SlippageBPS < 1 ||
+		p.SlippageBPS > 100 ||
+		p.MaxAgeSeconds < 60 ||
+		p.MaxAgeSeconds > 900 {
 		return errors.New("invalid risk limits")
 	}
 	return nil
@@ -206,7 +239,10 @@ type Order struct {
 }
 
 func (o Order) Open() bool {
-	return slices.Contains([]string{"approved", "dispatching", "unknown", "acknowledged", "partially_filled", "cancel_pending"}, o.Status)
+	return slices.Contains(
+		[]string{"approved", "dispatching", "unknown", "acknowledged", "partially_filled", "cancel_pending"},
+		o.Status,
+	)
 }
 
 type Fill struct {
@@ -245,8 +281,24 @@ type State struct {
 }
 
 func NewState(id, currency, mode string) State {
-	return State{ID: id, Currency: currency, Mode: mode, Cash: D("100000"), Initial: D("100000"), DayStart: D("100000"), Peak: D("100000"), Policy: DefaultPolicy(), Halted: true, Reason: "Waiting for configuration and activation", Orders: []Order{}, Fills: []Fill{}, Positions: map[string]Position{}, Cursors: map[string]string{}}
+	return State{
+		ID:        id,
+		Currency:  currency,
+		Mode:      mode,
+		Cash:      D("100000"),
+		Initial:   D("100000"),
+		DayStart:  D("100000"),
+		Peak:      D("100000"),
+		Policy:    DefaultPolicy(),
+		Halted:    true,
+		Reason:    "Waiting for configuration and activation",
+		Orders:    []Order{},
+		Fills:     []Fill{},
+		Positions: map[string]Position{},
+		Cursors:   map[string]string{},
+	}
 }
+
 func (a State) Equity() d.Decimal {
 	v := a.Cash
 	for _, p := range a.Positions {
@@ -254,6 +306,7 @@ func (a State) Equity() d.Decimal {
 	}
 	return v
 }
+
 func (a State) Exposure() d.Decimal {
 	v := Zero
 	for _, p := range a.Positions {
@@ -288,16 +341,18 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 			return nil, errors.New("pending order on symbol")
 		}
 	}
-	qty := Zero
+	var qty d.Decimal
 	limit := price
 	stop := price.Mul(D("1").Sub(Fraction(s.StopBPS))).RoundFloor(2)
 	target := price.Mul(D("1").Add(Fraction(s.TargetBPS))).RoundFloor(2)
 	reserve := Zero
-	if side == "buy" {
+	switch side {
+	case "buy":
 		if a.Halted {
 			return nil, errors.New("account blocked")
 		}
-		if a.DayStart.IsPositive() && a.Equity().LessThanOrEqual(a.DayStart.Mul(D("1").Sub(Fraction(a.Policy.DailyLossBPS)))) {
+		if a.DayStart.IsPositive() &&
+			a.Equity().LessThanOrEqual(a.DayStart.Mul(D("1").Sub(Fraction(a.Policy.DailyLossBPS)))) {
 			a.Halt("Daily loss limit")
 			return nil, errors.New(a.Reason)
 		}
@@ -310,22 +365,40 @@ func (a *State) Reserve(s Strategy, side, key string, price d.Decimal, at time.T
 		limit = price.Mul(D("1").Add(Fraction(a.Policy.SlippageBPS))).RoundCeil(2)
 		perUnit := limit.Sub(stop).Add(limit.Mul(Fraction(2*a.Policy.CostBPS + a.Policy.SlippageBPS)))
 		remaining := d.Min(a.Cash, a.Equity().Mul(Fraction(a.Policy.ExposureBPS)).Sub(a.Exposure()))
-		qty = d.Min(a.Equity().Mul(Fraction(a.Policy.RiskBPS)).Div(perUnit), remaining.Div(limit.Mul(D("1").Add(Fraction(a.Policy.CostBPS)))))
+		qty = d.Min(
+			a.Equity().Mul(Fraction(a.Policy.RiskBPS)).Div(perUnit),
+			remaining.Div(limit.Mul(D("1").Add(Fraction(a.Policy.CostBPS)))),
+		)
 		qty = qty.Div(i.Step).Floor().Mul(i.Step)
 		reserve = qty.Mul(limit).Mul(D("1").Add(Fraction(a.Policy.CostBPS)))
-	} else if side == "sell" {
+	case "sell":
 		qty = a.Positions[s.Symbol].Qty
 		limit = price.Mul(D("1").Sub(Fraction(a.Policy.SlippageBPS))).RoundFloor(2)
-	} else {
+	default:
 		return nil, errors.New("invalid side")
 	}
 	if !qty.IsPositive() {
 		return nil, errors.New("quantity below minimum")
 	}
-	o := Order{ID: ID(), Key: key, Symbol: s.Symbol, Side: side, Qty: qty, Limit: limit, Stop: stop, Target: target, Reserved: reserve, Status: "approved", Generation: a.Generation, CreatedAt: at, UpdatedAt: at}
+	o := Order{
+		ID:         ID(),
+		Key:        key,
+		Symbol:     s.Symbol,
+		Side:       side,
+		Qty:        qty,
+		Limit:      limit,
+		Stop:       stop,
+		Target:     target,
+		Reserved:   reserve,
+		Status:     "approved",
+		Generation: a.Generation,
+		CreatedAt:  at,
+		UpdatedAt:  at,
+	}
 	a.Orders = append(a.Orders, o)
 	return &a.Orders[len(a.Orders)-1], nil
 }
+
 func (a *State) ApplyFill(f Fill) error {
 	for _, old := range a.Fills {
 		if old.ID == f.ID {
@@ -390,6 +463,7 @@ func (a *State) ApplyFill(f Fill) error {
 	a.Peak = d.Max(a.Peak, a.Equity())
 	return nil
 }
+
 func (a *State) Order(id string) *Order {
 	for i := range a.Orders {
 		if a.Orders[i].ID == id {
@@ -398,6 +472,7 @@ func (a *State) Order(id string) *Order {
 	}
 	return nil
 }
+
 func (a *State) Mark(symbol string, price d.Decimal) {
 	if p, ok := a.Positions[symbol]; ok {
 		p.Mark = price
@@ -405,6 +480,7 @@ func (a *State) Mark(symbol string, price d.Decimal) {
 		a.Peak = d.Max(a.Peak, a.Equity())
 	}
 }
+
 func MarketDay(market string, t time.Time) string {
 	zone := "America/New_York"
 	if market == "B3" {
@@ -446,7 +522,16 @@ func Simulate(a *State, o *Order, c Candle) error {
 		o.Reserved = Zero
 		return nil
 	}
-	f := Fill{ID: o.ID + "/" + fmt.Sprint(c.Time.Unix()), OrderID: o.ID, Symbol: o.Symbol, Side: o.Side, Qty: qty, Price: price, Fees: qty.Mul(price).Mul(Fraction(a.Policy.CostBPS)), Time: c.Time}
+	f := Fill{
+		ID:      o.ID + "/" + strconv.FormatInt(c.Time.Unix(), 10),
+		OrderID: o.ID,
+		Symbol:  o.Symbol,
+		Side:    o.Side,
+		Qty:     qty,
+		Price:   price,
+		Fees:    qty.Mul(price).Mul(Fraction(a.Policy.CostBPS)),
+		Time:    c.Time,
+	}
 	if err := a.ApplyFill(f); err != nil {
 		return err
 	}
@@ -478,5 +563,8 @@ func (a *State) RecordRejection(key, symbol, side string, err error, at time.Tim
 			return
 		}
 	}
-	a.RiskDecisions = append(a.RiskDecisions, RiskDecision{key, symbol, side, err.Error(), a.Policy, a.Equity(), a.Exposure(), at})
+	a.RiskDecisions = append(
+		a.RiskDecisions,
+		RiskDecision{key, symbol, side, err.Error(), a.Policy, a.Equity(), a.Exposure(), at},
+	)
 }

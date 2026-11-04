@@ -7,12 +7,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
-	"github.com/AlexGalhardo/vukem-trading/internal/trading"
-	d "github.com/shopspring/decimal"
 	"log/slog"
 	"strconv"
 	"time"
+
+	d "github.com/shopspring/decimal"
+
+	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
 type Engine struct {
@@ -108,13 +110,20 @@ func (e Engine) Run(ctx context.Context) error {
 		}
 	}
 }
+
 func (e Engine) Tick(ctx context.Context) error {
 	strategies, err := e.Store.ActiveStrategies(ctx)
 	if err != nil {
 		return err
 	}
 	for _, id := range []string{"b3", "us"} {
-		if err := e.mutate(ctx, id, "engine", "tick", func(a *trading.State) error { a.Heartbeat = time.Now().UTC(); return nil }); err != nil {
+		if err := e.mutate(
+			ctx,
+			id,
+			"engine",
+			"tick",
+			func(a *trading.State) error { a.Heartbeat = time.Now().UTC(); return nil },
+		); err != nil {
 			return err
 		}
 	}
@@ -180,6 +189,7 @@ func (e Engine) Tick(ctx context.Context) error {
 	}
 	return nil
 }
+
 func (e Engine) halt(ctx context.Context, id, reason string) {
 	changed := false
 	err := e.mutate(ctx, id, "engine", "halt", func(a *trading.State) error {
@@ -196,13 +206,14 @@ func (e Engine) halt(ctx context.Context, id, reason string) {
 		e.Alert(ctx, id+": "+reason)
 	}
 }
+
 func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Dataset, batch int) error {
 	if ds.Symbol != s.Symbol {
 		return errors.New("replay dataset incompatible")
 	}
 	inst, _ := trading.FindInstrument(s.Symbol)
 	return e.mutate(ctx, "b3", "engine", "tick", func(a *trading.State) error {
-		for n := 0; n < batch; n++ {
+		for range batch {
 			index := s.Slow + 1
 			if v := a.Cursors[s.ID]; v != "" {
 				parsed, err := strconv.Atoi(v)
@@ -253,7 +264,18 @@ func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Datas
 					o, err := a.Reserve(s, "sell", s.ID+fmt.Sprint(index, "/exit"), price, c.Time)
 					if err == nil {
 						fillPrice := price.Mul(trading.D("1").Sub(trading.Fraction(a.Policy.SlippageBPS)))
-						if err := a.ApplyFill(trading.Fill{ID: o.ID, OrderID: o.ID, Symbol: s.Symbol, Side: "sell", Qty: o.Qty, Price: fillPrice, Fees: o.Qty.Mul(fillPrice).Mul(trading.Fraction(a.Policy.CostBPS)), Time: c.Time}); err != nil {
+						if err := a.ApplyFill(
+							trading.Fill{
+								ID:      o.ID,
+								OrderID: o.ID,
+								Symbol:  s.Symbol,
+								Side:    "sell",
+								Qty:     o.Qty,
+								Price:   fillPrice,
+								Fees:    o.Qty.Mul(fillPrice).Mul(trading.Fraction(a.Policy.CostBPS)),
+								Time:    c.Time,
+							},
+						); err != nil {
 							return err
 						}
 					}
@@ -262,7 +284,7 @@ func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Datas
 			if !a.Halted && !ds.ClosingAt(c.Time) && index < len(ds.Candles)-1 {
 				side := trading.Signal(s, ds.Candles[:index+1])
 				if side != "hold" {
-					key := s.ID + fmt.Sprint(index)
+					key := s.ID + strconv.Itoa(index)
 					_, err := a.Reserve(s, side, key, c.Close, c.Time)
 					a.RecordRejection(key, s.Symbol, side, err, c.Time)
 				}
@@ -273,6 +295,7 @@ func (e Engine) Replay(ctx context.Context, s trading.Strategy, ds trading.Datas
 		return nil
 	})
 }
+
 func (e Engine) SignalUS(ctx context.Context, s trading.Strategy, ds trading.Dataset, clock adapters.Clock) error {
 	if len(ds.Candles) < s.Slow+1 {
 		return errors.New("insufficient warmup")
@@ -294,7 +317,8 @@ func (e Engine) SignalUS(ctx context.Context, s trading.Strategy, ds trading.Dat
 		a.Mark(s.Symbol, last.Close)
 		side := trading.Signal(s, ds.Candles)
 		if p, ok := a.Positions[s.Symbol]; ok {
-			if last.Close.LessThanOrEqual(p.Stop) || last.Close.GreaterThanOrEqual(p.Target) || clock.NextClose.Sub(clock.Time) < 15*time.Minute {
+			if last.Close.LessThanOrEqual(p.Stop) || last.Close.GreaterThanOrEqual(p.Target) ||
+				clock.NextClose.Sub(clock.Time) < 15*time.Minute {
 				side = "sell"
 			}
 		}
@@ -381,7 +405,15 @@ func (e Engine) Reconcile(ctx context.Context) error {
 				}
 				delta := b.Filled.Sub(o.Filled)
 				price := b.Average.Mul(b.Filled).Sub(o.Average.Mul(o.Filled)).Div(delta)
-				f := trading.Fill{ID: b.ID + "/" + b.Filled.String(), OrderID: o.ID, Symbol: o.Symbol, Side: o.Side, Qty: delta, Price: price, Time: b.Updated}
+				f := trading.Fill{
+					ID:      b.ID + "/" + b.Filled.String(),
+					OrderID: o.ID,
+					Symbol:  o.Symbol,
+					Side:    o.Side,
+					Qty:     delta,
+					Price:   price,
+					Time:    b.Updated,
+				}
 				if err := a.ApplyFill(f); err != nil {
 					return err
 				}
@@ -429,6 +461,7 @@ func (e Engine) Reconcile(ctx context.Context) error {
 		return nil
 	})
 }
+
 func (e Engine) Dispatch(ctx context.Context) error {
 	var a trading.State
 	if err := e.Store.Get(ctx, "trading_accounts", "us", &a); err != nil {

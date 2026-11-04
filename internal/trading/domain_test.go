@@ -11,6 +11,7 @@ import (
 func strategy() Strategy {
 	return Strategy{Kind: "ma_cross", Symbol: "AAPL", Fast: 2, Slow: 4, Threshold: 2, StopBPS: 100, TargetBPS: 200}
 }
+
 func TestRiskReservationAndIdempotentFill(t *testing.T) {
 	a := NewState("test", "USD", "simulation")
 	a.Halted = false
@@ -30,7 +31,16 @@ func TestRiskReservationAndIdempotentFill(t *testing.T) {
 		t.Fatal("duplicate intent")
 	}
 	half := qty.Div(D("2")).Floor()
-	f := Fill{ID: "partial-1", OrderID: id, Symbol: "AAPL", Side: "buy", Qty: half, Price: D("100"), Fees: D("1"), Time: at}
+	f := Fill{
+		ID:      "partial-1",
+		OrderID: id,
+		Symbol:  "AAPL",
+		Side:    "buy",
+		Qty:     half,
+		Price:   D("100"),
+		Fees:    D("1"),
+		Time:    at,
+	}
 	if err := a.ApplyFill(f); err != nil {
 		t.Fatal(err)
 	}
@@ -58,6 +68,7 @@ func TestRiskReservationAndIdempotentFill(t *testing.T) {
 		t.Fatal("risk reduction blocked", err)
 	}
 }
+
 func TestDailyLossPersistsAndDecimals(t *testing.T) {
 	a := NewState("test", "USD", "simulation")
 	a.Halted = false
@@ -69,6 +80,7 @@ func TestDailyLossPersistsAndDecimals(t *testing.T) {
 		t.Fatal("inexact decimal")
 	}
 }
+
 func TestCSVRejectsAmbiguity(t *testing.T) {
 	sample := SampleCSV()
 	for _, invalid := range []string{strings.Replace(sample, "30.00", "NaN", 1), strings.Replace(sample, "30.00", "1e1000000000", 1), strings.Replace(sample, "10:05:00-03:00", "10:00:00-03:00", 1), strings.Replace(sample, "10:05:00-03:00", "10:05:00", 1), strings.Replace(sample, "30.20,29.90", "29.00,31.00", 1)} {
@@ -81,17 +93,28 @@ func TestCSVRejectsAmbiguity(t *testing.T) {
 		t.Fatal(ds, err)
 	}
 }
+
 func TestSignalsAndBacktestReproducibility(t *testing.T) {
 	s := strategy()
 	cs := []Candle{}
 	start := time.Date(2026, 10, 26, 14, 0, 0, 0, time.UTC)
-	for j := 0; j < 70; j++ {
+	for j := range 70 {
 		price := D("100").Add(D([]string{"0", "1", "2", "1", "0", "-1", "-2", "-1"}[j%8]))
 		open := price
 		if j > 0 {
 			open = cs[j-1].Close
 		}
-		cs = append(cs, Candle{start.Add(time.Duration(j) * 5 * time.Minute), open, price.Add(D("3")), price.Sub(D("3")), price, D("1000000")})
+		cs = append(
+			cs,
+			Candle{
+				start.Add(time.Duration(j) * 5 * time.Minute),
+				open,
+				price.Add(D("3")),
+				price.Sub(D("3")),
+				price,
+				D("1000000"),
+			},
+		)
 	}
 	ds := Dataset{Symbol: "AAPL", Hash: DatasetHash(cs), Candles: cs}
 	r, err := Backtest(context.Background(), ds, s, DefaultPolicy(), "all")
@@ -119,6 +142,7 @@ func TestSignalsAndBacktestReproducibility(t *testing.T) {
 		t.Fatal("zero variance must not trade")
 	}
 }
+
 func TestMarketTimezoneDST(t *testing.T) {
 	if !Session("US", time.Date(2026, 11, 2, 14, 30, 0, 0, time.UTC)) {
 		t.Fatal("US standard time opening")

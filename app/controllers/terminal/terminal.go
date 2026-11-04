@@ -1,19 +1,22 @@
+// Package terminal serves the trading terminal pages and its authenticated JSON API.
 package terminal
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/AlexGalhardo/vukem"
-	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
-	"github.com/AlexGalhardo/vukem-trading/internal/trading"
-	"github.com/AlexGalhardo/vukem/errs"
-	"github.com/AlexGalhardo/vukem/inertia"
-	"github.com/AlexGalhardo/vukem/web"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/AlexGalhardo/vukem"
+	"github.com/AlexGalhardo/vukem/errs"
+	"github.com/AlexGalhardo/vukem/inertia"
+	"github.com/AlexGalhardo/vukem/web"
+
+	"github.com/AlexGalhardo/vukem-trading/internal/adapters"
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
 type Controller struct {
@@ -25,6 +28,7 @@ func New(app *vukem.App) (*Controller, error) {
 	db, err := app.DB()
 	return &Controller{trading.Store{DB: db}, app}, err
 }
+
 func decode(c *web.Ctx, out any) error {
 	r := json.NewDecoder(io.LimitReader(c.Request().Body, 11<<20))
 	r.DisallowUnknownFields()
@@ -37,6 +41,7 @@ func decode(c *web.Ctx, out any) error {
 	}
 	return nil
 }
+
 func bad(err error) error {
 	if err != nil {
 		return errs.New(422, err.Error())
@@ -47,6 +52,7 @@ func accountID(id string) bool { return id == "b3" || id == "us" }
 func (h *Controller) Page(section string) func(*web.Ctx) error {
 	return func(c *web.Ctx) error { return inertia.Render(c, "Terminal", inertia.Props{"section": section}) }
 }
+
 func (h *Controller) Snapshot(c *web.Ctx) error {
 	ctx := c.Context()
 	if err := h.Store.Initialize(ctx); err != nil {
@@ -78,7 +84,29 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 		for _, p := range a.Positions {
 			unrealized = unrealized.Add(p.Mark.Sub(p.Average).Mul(p.Qty))
 		}
-		states = append(states, map[string]any{"id": a.ID, "mode": a.Mode, "currency": a.Currency, "cash": a.Cash, "equity": a.Equity(), "realized": a.Realized, "unrealized": unrealized, "exposure": a.Exposure(), "drawdown": dd, "halted": a.Halted, "reason": a.Reason, "heartbeat": a.Heartbeat, "reconciled_at": a.ReconciledAt, "orders": orders, "positions": a.Positions, "fills": fills, "policy": a.Policy, "cursors": a.Cursors})
+		states = append(
+			states,
+			map[string]any{
+				"id":            a.ID,
+				"mode":          a.Mode,
+				"currency":      a.Currency,
+				"cash":          a.Cash,
+				"equity":        a.Equity(),
+				"realized":      a.Realized,
+				"unrealized":    unrealized,
+				"exposure":      a.Exposure(),
+				"drawdown":      dd,
+				"halted":        a.Halted,
+				"reason":        a.Reason,
+				"heartbeat":     a.Heartbeat,
+				"reconciled_at": a.ReconciledAt,
+				"orders":        orders,
+				"positions":     a.Positions,
+				"fills":         fills,
+				"policy":        a.Policy,
+				"cursors":       a.Cursors,
+			},
+		)
 	}
 	datasets, err := h.Store.List(ctx, "datasets", 100)
 	if err != nil {
@@ -95,7 +123,21 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 			first = ds.Candles[0].Time
 			last = ds.Candles[len(ds.Candles)-1].Time
 		}
-		meta = append(meta, map[string]any{"id": ds.ID, "symbol": ds.Symbol, "currency": ds.Currency, "source": ds.Source, "hash": ds.Hash, "license": ds.License, "bars": len(ds.Candles), "first": first, "last": last, "problems": trading.DatasetProblems(ds)})
+		meta = append(
+			meta,
+			map[string]any{
+				"id":       ds.ID,
+				"symbol":   ds.Symbol,
+				"currency": ds.Currency,
+				"source":   ds.Source,
+				"hash":     ds.Hash,
+				"license":  ds.License,
+				"bars":     len(ds.Candles),
+				"first":    first,
+				"last":     last,
+				"problems": trading.DatasetProblems(ds),
+			},
+		)
 	}
 	strategies, err := h.Store.List(ctx, "strategies", 100)
 	if err != nil {
@@ -121,8 +163,30 @@ func (h *Controller) Snapshot(c *web.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return c.JSON(200, map[string]any{"accounts": states, "datasets": meta, "strategies": strategies, "backtests": jobs, "audit": audit, "instruments": trading.Instruments, "settings": map[string]any{"google_configured": h.App.Source.Get("SOCIAL_GOOGLE_CLIENT_ID") != "", "owner_configured": h.App.Source.Get("OWNER_GOOGLE_EMAIL") != "", "alpaca_configured": h.App.Source.Get("ALPACA_API_KEY") != "" && h.App.Source.Get("ALPACA_API_SECRET") != "", "mode": "paper_only", "feed": "IEX", "timeframe": 5, "engine_version": "vukem-trading-1"}, "server_time": time.Now().UTC()})
+	return c.JSON(
+		200,
+		map[string]any{
+			"accounts":    states,
+			"datasets":    meta,
+			"strategies":  strategies,
+			"backtests":   jobs,
+			"audit":       audit,
+			"instruments": trading.Instruments,
+			"settings": map[string]any{
+				"google_configured": h.App.Source.Get("SOCIAL_GOOGLE_CLIENT_ID") != "",
+				"owner_configured":  h.App.Source.Get("OWNER_GOOGLE_EMAIL") != "",
+				"alpaca_configured": h.App.Source.Get("ALPACA_API_KEY") != "" &&
+					h.App.Source.Get("ALPACA_API_SECRET") != "",
+				"mode":           "paper_only",
+				"feed":           "IEX",
+				"timeframe":      5,
+				"engine_version": "vukem-trading-1",
+			},
+			"server_time": time.Now().UTC(),
+		},
+	)
 }
+
 func (h *Controller) Import(c *web.Ctx) error {
 	var in struct {
 		Symbol  string `json:"symbol"`
@@ -142,6 +206,7 @@ func (h *Controller) Import(c *web.Ctx) error {
 	}
 	return c.JSON(201, map[string]any{"id": ds.ID, "bars": len(ds.Candles)})
 }
+
 func (h *Controller) Fetch(c *web.Ctx) error {
 	var in struct {
 		Symbol string `json:"symbol"`
@@ -156,7 +221,12 @@ func (h *Controller) Fetch(c *web.Ctx) error {
 	broker := adapters.Alpaca{Key: h.App.Source.Get("ALPACA_API_KEY"), Secret: h.App.Source.Get("ALPACA_API_SECRET")}
 	ctx, cancel := context.WithTimeout(c.Context(), 45*time.Second)
 	defer cancel()
-	ds, err := broker.Bars(ctx, in.Symbol, time.Now().Add(-time.Duration(in.Days)*24*time.Hour), time.Now().Add(-16*time.Minute))
+	ds, err := broker.Bars(
+		ctx,
+		in.Symbol,
+		time.Now().Add(-time.Duration(in.Days)*24*time.Hour),
+		time.Now().Add(-16*time.Minute),
+	)
 	if err != nil {
 		return errs.New(502, "Failed to fetch IEX history; check credentials, permissions and period")
 	}
@@ -165,6 +235,7 @@ func (h *Controller) Fetch(c *web.Ctx) error {
 	}
 	return c.JSON(201, map[string]any{"id": ds.ID, "bars": len(ds.Candles)})
 }
+
 func (h *Controller) Dataset(c *web.Ctx) error {
 	var ds trading.Dataset
 	if err := h.Store.Get(c.Context(), "datasets", c.Param("id"), &ds); err != nil {
@@ -175,6 +246,7 @@ func (h *Controller) Dataset(c *web.Ctx) error {
 	}
 	return c.JSON(200, ds)
 }
+
 func (h *Controller) Strategy(c *web.Ctx) error {
 	var s trading.Strategy
 	if err := decode(c, &s); err != nil {
@@ -192,7 +264,13 @@ func (h *Controller) Strategy(c *web.Ctx) error {
 	}
 	if s.AccountID == "b3" {
 		var ds trading.Dataset
-		if err := h.Store.Get(c.Context(), "datasets", s.DatasetID, &ds); err != nil || ds.Symbol != s.Symbol || len(ds.Candles) < s.Slow+2 {
+		if err := h.Store.Get(
+			c.Context(),
+			"datasets",
+			s.DatasetID,
+			&ds,
+		); err != nil || ds.Symbol != s.Symbol ||
+			len(ds.Candles) < s.Slow+2 {
 			return errs.New(422, "Select a dataset compatible with warmup")
 		}
 	}
@@ -204,6 +282,7 @@ func (h *Controller) Strategy(c *web.Ctx) error {
 	}
 	return c.JSON(201, s)
 }
+
 func (h *Controller) Toggle(c *web.Ctx) error {
 	var in struct {
 		Enabled bool `json:"enabled"`
@@ -221,7 +300,10 @@ func (h *Controller) Toggle(c *web.Ctx) error {
 			return err
 		}
 		if p := a.Positions[s.Symbol]; p.Qty.IsPositive() {
-			return errs.New(422, "There is a position on the symbol. Block entries and keep the strategy until it is closed.")
+			return errs.New(
+				422,
+				"There is a position on the symbol. Block entries and keep the strategy until it is closed.",
+			)
 		}
 		for _, o := range a.Orders {
 			if o.Symbol == s.Symbol && o.Open() {
@@ -238,6 +320,7 @@ func (h *Controller) Toggle(c *web.Ctx) error {
 	}
 	return c.JSON(200, map[string]string{"status": status})
 }
+
 func (h *Controller) Backtest(c *web.Ctx) error {
 	var in struct {
 		StrategyID string `json:"strategy_id"`
@@ -262,12 +345,21 @@ func (h *Controller) Backtest(c *web.Ctx) error {
 	if err := h.Store.Get(c.Context(), "trading_accounts", s.AccountID, &a); err != nil {
 		return err
 	}
-	job := trading.Job{ID: trading.ID(), DatasetID: ds.ID, Strategy: s, Policy: a.Policy, Partition: in.Partition, CreatedAt: time.Now().UTC(), CodeVersion: trading.BuildVersion}
+	job := trading.Job{
+		ID:          trading.ID(),
+		DatasetID:   ds.ID,
+		Strategy:    s,
+		Policy:      a.Policy,
+		Partition:   in.Partition,
+		CreatedAt:   time.Now().UTC(),
+		CodeVersion: trading.BuildVersion,
+	}
 	if err := h.Store.Create(c.Context(), "backtests", job.ID, "queued", "owner", job); err != nil {
 		return err
 	}
 	return c.JSON(202, job)
 }
+
 func (h *Controller) Job(c *web.Ctx) error {
 	var job trading.Job
 	if err := h.Store.Get(c.Context(), "backtests", c.Param("id"), &job); err != nil {
@@ -282,12 +374,14 @@ func (h *Controller) Job(c *web.Ctx) error {
 	}
 	return c.JSON(200, job)
 }
+
 func (h *Controller) CancelJob(c *web.Ctx) error {
 	if err := h.Store.Status(c.Context(), "backtests", c.Param("id"), "canceled", "owner"); err != nil {
 		return errs.New(422, "Backtest already finished or does not exist")
 	}
 	return c.JSON(200, map[string]string{"status": "canceled"})
 }
+
 func (h *Controller) Policy(c *web.Ctx) error {
 	id := c.Param("id")
 	if !accountID(id) {
@@ -313,6 +407,7 @@ func (h *Controller) Policy(c *web.Ctx) error {
 	}
 	return c.JSON(200, p)
 }
+
 func (h *Controller) Control(c *web.Ctx) error {
 	id := c.Param("id")
 	if !accountID(id) {
@@ -353,7 +448,9 @@ func (h *Controller) Control(c *web.Ctx) error {
 			if id == "us" && (a.ReconciledAt.IsZero() || time.Since(a.ReconciledAt) > 30*time.Second) {
 				return errors.New("recent reconciliation required")
 			}
-			if a.DayStart.IsPositive() && a.Equity().LessThanOrEqual(a.DayStart.Mul(trading.D("1").Sub(trading.Fraction(a.Policy.DailyLossBPS)))) {
+			if a.DayStart.IsPositive() &&
+				a.Equity().
+					LessThanOrEqual(a.DayStart.Mul(trading.D("1").Sub(trading.Fraction(a.Policy.DailyLossBPS)))) {
 				return errors.New("daily loss limit reached")
 			}
 			a.Halted = false
@@ -401,6 +498,7 @@ func (h *Controller) Control(c *web.Ctx) error {
 	}
 	return c.JSON(200, map[string]string{"status": "recorded"})
 }
+
 func (h *Controller) CancelOrder(c *web.Ctx) error {
 	id := c.Param("account")
 	if !accountID(id) {
@@ -426,6 +524,7 @@ func (h *Controller) CancelOrder(c *web.Ctx) error {
 	}
 	return c.JSON(200, map[string]string{"status": "recorded"})
 }
+
 func (h *Controller) Ready(c *web.Ctx) error {
 	if err := h.Store.DB.SQL().PingContext(c.Context()); err != nil {
 		return c.JSON(503, map[string]string{"status": "unavailable"})

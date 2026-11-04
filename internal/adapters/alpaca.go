@@ -7,12 +7,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/AlexGalhardo/vukem-trading/internal/trading"
-	d "github.com/shopspring/decimal"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	d "github.com/shopspring/decimal"
+
+	"github.com/AlexGalhardo/vukem-trading/internal/trading"
 )
 
 type Alpaca struct {
@@ -45,7 +47,10 @@ func (a Alpaca) request(ctx context.Context, method, path string, input, output 
 	req.Header.Set("Content-Type", "application/json")
 	client := a.Client
 	if client == nil {
-		client = &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+		client = &http.Client{
+			Timeout:       15 * time.Second,
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		}
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -97,47 +102,80 @@ func (a Alpaca) Account(ctx context.Context) (BrokerAccount, error) {
 	err := a.request(ctx, "GET", "/v2/account", nil, &out, false)
 	return out, err
 }
+
 func (a Alpaca) Clock(ctx context.Context) (Clock, error) {
 	var out Clock
 	err := a.request(ctx, "GET", "/v2/clock", nil, &out, false)
 	return out, err
 }
+
 func (a Alpaca) Positions(ctx context.Context) ([]BrokerPosition, error) {
 	out := []BrokerPosition{}
 	err := a.request(ctx, "GET", "/v2/positions", nil, &out, false)
 	return out, err
 }
+
 func (a Alpaca) Orders(ctx context.Context) ([]BrokerOrder, error) {
 	out := []BrokerOrder{}
 	err := a.request(ctx, "GET", "/v2/orders?status=open&limit=500", nil, &out, false)
 	return out, err
 }
+
 func (a Alpaca) Lookup(ctx context.Context, id string) (BrokerOrder, error) {
 	var out BrokerOrder
 	err := a.request(ctx, "GET", "/v2/orders:by_client_order_id?client_order_id="+url.QueryEscape(id), nil, &out, false)
 	return out, err
 }
+
 func (a Alpaca) Submit(ctx context.Context, o trading.Order) (BrokerOrder, error) {
 	var out BrokerOrder
-	payload := map[string]any{"symbol": o.Symbol, "qty": o.Qty.String(), "side": o.Side, "type": "limit", "limit_price": o.Limit.StringFixed(2), "time_in_force": "day", "client_order_id": o.ID}
+	payload := map[string]any{
+		"symbol":          o.Symbol,
+		"qty":             o.Qty.String(),
+		"side":            o.Side,
+		"type":            "limit",
+		"limit_price":     o.Limit.StringFixed(2),
+		"time_in_force":   "day",
+		"client_order_id": o.ID,
+	}
 	err := a.request(ctx, "POST", "/v2/orders", payload, &out, false)
 	return out, err
 }
+
 func (a Alpaca) Cancel(ctx context.Context, id string) error {
 	return a.request(ctx, "DELETE", "/v2/orders/"+url.PathEscape(id), nil, nil, false)
 }
+
 func (a Alpaca) Bars(ctx context.Context, symbol string, start, end time.Time) (trading.Dataset, error) {
 	i, err := trading.FindInstrument(symbol)
 	if err != nil || i.Market != "US" {
 		return trading.Dataset{}, errors.New("invalid symbol for Alpaca")
 	}
-	params := url.Values{"timeframe": {"5Min"}, "start": {start.UTC().Format(time.RFC3339)}, "end": {end.UTC().Format(time.RFC3339)}, "feed": {"iex"}, "adjustment": {"raw"}, "limit": {"10000"}}
+	params := url.Values{
+		"timeframe":  {"5Min"},
+		"start":      {start.UTC().Format(time.RFC3339)},
+		"end":        {end.UTC().Format(time.RFC3339)},
+		"feed":       {"iex"},
+		"adjustment": {"raw"},
+		"limit":      {"10000"},
+	}
 	calendar, err := a.Calendar(ctx, start, end)
 	if err != nil {
 		return trading.Dataset{}, err
 	}
-	ds := trading.Dataset{CalendarSource: "Alpaca exchange calendar", SessionCloses: calendar, ID: trading.ID(), Symbol: symbol, Currency: "USD", Timeframe: 5, Source: "Alpaca IEX", License: "Alpaca account use; confirm contracted terms", CreatedAt: time.Now().UTC(), Candles: []trading.Candle{}}
-	for page := 0; page < 20; page++ {
+	ds := trading.Dataset{
+		CalendarSource: "Alpaca exchange calendar",
+		SessionCloses:  calendar,
+		ID:             trading.ID(),
+		Symbol:         symbol,
+		Currency:       "USD",
+		Timeframe:      5,
+		Source:         "Alpaca IEX",
+		License:        "Alpaca account use; confirm contracted terms",
+		CreatedAt:      time.Now().UTC(),
+		Candles:        []trading.Candle{},
+	}
+	for page := range 20 {
 		var response struct {
 			Bars []struct {
 				Time   time.Time `json:"t"`
@@ -149,7 +187,14 @@ func (a Alpaca) Bars(ctx context.Context, symbol string, start, end time.Time) (
 			} `json:"bars"`
 			Next string `json:"next_page_token"`
 		}
-		if err := a.request(ctx, "GET", "/v2/stocks/"+symbol+"/bars?"+params.Encode(), nil, &response, true); err != nil {
+		if err := a.request(
+			ctx,
+			"GET",
+			"/v2/stocks/"+symbol+"/bars?"+params.Encode(),
+			nil,
+			&response,
+			true,
+		); err != nil {
 			return ds, err
 		}
 		for _, b := range response.Bars {
@@ -158,7 +203,8 @@ func (a Alpaca) Bars(ctx context.Context, symbol string, start, end time.Time) (
 				return ds, err
 			}
 			sessionClose, exists := calendar[trading.MarketDay("US", c.Time)]
-			if exists && trading.Session("US", c.Time) && !c.Time.Add(5*time.Minute).After(end) && !c.Time.Add(5*time.Minute).After(sessionClose) {
+			if exists && trading.Session("US", c.Time) && !c.Time.Add(5*time.Minute).After(end) &&
+				!c.Time.Add(5*time.Minute).After(sessionClose) {
 				if len(ds.Candles) > 0 && !c.Time.After(ds.Candles[len(ds.Candles)-1].Time) {
 					return ds, errors.New("candles duplicated/out of order")
 				}
@@ -196,11 +242,11 @@ func (a Alpaca) Calendar(ctx context.Context, start, end time.Time) (map[string]
 	}
 	out := map[string]time.Time{}
 	for _, row := range rows {
-		close, err := time.ParseInLocation("2006-01-02 15:04", row.Date+" "+row.Close, zone)
+		closeAt, err := time.ParseInLocation("2006-01-02 15:04", row.Date+" "+row.Close, zone)
 		if err != nil {
 			return nil, errors.New("invalid calendar")
 		}
-		out[row.Date] = close.UTC()
+		out[row.Date] = closeAt.UTC()
 	}
 	return out, nil
 }

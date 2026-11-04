@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"github.com/AlexGalhardo/vukem"
+
 	"github.com/AlexGalhardo/vukem-trading/app/commands"
 )
 

@@ -6,10 +6,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	d "github.com/shopspring/decimal"
 	"io"
 	"strings"
 	"time"
+
+	d "github.com/shopspring/decimal"
 )
 
 // ImportCSV is strict and atomic: a rejected row rejects the whole dataset.
@@ -32,7 +33,19 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 		return Dataset{}, errors.New("CSV exceeds 10 MiB")
 	}
 	hash := sha256.Sum256(raw)
-	ds := Dataset{CalendarSource: B3CalendarVersion, SessionCloses: map[string]time.Time{}, ID: ID(), Symbol: symbol, Source: source, License: license, Hash: hex.EncodeToString(hash[:]), Currency: i.Currency, Timeframe: 5, CreatedAt: time.Now().UTC(), Candles: []Candle{}}
+	ds := Dataset{
+		CalendarSource: B3CalendarVersion,
+		SessionCloses:  map[string]time.Time{},
+		ID:             ID(),
+		Symbol:         symbol,
+		Source:         source,
+		License:        license,
+		Hash:           hex.EncodeToString(hash[:]),
+		Currency:       i.Currency,
+		Timeframe:      5,
+		CreatedAt:      time.Now().UTC(),
+		Candles:        []Candle{},
+	}
 	r := csv.NewReader(strings.NewReader(string(raw)))
 	header, err := r.Read()
 	if err != nil || strings.Join(header, ",") != "time,open,high,low,close,volume" {
@@ -40,7 +53,7 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 	}
 	for line := 2; ; line++ {
 		row, e := r.Read()
-		if e == io.EOF {
+		if errors.Is(e, io.EOF) {
 			break
 		}
 		if e != nil || len(row) != 6 {
@@ -56,7 +69,8 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 				return ds, fmt.Errorf("decimal exceeds limit on row %d", line)
 			}
 			vals[j], e = d.NewFromString(row[j+1])
-			if e != nil || vals[j].Exponent() < -8 || vals[j].Exponent() > 12 || vals[j].Abs().GreaterThan(D("1000000000000")) {
+			if e != nil || vals[j].Exponent() < -8 || vals[j].Exponent() > 12 ||
+				vals[j].Abs().GreaterThan(D("1000000000000")) {
 				return ds, fmt.Errorf("invalid decimal on row %d", line)
 			}
 		}
@@ -82,6 +96,7 @@ func ImportCSV(input io.Reader, symbol, source, license string) (Dataset, error)
 	}
 	return ds, nil
 }
+
 func DatasetProblems(ds Dataset) []string {
 	issues := []string{}
 	for j := 1; j < len(ds.Candles); j++ {
@@ -95,6 +110,7 @@ func DatasetProblems(ds Dataset) []string {
 	}
 	return issues
 }
+
 func DatasetHash(cs []Candle) string {
 	h := sha256.New()
 	for _, c := range cs {
@@ -102,6 +118,7 @@ func DatasetHash(cs []Candle) string {
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
+
 func SampleCSV() string {
 	return "time,open,high,low,close,volume\n2026-10-26T10:00:00-03:00,30.00,30.20,29.90,30.10,100000\n2026-10-26T10:05:00-03:00,30.10,30.30,30.00,30.20,100000\n2026-10-26T10:10:00-03:00,30.20,30.25,30.00,30.05,100000\n"
 }
