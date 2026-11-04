@@ -1,0 +1,46 @@
+# QuantConnect Lean: patterns for vukem-trading
+
+Source: [QuantConnect/Lean](https://github.com/QuantConnect/Lean) (Apache-2.0) and the [QuantConnect docs](https://www.quantconnect.com/docs/v2). Researched 2026-11-04. Items marked *unverified* were not confirmed in the official docs.
+
+## Architecture
+
+Lean is "modular in design, with each component pluggable and customizable" and ships default models for every plug-in point. Top-level areas: Engine, Algorithm, Data, Brokerages, Launcher, Common, Optimizer, Research, Report, Indicators. Local runs use Docker through the Lean CLI. The docs do not describe internal engine threads, so handler names such as DataFeed or Synchronizer are *unverified*.
+
+## Algorithm Framework
+
+Five swappable models connected by typed values:
+
+```text
+Universe Selection -> Alpha (Insight) -> Portfolio Construction (PortfolioTarget)
+  -> Risk Management (adjusted targets) -> Execution (orders)
+```
+
+- Modules must not share state; each one is replaceable without touching the others.
+- Behavior follows the data flow, not registration order.
+- Pitfall: equal-weight construction can allocate 100% of buying power to one asset from a single signal, then force large sells and turnover. Exits fit poorly in the framework; use short-lived insights, insight expiry, or a separate exit alpha.
+- Risk models are target adjusters (trailing stop, max unrealized profit, sector exposure). The docs do not say whether each one fully liquidates.
+
+## Backtest realism
+
+- Reality models make a backtest "as realistic as possible", but the defaults assume highly liquid assets.
+- Slippage: the default is **no slippage** (`NullSlippageModel`). `VolumeShareSlippageModel` scales with order size against bar volume and is better at dense resolutions. A custom model only needs `get_slippage_approximation(asset, order)`.
+- Fills: a `FillModel` has per-order-type methods and returns order events. Defaults assume **complete fills**; partial fills need a custom model.
+- Fees, buying power, settlement, short availability and margin interest are separate per-security models. Portfolio-level: margin call and risk-free interest.
+- Universe membership is kept while a security has positions, open orders or has not met the minimum time in universe. Delisted securities stay as objects for record keeping.
+- Warm-up is an engine state (`is_warming_up`); orders are blocked during it. Pitfalls: illiquid assets return no data even with fill-forward, and bar-count warm-ups cross trading days.
+- Survivorship bias, corporate-action adjustment and time-zone handling: *unverified*.
+
+## Metrics and reports
+
+Overall statistics: PSR, total trades, average win/loss, drawdown, net profit, loss rate, profit-loss ratio, beta, alpha, annual variance and standard deviation, tracking error, total fees, Sharpe, compounding annual return, expectancy, win rate, information ratio, Treynor and estimated strategy capacity. The default benchmark is SPY. Formulas and the risk-free rate are not stated. Outputs: JSON results (UTC), orders and trades as CSV/JSON, logs and insights JSON.
+
+## Recommendations for vukem-trading
+
+1. Keep a staged pipeline with typed boundaries (signal, target, adjusted target, order); each stage depends only on its inputs.
+2. Make fill, slippage, fee and buying-power models per-instrument interfaces with an explicit default.
+3. Model partial fills in the backtester, or document their absence as a known limit.
+4. Run risk as a target adjuster after portfolio construction; use a separate exit rule for exits.
+5. Keep a security in the universe while it has positions or open orders, to avoid orphaned positions.
+6. Treat warm-up as an engine state that blocks order placement.
+7. Export results as UTC JSON plus CSV for orders and trades.
+8. Publish PSR and Sharpe with a stated risk-free rate and benchmark; define the formulas, since Lean does not state them.

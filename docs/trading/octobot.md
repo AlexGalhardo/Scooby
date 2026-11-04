@@ -1,0 +1,23 @@
+# OctoBot: patterns for vukem-trading
+
+Source: [Drakkar-Software/OctoBot](https://github.com/Drakkar-Software/OctoBot) README and CONTRIBUTING. Researched 2026-11-04. The official guides and architecture pages returned 403/404, so most internals are *unverified*. Treat this file as a short outline, not a design source.
+
+## What is documented
+
+- Two shapes: classic ("manual") OctoBot with backtesting, Telegram and TradingView, and **node mode**, the default in the latest release, which is a backend for the new UI and the mobile app.
+- Exchanges go through CCXT (more than 15).
+- Strategy and exchange-specific code lives in the separate OctoBot-Tentacles repository; the generic core refuses per-coin logic. New dependencies need an issue or an optional import.
+- Trading modes: Grid (many buy and sell orders at intervals), DCA (scheduled buys to lower the average cost), TradingView (alert driven), Index (baskets), ChatGPT/AI (LLM opinion, Ollama supported), and market making in a separate project.
+- Paper trading is described as risk-free, and a built-in backtesting engine simulates a portfolio on historical data. Backtesting exists only in manual OctoBot, not in node mode.
+
+## Unverified
+
+Evaluator and strategy composition, fill model, fees, slippage, risk controls, order timeouts, recovery, persistence, configuration and secrets handling.
+
+## Recommendations for vukem-trading
+
+1. Separate the trading mode (how orders are placed: grid, DCA) from the strategy or evaluator (what the signal is).
+2. Keep a plugin boundary for exchange and strategy code so the core stays generic.
+3. Mirror the headless engine plus separate UI/API split; this project already runs the web and the engine as distinct processes.
+4. Label paper trading clearly as its own mode and verify its fill and fee behavior before trusting results.
+5. If an LLM is ever added, it proposes validated drafts only; it never signs or sends orders (see the brainstorming decisions).

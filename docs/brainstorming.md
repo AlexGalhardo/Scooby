@@ -1,62 +1,64 @@
-# Brainstorming — alternativas e hipóteses
+# Brainstorming and owner decisions
 
-Estado: exploração de alternativas. Rodada 1 confirmou uso pessoal, Brasil + EUA e backtest/paper; alternativas incompatíveis permanecem apenas como histórico de análise.
+Status: living record. Decisions marked **Decided** come from the owner's interview on 2026-11-04 and the earlier grilling in [grilling.md](grilling.md); they are final until the owner changes them. Research behind the options lives in [trading/](trading/README.md).
 
-## Alternativas de produto
+## Owner decisions (2026-11-04)
 
-| Caminho | Benefício | Custo ou dependência | Recomendação |
-| --- | --- | --- | --- |
-| Terminal pessoal | Uma identidade e conta simplificam operação | Allowlist e recuperação do proprietário | Começar aqui |
-| SaaS | Vários usuários e contas | Isolamento, autorização, cobrança, suporte e análise regulatória | Só se Q1 exigir |
-| Plataforma de pesquisa | Aprende sem conectar execução | Difere do resultado em mercado | Primeiro incremento |
-| Terminal com paper broker | Testa execução e recuperação | Credenciais e plano de dados | Próximo incremento |
-
-## Mercado e corretora
-
-| Alternativa | Questão técnica a comprovar |
+| Topic | Decision |
 | --- | --- |
-| EUA / Alpaca | Elegibilidade, feed contratado, ajustes e condições paper/live |
-| EUA / Interactive Brokers | Sessões, permissões e operação do gateway escolhido |
-| B3 | Corretora efetivamente oferece execução via API? Contrato e histórico disponíveis? |
-| Cripto | Bolsa, jurisdição, custódia, precisão por par e funcionamento 24/7 |
-| Vários mercados | Calendários, moedas, contratos, feeds e adapters distintos |
+| Money | **Paper now, live later** behind safety gates (risk limits, kill switch, manual approval). No real orders in the current scope. |
+| Markets | B3, US equities and ETFs, crypto and forex. B3 and US exist today; crypto and forex are roadmap items. |
+| Strategies | Trend and momentum, mean reversion, intraday (opening-range breakout and similar), grid, DCA and market making. Market making waits for order-book data. |
+| Users | **Only the owner**: personal terminal, single Google account. Multi-user is out of scope. |
+| Data | CSV import (exists), free APIs, broker paper accounts (Alpaca, Binance testnet) and paid feeds, all behind provider interfaces. |
+| Risk, non-negotiable | Mandatory stop on every order, daily-loss kill switch, risk per trade as a percentage of capital, exposure caps per asset and in total. |
+| Work style | Sequential and inline; the `researcher` agent for external research only; no worktrees or parallel agents. |
+| Repository | `AlexGalhardo/vukem-trading`; the agent may push to `main`. |
+| Deployment | A separate `site` service on Railway, deployed after green CI; DNS record shown before it is applied. |
+| Frontend tooling | Bun 1.4.4 with `bun check` for types (no `tsc`), Biome 2 for lint and format. |
+| Dependencies | The `site` copies the stack of the vukem site with exact versions. |
 
-Alpaca é candidata se o mercado inicial for EUA; não foi escolhida. Dados de
-mercado e API de ordens são contratos distintos. Não tratar PETR4 como ativo
-operável na Alpaca nem presumir que todo feed gratuito representa o mercado todo.
+## Product alternatives (history)
 
-## Alternativas de arquitetura
+| Path | Benefit | Cost | Verdict |
+| --- | --- | --- | --- |
+| Personal terminal | One identity and account | Allowlist, owner recovery | **Chosen** |
+| SaaS | Many users | Isolation, billing, support, regulation | Out of scope |
+| Research platform | Learn without execution | Differs from market behavior | First increment, done |
+| Terminal with paper broker | Tests execution and recovery | Credentials, data plan | Current |
 
-- **Monólito modular + worker separado:** compartilha domínio Go, mas processos
-  web e engine têm ciclos de vida e credenciais distintos. Recomendado no MVP.
-- **Microsserviços por motor:** isolamento maior, mais rede, deploy e consistência
-  distribuída. Adiar até que uma carga ou equipe justifique a separação.
-- **Eventos PostgreSQL + outbox:** transação local e recuperação simples, com
-  polling controlado. Escolha proposta para começar.
-- **NATS JetStream:** útil com vários consumidores e replay; implica operar o
-  broker. Entrega de mensagens não elimina idempotência na corretora.
-- **Redis:** pode atender cache/sessões, mas não ser o registro definitivo de ordens.
-- **TimescaleDB:** avaliar extensão e suporte efetivo na Railway antes de depender
-  dela. PostgreSQL convencional com índices/partições é a opção inicial proposta.
+## Architecture alternatives (history)
 
-## Hipóteses quantitativas
+- **Modular monolith plus a separate worker:** shared Go domain, distinct web and engine lifecycles and credentials. **Chosen**.
+- **Microservices per engine:** more network and deployment cost; deferred until load or team justifies it.
+- **PostgreSQL events plus outbox:** simple local transactions and recovery. **Chosen**.
+- **NATS JetStream:** useful for many consumers; adds a broker to operate. Delivery does not remove the need for idempotency at the broker.
+- **Redis:** fine for cache and sessions, never the system of record for orders.
+- **TimescaleDB:** evaluate Railway support before depending on it; plain PostgreSQL with indexes and partitions first.
 
-Médias móveis: testar cruzamentos com regras explícitas de entrada/saída.
-Reversão: Z-score com janela mínima e guarda para desvio zero; limiares não são
-recomendação de investimento. Rompimento: faixa anterior e volatilidade sem
-usar máxima futura do próprio candle. Cada estratégia precisa de regras de
-sizing, saída, sessão e dados ausentes. Um bom resultado in-sample não valida a
-estratégia. Não escolher parâmetros com base no conjunto reservado de avaliação.
+## Open questions and my recommendations
 
-## O que ainda não adotar
+1. **Order-book data for market making.** No source yet. Recommendation: do not start market making; grid and DCA first with capped inventory.
+2. **Crypto venue.** Recommendation: Binance testnet for paper, public candles for backtests; one pair family first (BTC and ETH against USDT).
+3. **Forex source.** Recommendation: backtest-only with licensed or public daily and hourly data; no broker adapter until there is a paper account to test.
+4. **B3 intraday licensing.** Still the main blocker for validating B3 strategies; keep the CSV import path and record provenance and license.
+5. **Fill model for passive orders.** Needs an ADR: walk-the-book versus price-crossing. Reference projects disagree or do not document it.
+6. **Parameter declarations as data.** Recommendation: adopt now so that the optimizer, the UI and the backtester share a single source.
+7. **Provider interface.** Recommendation: define a Go interface per data type (quote, bar, fundamentals) with credentials validated before use.
+8. **Live gate criteria.** The list in [trading/risk-and-execution.md](trading/risk-and-execution.md) becomes an ADR before any live adapter.
+9. **Tooling migration.** npm to Bun changes the lockfile, the Dockerfile and CI; recorded in ADR-0015.
 
-LLM não assina nem envia ordens. Se adicionada, produz rascunho de DSL validada e
-revisada; nunca executa código arbitrário. Não prometer detectar topo/fundo,
-"exactly once" em rede externa, stop a preço garantido ou retorno financeiro.
+## Quantitative hypotheses
 
-## Perguntas para próximos experimentos
+- Moving averages: explicit entry and exit rules with a volatility-scaled stop.
+- Reversion: Z-score with a minimum window and a guard for zero deviation; thresholds are not investment recommendations.
+- Breakout: use the previous range and volatility, never the same candle's future high.
+- Every strategy defines sizing, exit, session and missing-data behavior. A good in-sample result does not validate a strategy, and parameters are never chosen on the held-out set.
 
-O feed cobre os ativos desejados? O orçamento comporta histórico e licenças?
-Qual diferença entre backtest, simulação interna e paper da corretora? Em quais
-cenários uma estratégia deve ser desativada? Quais métricas realmente ajudam o
-proprietário a decidir, em vez de apenas aumentar a aparência do dashboard?
+## Not to adopt
+
+An LLM never signs or sends orders; if added, it drafts validated configuration for human review and never runs arbitrary code. Never promise detection of tops or bottoms, exactly-once delivery across a network, guaranteed stop prices or any return.
+
+## Questions for future experiments
+
+Does the feed cover the desired assets? Does the budget cover history and licenses? How do backtest, internal simulation and broker paper differ for each strategy? In which scenarios must a strategy be disabled? Which metrics actually help the owner decide, rather than decorating the dashboard?

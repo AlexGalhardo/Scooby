@@ -1,0 +1,46 @@
+# Risk and execution guide
+
+Synthesis of [eTape](etape.md), [Hummingbot](hummingbot.md), [Freqtrade](freqtrade.md), [Lean](lean.md) and [QuantDinger](quantdinger.md). The engine already has per-account reservations, an outbox, leader fencing and reconciliation (see [arquitetura.md](../arquitetura.md) and ADR-0012 and ADR-0013). This guide lists what to add.
+
+## Risk layers, evaluated in this order
+
+1. **Master arm switch and default deny.** With no enabled venue or no armed switch, every order is rejected.
+2. **Instrument and session rules.** Calendar, lot and tick size, trading hours, halts.
+3. **Order-level rules.** A stop is mandatory on every entry; risk per trade as a percentage of equity sets size; maximum order value.
+4. **Account-level caps.** Gross and net exposure, per-symbol exposure, open positions, open orders, leverage (none by default).
+5. **Loss controls.** Daily loss limit with a kill switch that blocks new entries until the next session.
+6. **Protections** (Freqtrade): lock a symbol after a stop-loss streak; lock the account on an equity drawdown; per-symbol cooldown after an exit.
+7. **Deterministic first, models second.** Any AI or heuristic gate runs after these, can only reject entries, and never blocks an exit.
+
+Rules 1, 3, 4 and 5 are the owner's non-negotiables. Pin units (basis points versus percent versus decimal) with tests, because Hummingbot's kill switch shows how easily they drift.
+
+## Exits
+
+Model exits as a triple barrier: stop, target, time limit, plus an optional trailing stop. Persist a close-reason enum (target, stop, trailing, time, risk, manual, insufficient balance, failed). Reducing-risk exits have their own policy and must never flip a position.
+
+## Order lifecycle
+
+`intent -> reserved -> submitted -> acknowledged -> partially filled -> filled | cancelled | rejected | unknown`. Rules:
+
+- Persist the decision and intent before any external call; the outbox is the source of truth.
+- A timeout leaves the order `unknown`; reconcile before any retry. Never resend blindly.
+- Fills are idempotent by a broker fill identifier; ledger entries are append-only.
+- Cancel, block and flatten are distinct, audited actions.
+
+## Stops are simulated, not guaranteed
+
+The engine evaluates stops at its poll interval (15 s today). Native broker stops (`stoploss_on_exchange` in Freqtrade) reduce that gap but a stop-limit can miss a gap and a stop-market can slip. State this in the UI. Leverage multiplies the effect on capital; keep leverage off.
+
+## Paper versus live gates
+
+Paper broker accounts and the internal simulator stay segregated. Before any live adapter exists, all of these must hold and be recorded in an ADR:
+
+- Paper results over an agreed period match the backtest expectation within a stated tolerance.
+- The risk gate, kill switch and reconciliation have failure-path tests.
+- Live is enabled by a server-side flag separate from any agent or UI setting.
+- Credentials are encrypted at rest and exist only in the worker.
+- Maximum order size and daily loss are set absurdly low for the first period.
+
+## Observability
+
+Audit every decision, rejection and control action. Track heartbeat age, feed staleness, reconciliation drift, rejected-order rate and slippage versus expectation. Alerts: kill switch fired, leader change, feed stale, unknown order older than a threshold.

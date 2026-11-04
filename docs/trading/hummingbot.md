@@ -1,0 +1,50 @@
+# Hummingbot: patterns for vukem-trading
+
+Source: [hummingbot/hummingbot](https://github.com/hummingbot/hummingbot) (Apache-2.0), [hummingbot.org](https://hummingbot.org/) and [condor.hummingbot.org](https://condor.hummingbot.org/). Researched 2026-11-04. Many subpages returned 404, so the tick loop, order tracker, rate-limit internals and the paper-trade fill model are *unverified*. Source code was not read.
+
+## Architecture
+
+- Connector types: CLOB CEX (API keys, spot and perpetual), CLOB DEX (wallet keys) and AMM DEX through Gateway (Router, AMM, CLMM). Connectors standardize REST and WebSocket access.
+- Strategy frameworks: single-file Scripts, **Controllers** (V2, run by a controller runner) and legacy V1 strategies.
+- Controllers read a shared **Market Data Provider** (candles, order book, trades) and emit executor actions.
+- Executors are finite-lifecycle workflows creatable without a running strategy: Position, DCA, Grid, TWAP, XEMM and LP. Only the Position executor's parameters were verified.
+
+## Position executor (triple barrier)
+
+One position, closed by the first trigger:
+
+- `stop_loss` as a fraction after fees, always a market exit.
+- `take_profit`, optionally resting as a limit order.
+- `time_limit` in seconds since creation, whether or not the entry filled.
+- `trailing_stop` needs both an activation price and a trailing delta; setting only one drops it.
+- Open order type market, limit (default) or limit-maker. The default limit entry sits at the best bid or ask and may never fill.
+- Close reasons: take profit, stop loss, trailing stop, time limit, expired, early stop, position hold, insufficient balance, failed.
+- `amount` is in the base asset, not the quote.
+
+## Market making
+
+- Pure market making: bid and ask spread, order levels with per-level spread and amount, refresh time, maximum order age, refresh tolerance, filled-order delay. Inventory skew targets a base percentage. Guards: price floor and ceiling, minimum spread, hanging orders. The page documents no stop-loss.
+- Avellaneda-Stoikov: reservation price and optimal spread from a risk factor, instant volatility (rolling tick buffer) and trading intensity (alpha and kappa). Only changed snapshots count as ticks, so quoting can start well after startup. `min_spread` is a hard floor, and an extreme risk factor can produce a negative optimal bid that suppresses buys.
+
+## Risk controls
+
+The kill switch stops on a profit or loss percentage computed like the `history` command. The docs' own examples disagree on units and logs show a decimal; price moves alone can trigger it. Stop-loss, drawdown and a global kill beyond this are not verified.
+
+## Backtesting
+
+The Condor backtester replays controller configs over candles at 1m, 5m, 15m and 1h resolution. It simulates Position, DCA, Grid and Order executors; Arbitrage, XEMM, TWAP and LP produce no trades. Default fee 0.0002; queue position is not modeled. Runs with fewer than 20 executors are flagged as noise. Docs warn not to trust absolute PnL. Candle resolution must not be finer than the controller's indicator interval, because that inflates PnL and Sharpe through look-ahead.
+
+## Paper trading, configuration, deployment
+
+- Paper trading uses `*_paper_trade` connectors. The official fill-model page was not found. A third-party post claims fills occur only when the live opposite side crosses the paper order's price, which would make passive orders rarely fill; treat that as a hypothesis to test.
+- An encrypted keystore protects exchange keys; losing its password is a real risk.
+- Docker deployment starts a dashboard and a backend API. Gateway runs plain HTTP in dev mode; production needs certificates. Do not use `latest` image tags.
+
+## Recommendations for vukem-trading
+
+1. Model exits as a triple barrier (stop, target, time limit, trailing) with explicit close-reason enums.
+2. Keep the executor concept: a finite-lifecycle unit created independently of any running strategy.
+3. Make backtests refuse or flag unsupported order types instead of silently producing zero trades; warn on runs with few trades; forbid candles finer than the indicator interval.
+4. Put a profit and loss kill switch in the risk engine, with tests that pin percent versus decimal units.
+5. Choose and document one paper fill rule (walk the book, or crossing), and test it with resting passive orders.
+6. Keep secrets in an encrypted store and pin image tags.

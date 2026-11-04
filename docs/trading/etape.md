@@ -1,0 +1,44 @@
+# eTape: patterns for the vukem-trading web terminal
+
+Source: [earlisreal/eTape](https://github.com/earlisreal/eTape) README (MIT). Researched 2026-11-04. eTape is a local day-trading platform for US stocks, written as a Go engine plus a React and TypeScript UI. This is the closest reference for our own architecture.
+
+## Features worth copying
+
+- **Time and Sales:** buy and sell coloring over a ring buffer, virtualized.
+- **Level 2 ladder:** full-depth book drawn on canvas.
+- **Hotkey deck:** one-keystroke order templates with a price offset; size by buying-power percentage or position percentage; hotkeys target the most recently active panel.
+- **Charts:** TradingView Lightweight Charts from 10 seconds to monthly, VWAP, EMA, SMA, MACD and volume, live fill markers. Ten-second bars are built from raw ticks and reconciled to one-minute data.
+- **Scanner:** session-aware gainers, losers and most active, with filters (float, volume, turnover, relative volume, price, percent change).
+- **Chart risk entry:** a two-point buy and stop tool that sizes stop-limit orders from a dollar, cash or buying-power loss budget.
+- **Trailing stops:** price, percent or completed-candle trails, long and short.
+- **Paper simulator:** fills walk the live book with partial fills, slippage and latency models.
+- **Workspace:** dockable panels, linked symbol groups, saved price alerts with sound.
+
+## Risk gate
+
+Default deny: with no venue configured, every order is blocked, and a master execution switch must be armed in the UI. Two layers must both pass:
+
+- Global caps: `max_day_loss`, `max_symbol_position_value`, `max_symbol_position_shares`.
+- Per-venue caps: `max_order_value`, `max_open_orders`.
+
+## Architecture
+
+- Go engine without cgo; React, TypeScript and Vite UI served from loopback.
+- Engine to UI over a localhost WebSocket carrying JSON.
+- TypeScript wire types are generated from Go structs, with a check that detects drift.
+- Design rule: high-frequency data never passes through React state. Chart, ladder and tape are canvas surfaces repainted per frame.
+- SQLite journal; tick archive with a size cap and a free-disk reserve.
+- Venues are separate types: built-in simulator, Alpaca (paper and live), TradeZero and moomoo.
+
+## Limits
+
+US stocks only. Limit up-limit down rows are a local display approximation, not official bands or halts. Market data is read-only from the moomoo gateway. Binaries are unsigned.
+
+## Recommendations for vukem-trading
+
+1. Adopt the two-layer, default-deny risk gate with an explicit arm switch.
+2. Add hotkey order templates sized by percentage of buying power or position.
+3. Render tape and ladder on canvas outside React state; push updates over a WebSocket or SSE channel.
+4. Generate TypeScript types from Go structs and add a drift check in CI.
+5. Build a session-aware scanner and a risk-entry tool that sizes from a loss budget.
+6. Keep the simulator as its own venue type, with partial fills, slippage and latency.

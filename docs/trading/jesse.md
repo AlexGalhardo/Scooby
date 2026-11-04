@@ -1,0 +1,40 @@
+# Jesse: patterns for vukem-trading
+
+Source: [jesse-ai/jesse](https://github.com/jesse-ai/jesse) (MIT) and [docs.jesse.trade](https://docs.jesse.trade/). Researched 2026-11-04. Jesse is a Python crypto framework; items marked *unverified* were not confirmed in the docs.
+
+## Architecture
+
+Modes: backtest, live/paper, benchmark and optimize. A Research API exposes candles, backtesting and optimization to scripts and notebooks. Storage is PostgreSQL with optional TimescaleDB. Settings live in `.env`, and a change does not affect running sessions. Internal module boundaries are *unverified*.
+
+## Strategy API
+
+- Hooks: `should_long`, `should_short`, `should_cancel_entry`, `go_long` (sets entry `self.buy`, `self.stop_loss`, `self.take_profit`), `go_short`, `update_position`, `before`, `filter_*`, `watch_list`, `trading_hours`.
+- Context properties: price, balance, available margin, fee rate, leverage, position, average entry price, liquidation price, funding rate, and the mode flags `is_backtesting`, `is_papertrading` and `is_livetrading`, so one strategy runs unchanged in every mode.
+- Hyperparameters are declared as data: `name`, `type` (int, float, categorical, bool), `min`, `max`, `step`, `options`, `default`; read via `self.hp[...]`.
+
+## Backtest realism
+
+Every candle in the range is simulated, with fees, order types, partial fills, leverage and shorts as first-class. Docs claim multi-timeframe runs are "without look-ahead bias" but do not document the mechanics. Fee and slippage configuration, warm-up and survivorship handling are *unverified*.
+
+## Metrics
+
+Total closed trades, net profit, max drawdown, max underwater period, annual return, expectancy, average win/loss, win rate (long/short), average holding time, Sharpe, Calmar, Sortino, Omega, streaks, positive/negative months, total fees, and a Buy and Hold benchmark with no leverage and no fees. No JSON schema is documented.
+
+## Optimization and overfitting
+
+- Optuna with Ray for parallelism. The default objective is Sharpe; Calmar, Sortino and Omega are selectable.
+- Recommended split: training 60-70%, testing 15-20%, validation 15-20%. Validation is used only to choose among finalists. Warning signs: good train with bad test results, and very few trades in the test period.
+- Monte Carlo (trade-order shuffling and candle perturbation) and bootstrap significance testing are offered as guards against overfitting.
+
+## Risk controls
+
+The docs describe `liquidate()`, `available_margin` and `liquidation_price`, but no max-drawdown stop or sizing rules. The main safety statement is a risk disclaimer.
+
+## Recommendations for vukem-trading
+
+1. Declare strategy parameters as data (name, type, range, step, default) so the optimizer, backtester and UI share one source.
+2. Use a three-period split (train, test, validation); touch validation only for the final choice, and enforce a minimum trade count per run.
+3. Add Monte Carlo and bootstrap significance as report steps.
+4. Put the run mode on the strategy context so identical code runs in backtest, replay and paper.
+5. Always show a Buy and Hold baseline without fees or leverage.
+6. Apply config changes only at the next session start.

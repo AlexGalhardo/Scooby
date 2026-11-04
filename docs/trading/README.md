@@ -1,0 +1,40 @@
+# Trading knowledge base
+
+Research for evolving vukem-trading, drawn from ten reference projects. Everything here is a *pattern or hazard to evaluate*, not a promise of profitability. Paper trading and backtesting only; real capital stays out of scope until an ADR and the live gates in [risk-and-execution.md](risk-and-execution.md) are met.
+
+Research date: 2026-11-04. Each page marks what the official docs did not confirm as *unverified*.
+
+## Per-project notes
+
+| Project | Note | Most useful for |
+| --- | --- | --- |
+| [QuantConnect Lean](lean.md) | Algorithm framework, reality models | Pipeline stages, fill/slippage/fee models |
+| [Jesse](jesse.md) | Strategy API, optimization | Hyperparameters as data, train/test/validation |
+| [Freqtrade](freqtrade.md) | Callbacks, protections, bias analysis | Fill rules, look-ahead checks, protections |
+| [OctoBot](octobot.md) | Trading modes, node mode | Mode versus strategy separation |
+| [Hummingbot](hummingbot.md) | Executors, market making, kill switch | Triple barrier, executors, backtest honesty |
+| [eTape](etape.md) | Local day-trading terminal in Go and React | Risk gate, hotkeys, ladder, wire types |
+| [OpenBB](openbb.md) | Provider contract, MCP | Data-provider interface |
+| [OpenStock](openstock.md) | Retail dashboard (AGPL) | Coverage matrix, alerts |
+| [OpenTerminal](openterminal.md) | Widget terminal | Layout, palette, security defaults |
+| [QuantDinger](quantdinger.md) | AI trading OS | Agent safety model, overfitting statistics |
+
+## Cross-cutting guides
+
+- [backtesting.md](backtesting.md): fill model, bias, metrics, validation protocol.
+- [risk-and-execution.md](risk-and-execution.md): risk layers, order lifecycle, paper versus live gates.
+- [strategies-and-markets.md](strategies-and-markets.md): strategy families, market-specific rules for B3, US, crypto and forex, data sources.
+- [terminal-and-agents.md](terminal-and-agents.md): web terminal features, AI and agent boundaries.
+
+## Top ten ideas to adopt
+
+1. A provider interface per data type, with declared credentials that fail fast (OpenBB).
+2. Explicit, configurable fill rules, plus slippage and partial fills (Lean, Freqtrade).
+3. A look-ahead check that perturbs inputs and compares signals (Freqtrade).
+4. A three-period split with validation touched once, plus deflated Sharpe and Monte Carlo (Jesse, QuantDinger).
+5. A default-deny, two-layer risk gate with a master arm switch (eTape).
+6. Triple-barrier exits with explicit close reasons (Hummingbot).
+7. Protections: stop-loss streak lock, equity drawdown lock, per-asset cooldown (Freqtrade).
+8. Agents get paper-only scoped tokens; deterministic risk runs before any LLM; entries fail closed (QuantDinger).
+9. Generated TypeScript wire types with a drift check; canvas surfaces for high-frequency data (eTape).
+10. A coverage matrix per market and data mode shown in the UI (OpenStock).
