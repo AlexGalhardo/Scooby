@@ -1,0 +1,13 @@
+# Reviewed findings in vukem-trading's history (reviewed 2026-11-04, Betterleaks
+# v1.9.0): fake "DON'T" examples in vendored agent skill documentation and the
+# public local PostgreSQL fixture password in a workflow that no longer carries
+# it. None is a secret. Format: commit:file:rule:line. Add a line only after
+# checking the finding is not a secret; rotate a real one instead.
+660a78b7852d2908ad63f05380d67c6ebbfb579d:.agents/skills/golang-security/references/secrets.md:generic-api-key:31
+660a78b7852d2908ad63f05380d67c6ebbfb579d:.agents/skills/golang-security/references/secrets.md:generic-password:32
+660a78b7852d2908ad63f05380d67c6ebbfb579d:.agents/skills/golang-security/evals/evals.json:generic-password:210
+660a78b7852d2908ad63f05380d67c6ebbfb579d:.agents/skills/golang-database/references/testing.md:generic-credential-uri:132
+660a78b7852d2908ad63f05380d67c6ebbfb579d:.agents/skills/golang-observability/references/profiling.md:generic-credential-uri:31
+660a78b7852d2908ad63f05380d67c6ebbfb579d:.agents/skills/golang-testing/references/integration-testing.md:generic-credential-uri:110
+28278148a4dc95344d5b86a2cdc2318cd1f730a1:.github/workflows/release.yml:generic-credential-uri:42
+28278148a4dc95344d5b86a2cdc2318cd1f730a1:.github/workflows/release.yml:generic-password:35
