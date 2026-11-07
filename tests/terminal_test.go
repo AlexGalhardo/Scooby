@@ -490,3 +490,14 @@ func TestGoogleRedirectUsesTheCanonicalAppURL(t *testing.T) {
 		}
 	}
 }
+
+func TestPrivateResponsesAreNeverCached(t *testing.T) {
+	t.Parallel()
+	a := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, a)
+	for _, path := range []string{"/", "/api/snapshot", "/api/preferences"} {
+		if got := c.Get(path).AssertOK().Header("Cache-Control"); got != "private, no-store" {
+			t.Fatalf("%s Cache-Control = %q", path, got)
+		}
+	}
+}

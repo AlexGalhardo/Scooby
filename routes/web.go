@@ -23,6 +23,14 @@ func Web(r *router.Router, app *vukem.App) error {
 	r.UseServer(middleware.Gzip())
 	r.UseServer(middleware.StaticFS(resources.Public(), middleware.StaticConfig{Prefix: "/"}))
 	r.Use(app.Inertia.Middleware)
+	// Financial and session data must never sit in a shared or browser cache; hashed assets are
+	// served earlier by StaticFS and stay immutable.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "private, no-store")
+			next.ServeHTTP(w, r)
+		})
+	})
 	acc, err := accounts.New(app)
 	if err != nil {
 		return err
