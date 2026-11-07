@@ -27,6 +27,5 @@ node_modules/
 /vukem-feedback.md
 
 # Documentation site
-/site/.next/
+/site/.astro/
 /site/out/
-/site/next-env.d.ts

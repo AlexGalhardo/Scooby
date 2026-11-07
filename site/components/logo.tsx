@@ -1,7 +1,7 @@
-import Link from "next/link";
+import { Link } from "@/components/link";
 import { t } from "@/lib/ui-text";
 
-// Mark shared with the Vukem ecosystem: two slanted strokes forming a V on Go-gopher blue.
+// Vukem ecosystem mark: two slanted strokes forming a V on Go-gopher blue.
 export function LogoMark({ className = "size-6" }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden className={className}>
