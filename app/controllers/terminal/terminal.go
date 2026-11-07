@@ -332,16 +332,21 @@ func (h *Controller) Ticket(c *web.Ctx) error {
 	if tmpl == nil {
 		return errs.New(422, "Unknown order template")
 	}
-	prices, err := h.Store.LastPrices(c.Context(), in.Symbol)
+	quotes, err := h.Store.LastQuotes(c.Context(), in.Symbol)
 	if err != nil {
 		return err
 	}
-	price, ok := prices[in.Symbol]
+	quote, ok := quotes[in.Symbol]
 	if !ok {
 		return errs.New(422, "No price for the symbol: import or fetch a dataset first")
 	}
+	price := quote.Price
 	var placed trading.Order
 	err = h.Store.Mutate(c.Context(), id, "owner", "ticket", func(a *trading.State) error {
+		// B3 is a replay on a historical clock; only the broker account trades against the wall clock.
+		if id == "us" && time.Since(quote.Time.Add(5*time.Minute)) > time.Duration(a.Policy.MaxAgeSeconds)*time.Second {
+			return errors.New("the quote is older than the policy allows: fetch fresh data first")
+		}
 		o, err := a.Ticket(*tmpl, in.Symbol, price, "ticket/"+trading.ID(), time.Now().UTC())
 		if err != nil {
 			return err

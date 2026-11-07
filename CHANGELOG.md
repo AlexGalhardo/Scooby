@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Ticket orders on the US broker account are rejected when the latest quote is older than `Policy.MaxAgeSeconds` (security audit TR-AUDIT-001).
 - `Engine.Run` treats an error raised while its context is being cancelled as a clean stop; this removes the flaky `TestPostgresWorkerFailover`.
 - `State.Reserve` rejects an entry without a valid stop (`stop required`), even when a strategy bypassed `Strategy.Validate`.
 

@@ -501,3 +501,50 @@ func TestPrivateResponsesAreNeverCached(t *testing.T) {
 		}
 	}
 }
+
+func TestSecurity_TR001_TicketRejectsAStaleQuoteOnTheBrokerAccount(t *testing.T) {
+	app := terminalApp(t, "owner", "owner@example.com", true)
+	c := signIn(t, app).AcceptJSON()
+	c.GetJSON("/api/snapshot").AssertOK()
+	db, err := app.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := trading.Store{DB: db}
+	old := time.Now().UTC().Add(-72 * time.Hour).Truncate(5 * time.Minute)
+	candle := func(i int) trading.Candle {
+		p := trading.D("190")
+		return trading.Candle{
+			Time: old.Add(
+				time.Duration(i) * 5 * time.Minute,
+			),
+			Open:   p,
+			High:   p,
+			Low:    p,
+			Close:  p,
+			Volume: trading.D("1000"),
+		}
+	}
+	ds := trading.Dataset{
+		ID: "stale-aapl", Symbol: "AAPL", Currency: "USD", Source: "fixture", License: "internal test",
+		Candles: []trading.Candle{candle(0), candle(1), candle(2)},
+	}
+	if err := store.Create(t.Context(), "datasets", ds.ID, "ready", "test", ds); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Mutate(t.Context(), "us", "test", "arm", func(a *trading.State) error {
+		a.Halted, a.Reason, a.Cash = false, "", trading.D("10000")
+		a.Initial, a.DayStart, a.Peak = a.Cash, a.Cash, a.Cash
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	c.PostJSON("/api/accounts/us/ticket", map[string]any{"key": "b", "symbol": "AAPL"}).AssertUnprocessable()
+	var state trading.State
+	if err := store.Get(t.Context(), "trading_accounts", "us", &state); err != nil {
+		t.Fatal(err)
+	}
+	if len(state.Orders) != 0 {
+		t.Fatalf("a stale quote must not reserve an order, got %d", len(state.Orders))
+	}
+}

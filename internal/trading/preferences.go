@@ -192,24 +192,41 @@ func (s Store) SavePreferences(ctx context.Context, p Preferences) error {
 	return err
 }
 
-// LastPrices returns the latest close of each requested symbol, taken from the freshest dataset.
-func (s Store) LastPrices(ctx context.Context, symbols ...string) (map[string]d.Decimal, error) {
+// Quote is the latest close of a symbol and the open time of the candle it came from.
+type Quote struct {
+	Price d.Decimal
+	Time  time.Time
+}
+
+// LastQuotes returns the latest close of each requested symbol, taken from the freshest dataset.
+func (s Store) LastQuotes(ctx context.Context, symbols ...string) (map[string]Quote, error) {
 	records, err := s.List(ctx, "datasets", 200)
 	if err != nil {
 		return nil, err
 	}
-	prices := map[string]d.Decimal{}
-	latest := map[string]time.Time{}
+	quotes := map[string]Quote{}
 	for _, r := range records {
 		var ds Dataset
 		if json.Unmarshal(r.Payload, &ds) != nil || len(ds.Candles) == 0 || !slices.Contains(symbols, ds.Symbol) {
 			continue
 		}
 		last := ds.Candles[len(ds.Candles)-1]
-		if last.Time.After(latest[ds.Symbol]) {
-			latest[ds.Symbol] = last.Time
-			prices[ds.Symbol] = last.Close
+		if last.Time.After(quotes[ds.Symbol].Time) {
+			quotes[ds.Symbol] = Quote{Price: last.Close, Time: last.Time}
 		}
+	}
+	return quotes, nil
+}
+
+// LastPrices returns the latest close of each requested symbol, taken from the freshest dataset.
+func (s Store) LastPrices(ctx context.Context, symbols ...string) (map[string]d.Decimal, error) {
+	quotes, err := s.LastQuotes(ctx, symbols...)
+	if err != nil {
+		return nil, err
+	}
+	prices := make(map[string]d.Decimal, len(quotes))
+	for symbol, q := range quotes {
+		prices[symbol] = q.Price
 	}
 	return prices, nil
 }
