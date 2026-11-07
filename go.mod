@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	github.com/AlexGalhardo/vukem v0.39.0
 	github.com/AlexGalhardo/vukem/drivers/postgres v0.6.1
-	github.com/shopspring/decimal v1.4.0
+	github.com/shopspring/decimal v1.6.0
 )
 
 require (
