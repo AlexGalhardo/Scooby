@@ -469,3 +469,24 @@ func TestStrategyDecisionIsRecordedInTheAuditTrail(t *testing.T) {
 		AssertCreated()
 	c.GetJSON("/api/snapshot").AssertOK().AssertJSONPath("audit.0.action", "strategy.decision")
 }
+
+func TestGoogleRedirectUsesTheCanonicalAppURL(t *testing.T) {
+	t.Parallel()
+	a := vukemtest.New(t, bootstrap.New, vukemtest.Options{Env: map[string]string{
+		"APP_URL":                 "https://app.trading.vukem.dev",
+		"OWNER_GOOGLE_EMAIL":      "owner@example.com",
+		"SOCIAL_GOOGLE_CLIENT_ID": "client-id",
+	}})
+	loc := a.Client(t).Get("/auth/google/redirect").Header("Location")
+	for _, want := range []string{
+		"https://accounts.google.com/",
+		"client_id=client-id",
+		"redirect_uri=https%3A%2F%2Fapp.trading.vukem.dev%2Fauth%2Fgoogle%2Fcallback",
+		"code_challenge_method=S256",
+		"state=",
+	} {
+		if !strings.Contains(loc, want) {
+			t.Fatalf("redirect %q lacks %q", loc, want)
+		}
+	}
+}

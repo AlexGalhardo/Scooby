@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 
@@ -17,7 +18,27 @@ import (
 	"github.com/AlexGalhardo/vukem-trading/app/models"
 )
 
+// ValidateAppURL rejects a production APP_URL that cannot be the canonical host of the OAuth
+// callback: it must be an https URL with a public host and no path, query or fragment.
+func ValidateAppURL(production bool, raw string) error {
+	if !production {
+		return nil
+	}
+	u, err := url.Parse(strings.TrimSuffix(raw, "/"))
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return errors.New("APP_URL must be the https origin of the web service, for example https://app.trading.vukem.dev")
+	}
+	switch h := u.Hostname(); {
+	case h == "localhost", strings.HasPrefix(h, "127."), h == "::1", h == "0.0.0.0":
+		return errors.New("APP_URL must not point to a loopback host in production")
+	}
+	return nil
+}
+
 func NewSocial(app *vukem.App) (*social.Social, error) {
+	if err := ValidateAppURL(app.Config.IsProduction(), app.Config.URL); err != nil {
+		return nil, err
+	}
 	key, err := app.DeriveKey("social.state", 32)
 	if err != nil {
 		return nil, err
