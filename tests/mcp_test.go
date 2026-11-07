@@ -7,6 +7,7 @@ import (
 
 	"github.com/AlexGalhardo/vukem/vukemtest"
 
+	"github.com/AlexGalhardo/vukem-trading/app/controllers/terminal"
 	"github.com/AlexGalhardo/vukem-trading/bootstrap"
 )
 
@@ -32,7 +33,7 @@ func TestMCPIsOffWithoutAToken(t *testing.T) {
 }
 
 func TestMCPRejectsMissingOrWrongTokens(t *testing.T) {
-	app := mcpApp(t, "correct-horse-battery")
+	app := mcpApp(t, "correct-horse-battery-staple-0123456789")
 	c := app.Client(t)
 	c.PostJSON("/mcp", rpc("tools/list", map[string]any{})).AssertUnauthorized()
 	app.Client(t).
@@ -40,14 +41,14 @@ func TestMCPRejectsMissingOrWrongTokens(t *testing.T) {
 		PostJSON("/mcp", rpc("tools/list", map[string]any{})).
 		AssertUnauthorized()
 	app.Client(t).
-		WithHeader("Authorization", "correct-horse-battery").
+		WithHeader("Authorization", "correct-horse-battery-staple-0123456789").
 		PostJSON("/mcp", rpc("tools/list", map[string]any{})).
 		AssertUnauthorized()
 }
 
 func TestMCPOffersOnlyReadOnlyTools(t *testing.T) {
-	app := mcpApp(t, "correct-horse-battery")
-	c := app.Client(t).WithToken("correct-horse-battery")
+	app := mcpApp(t, "correct-horse-battery-staple-0123456789")
+	c := app.Client(t).WithToken("correct-horse-battery-staple-0123456789")
 	c.PostJSON("/mcp", rpc("initialize", map[string]any{})).
 		AssertOK().
 		AssertJSONPath("result.serverInfo.name", "vukem-trading")
@@ -87,8 +88,8 @@ func TestMCPOffersOnlyReadOnlyTools(t *testing.T) {
 }
 
 func TestMCPReadsMarketsAndMetrics(t *testing.T) {
-	app := mcpApp(t, "correct-horse-battery")
-	c := app.Client(t).WithToken("correct-horse-battery")
+	app := mcpApp(t, "correct-horse-battery-staple-0123456789")
+	c := app.Client(t).WithToken("correct-horse-battery-staple-0123456789")
 	call := func(name string, args map[string]any) *vukemtest.Response {
 		return c.PostJSON("/mcp", rpc("tools/call", map[string]any{"name": name, "arguments": args})).AssertOK()
 	}
@@ -97,4 +98,30 @@ func TestMCPReadsMarketsAndMetrics(t *testing.T) {
 	call("get_backtest_report", map[string]any{"id": "missing"}).AssertJSONPath("result.isError", true)
 	call("get_backtest_report", map[string]any{}).AssertJSONPath("result.isError", true)
 	c.PostJSON("/mcp", rpc("no/such/method", map[string]any{})).AssertOK().AssertJSONPath("error.code", -32601)
+}
+
+func TestSecurity_TR002_MCPThrottlesTokenGuessing(t *testing.T) {
+	app := mcpApp(t, "correct-horse-battery-staple-0123456789")
+	c := app.Client(t).WithToken("guess")
+	var last int
+	for range 80 {
+		last = c.PostJSON("/mcp", rpc("tools/list", map[string]any{})).Status()
+	}
+	if last != 429 {
+		t.Fatalf("guessing must be throttled, last status %d", last)
+	}
+}
+
+func TestSecurity_TR002_MCPRejectsAWeakToken(t *testing.T) {
+	for _, weak := range []string{"short", "correct-horse-battery"} {
+		if err := terminal.ValidateMCPToken(weak); err == nil {
+			t.Fatalf("token %q must be refused", weak)
+		}
+	}
+	if err := terminal.ValidateMCPToken(""); err != nil {
+		t.Fatalf("an unset token keeps the endpoint off: %v", err)
+	}
+	if err := terminal.ValidateMCPToken("correct-horse-battery-staple-0123456789"); err != nil {
+		t.Fatal(err)
+	}
 }

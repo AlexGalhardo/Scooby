@@ -5,7 +5,7 @@ Model Context Protocol, over a single HTTP endpoint (JSON-RPC 2.0). It can read.
 
 ## Turn it on
 
-Set a long random `MCP_TOKEN` on the web service. Without it the endpoint answers `404`. Generate the
+Set a long random `MCP_TOKEN` (at least 32 characters; shorter values stop the server at boot) on the web service. Without it the endpoint answers `404`. Generate the
 token on a machine you control and never paste it into chat or an issue.
 
 ```sh
@@ -13,7 +13,7 @@ openssl rand -base64 32
 ```
 
 Every request must carry `Authorization: Bearer <token>`. A missing or wrong token answers `401`; the
-comparison is constant-time.
+comparison is constant-time and each client address is limited to 60 requests per minute (`429` after that).
 
 ## Endpoint
 

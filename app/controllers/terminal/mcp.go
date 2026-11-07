@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"io"
 	"strings"
 	"time"
@@ -47,6 +48,17 @@ func mcpTools() []mcpTool {
 			noArgs,
 		},
 	}
+}
+
+// MinMCPTokenLength is the shortest MCP_TOKEN the server accepts; a shorter one is a boot error.
+const MinMCPTokenLength = 32
+
+// ValidateMCPToken fails closed on a configured but weak token. An empty token keeps the endpoint off.
+func ValidateMCPToken(token string) error {
+	if token != "" && len(token) < MinMCPTokenLength {
+		return errors.New("MCP_TOKEN must be at least 32 characters; generate one with: openssl rand -base64 32")
+	}
+	return nil
 }
 
 type rpcRequest struct {
