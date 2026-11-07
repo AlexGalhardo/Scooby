@@ -10,12 +10,16 @@ single source of truth.
 
 ## Decision
 
-- `site/` is the Next.js documentation site of the Vukem ecosystem (App Router, Tailwind, MDX),
-  copied and rebranded. Its stack versions are the ones of the reference site, pinned exactly.
+- `site/` is the Astro documentation site of the Vukem ecosystem (Astro 7 static output, React
+  islands, Tailwind 4, MDX), mirroring `vukem/site` and rebranded. It moved from Next.js on
+  2026-11-07 by owner instruction; every page and URL is unchanged. Its stack versions are the ones
+  of the reference site, pinned exactly.
 - `site/scripts/sync-docs.ts` generates `site/content/docs/**` and `navigation.ts` from `docs/`, the
   root community files and `CHANGELOG.md`. CI regenerates and fails on any difference.
 - The site is a separate Railway service built from `site/Dockerfile` with the repository root as
-  the build context. `/` redirects to `/docs/introduction`.
+  the build context: Bun and Node build the static `out/` directory and nginx serves it with the
+  `PORT` of the platform (`site/nginx.conf.template`, hashed `/_astro/` assets immutable).
+  `/` redirects to `/docs/introduction/`.
 - DNS: a `CNAME` for `trading` and the Railway verification `TXT` record in the `vukem.dev` zone.
 
 ## Alternatives
