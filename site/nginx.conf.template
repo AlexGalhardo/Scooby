@@ -12,6 +12,10 @@ server {
 
     error_page 404 /404.html;
 
+    # Real redirects instead of Astro's meta-refresh pages.
+    location = / { return 301 /docs/introduction/; }
+    location = /docs/ { return 301 /docs/introduction/; }
+
     location / {
         # Astro writes directory/index.html with trailing slashes; nginx redirects /docs/x to /docs/x/.
         try_files $uri $uri/ =404;
