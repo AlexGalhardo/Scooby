@@ -53,6 +53,8 @@ No path was found that places a real order or bypasses the live-readiness gate: 
 
 `routes/social.go:29` limits Google OAuth starts to 20 per minute per `c.IP()`. The Railway env examples set neither `TRUSTED_PROXIES` nor `TRUST_FORWARDED_PROTO`, so behind the platform proxy all clients may share one bucket (an anonymous caller could keep the owner from starting a login) and HSTS may not be sent. Whether that happens, and the right CIDR, are deployment facts outside the repository. Owner action: read the client IP in the web service log, then set both variables. No code change was made.
 
+Status: resolved. The production `web` service already sets `TRUSTED_PROXIES=100.64.0.0/24`, `TRUST_FORWARDED_PROTO=true` and `CLIENT_IP_HEADER=X-Real-IP` (checked on Railway 2026-11-07), and `.env.railway.web.example` now lists them.
+
 ## Rejected candidates
 
 | Id | Claim | Why rejected |
