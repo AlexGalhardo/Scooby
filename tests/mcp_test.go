@@ -125,3 +125,22 @@ func TestSecurity_TR002_MCPRejectsAWeakToken(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSecurity_TR003_MCPDoesNotLeakInternalErrors(t *testing.T) {
+	const token = "correct-horse-battery-staple-0123456789"
+	app := mcpApp(t, token)
+	db, err := app.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(t.Context(), "DROP TABLE datasets"); err != nil {
+		t.Fatal(err)
+	}
+	res := app.Client(t).WithToken(token).
+		PostJSON("/mcp", rpc("tools/call", map[string]any{"name": "list_datasets", "arguments": map[string]any{}})).
+		AssertOK().AssertJSONPath("result.isError", true)
+	text, _ := res.JSONPath("result.content.0.text")
+	if text != "Internal error" {
+		t.Fatalf("the client must get a generic message, got %v", text)
+	}
+}
