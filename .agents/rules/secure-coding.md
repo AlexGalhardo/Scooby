@@ -20,3 +20,4 @@ paths:
 - Load the `golang-security` skill for changes in accounts, uploads, webhooks, integrations and API keys.
 - Any agent or MCP surface is read-only and paper-only by default, uses scoped, hashed, rate-limited tokens, and never receives broker credentials. An LLM never signs or sends orders.
 - Production data commands run with `--dry-run` first and only with the owner's yes.
+- Run the vendored Cloudflare `security-audit` skill ([.agents/skills/security-audit/SKILL.md](../skills/security-audit/SKILL.md)) in guidance mode on changes to authentication, authorization, order flow, integrations and deployment. The `Security audit` workflow validates the skill and runs `govulncheck` on every pull request; its agent review needs the `ANTHROPIC_API_KEY` repository secret and is skipped without it.
