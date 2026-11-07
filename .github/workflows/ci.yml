@@ -166,6 +166,7 @@ jobs:
           git diff --exit-code -- content
       - run: bun run lint
       - run: bun run check:mdx
+      - run: bun run test:scripts
       - run: bun run build
 
   lint:
