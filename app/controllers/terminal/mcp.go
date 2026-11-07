@@ -117,8 +117,7 @@ func (h *Controller) MCP(c *web.Ctx) error {
 		out, err := h.callTool(c, call.Name, call.Arguments)
 		if err != nil {
 			message := "Internal error"
-			var public *errs.HTTPError
-			if errors.As(err, &public) {
+			if public, ok := errors.AsType[*errs.HTTPError](err); ok {
 				message = public.Text()
 			} else {
 				h.App.Log.Error("mcp tool failed", "tool", call.Name, "error", err)
