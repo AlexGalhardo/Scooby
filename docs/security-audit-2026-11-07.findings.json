@@ -1,0 +1,420 @@
+[
+  {
+    "verdict": "confirmed",
+    "fingerprint": "TR-AUDIT-001",
+    "title": "Order ticket prices a paper broker order from an arbitrarily old dataset",
+    "description": "POST /api/accounts/us/ticket sizes and prices an order from the last close of the newest stored dataset with no age check. The engine rejects stale quotes with Policy.MaxAgeSeconds, but the ticket path never applies it, so a buy limit built from a days-old close is dispatched to the Alpaca paper account.",
+    "root_cause": "Store.LastPrices returns only a price, discarding the candle time, so Controller.Ticket cannot enforce the stale-quote limit that Engine.SignalUS enforces.",
+    "intended_behavior": "Fail closed: a stale feed denies new entries (secure-coding rule) and the policy maximum quote age applies to every order path.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "app/controllers/terminal/terminal.go",
+        "line": 306,
+        "scope": "Controller.Ticket",
+        "description": "Authenticated owner request names an account, template key and symbol."
+      },
+      {
+        "kind": "propagation",
+        "file": "internal/trading/preferences.go",
+        "line": 196,
+        "scope": "Store.LastPrices",
+        "description": "Takes the close of the freshest dataset, whatever its age."
+      },
+      {
+        "kind": "sink",
+        "file": "internal/trading/ticket.go",
+        "line": 13,
+        "scope": "State.Ticket",
+        "description": "Reserves an approved order at that price; Engine.Dispatch later submits it to the broker."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "internal/engine/engine.go",
+        "line": 359,
+        "description": "SignalUS halts on quotes older than Policy.MaxAgeSeconds."
+      },
+      {
+        "file": "app/controllers/terminal/terminal.go",
+        "line": 335,
+        "description": "Ticket reads the price with no age comparison."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "authentication_level",
+        "description": "Owner session required."
+      },
+      {
+        "kind": "data_state",
+        "description": "US account armed and only an old Alpaca dataset stored."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "Owner (or a script running in the owner's session) pressing a ticket hotkey on the US account.",
+      "payloads": [
+        "POST /api/accounts/us/ticket {\"key\":\"b\",\"symbol\":\"AAPL\"}"
+      ],
+      "instructions": [
+        "Store an AAPL dataset whose last candle is days old.",
+        "Arm the US account (not halted, cash positive).",
+        "Post the ticket."
+      ],
+      "observed_result": "Code path: 201 with an approved buy at the stale close; the regression test added with the fix asserts a 422 instead."
+    },
+    "remediation": {
+      "strategy": "Return the last candle time from the store and reject a ticket on the US account when the candle is older than Policy.MaxAgeSeconds plus one bar."
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "Reachable by one hotkey whenever the US dataset is not refreshed."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "Paper-only orders at a wrong price; limited to the paper account and owner-initiated."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Direct code path with no intervening check; confirmed by the failing regression test written before the fix."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "fingerprint": "TR-AUDIT-002",
+    "title": "MCP bearer endpoint has no throttle and accepts any token strength",
+    "description": "POST /mcp is public and guarded only by MCP_TOKEN. There is no rate limit and no minimum length, so a short token set by mistake can be guessed online without limit, exposing backtest reports, dataset metadata and ops metrics.",
+    "root_cause": "MCP handler compares the token but registers no limiter, and bootstrap never validates MCP_TOKEN strength.",
+    "intended_behavior": "Agent surfaces use scoped, rate-limited tokens, and a security-weakening configuration is a boot error (secure-coding rules).",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "routes/web.go",
+        "line": 63,
+        "scope": "Web",
+        "description": "Registers POST /mcp with no middleware beyond defaults."
+      },
+      {
+        "kind": "sink",
+        "file": "app/controllers/terminal/mcp.go",
+        "line": 68,
+        "scope": "Controller.MCP",
+        "description": "Unlimited bearer guesses answered 401 or the token holder gets read access."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "routes/social.go",
+        "line": 29,
+        "description": "Only the Google OAuth routes use a rate limiter."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "system_configuration",
+        "description": "MCP_TOKEN set to a guessable value."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "Unauthenticated network client.",
+      "payloads": [
+        "POST /mcp with Authorization: Bearer <guess>"
+      ],
+      "instructions": [
+        "Send repeated guesses; none is ever throttled."
+      ],
+      "observed_result": "Code path: every guess is evaluated; the regression test asserts 429 after the limit and a boot error for short tokens."
+    },
+    "remediation": {
+      "strategy": "Throttle /mcp per IP and fail MCP route registration when MCP_TOKEN is set but shorter than 32 characters."
+    },
+    "severity": {
+      "likelihood": {
+        "score": "low",
+        "reason": "Needs a weak token or an unusually long online campaign."
+      },
+      "impact": {
+        "score": "low",
+        "reason": "Read-only, non-credential trading metrics."
+      },
+      "overall_severity": "low"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Absence of any limiter or validation is visible in source."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "fingerprint": "TR-AUDIT-003",
+    "title": "MCP tool errors return raw internal error text",
+    "description": "callTool errors from the store are returned verbatim in the JSON-RPC result, so a token holder receives driver and SQL error text.",
+    "root_cause": "MCP handler serializes err.Error() for every error, not only for the deliberate errs.New messages.",
+    "intended_behavior": "Client-facing errors never include SQL, paths or configuration.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "app/controllers/terminal/mcp.go",
+        "line": 97,
+        "scope": "Controller.MCP tools/call",
+        "description": "Calls callTool and receives any store error."
+      },
+      {
+        "kind": "sink",
+        "file": "app/controllers/terminal/mcp.go",
+        "line": 109,
+        "scope": "Controller.MCP",
+        "description": "Writes err.Error() into the response content."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "app/controllers/terminal/mcp.go",
+        "line": 136,
+        "description": "list_datasets returns the store error unchanged."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "data_state",
+        "description": "A store query fails."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "Holder of MCP_TOKEN (an assistant).",
+      "payloads": [
+        "tools/call list_datasets while the datasets table is unavailable"
+      ],
+      "instructions": [
+        "Break the table in a test database and call the tool."
+      ],
+      "observed_result": "Code path: the response text contains the driver message; the regression test asserts a generic message."
+    },
+    "remediation": {
+      "strategy": "Return the message only for errs.* errors and a generic text otherwise; log the original."
+    },
+    "severity": {
+      "likelihood": {
+        "score": "low",
+        "reason": "Needs a store failure."
+      },
+      "impact": {
+        "score": "low",
+        "reason": "Discloses internal error text to a read-only principal."
+      },
+      "overall_severity": "low"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Direct pass-through in source."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "TR-AUDIT-004",
+    "title": "Google OAuth limiter and HSTS may key on the Railway proxy address",
+    "description": "The google.oauth limiter keys on c.IP(). Without TRUSTED_PROXIES the address is the platform proxy, so all clients may share one 20 per minute bucket and an anonymous caller could keep the owner from starting a login.",
+    "claimed_root_cause": "The Railway env examples set neither TRUSTED_PROXIES nor TRUST_FORWARDED_PROTO.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "routes/social.go",
+        "line": 44,
+        "scope": "Social",
+        "description": "Redirect route guarded by a per-IP limiter."
+      },
+      {
+        "kind": "sink",
+        "file": "routes/social.go",
+        "line": 29,
+        "scope": "Social",
+        "description": "Limiter keyed by ratelimit.ByIP."
+      }
+    ],
+    "evidence": [
+      {
+        "file": ".env.railway.web.example",
+        "line": 1,
+        "description": "The example lists no TRUSTED_PROXIES or TRUST_FORWARDED_PROTO."
+      }
+    ],
+    "blockers": [
+      "What source address Railway presents to the service and the correct trusted CIDR are deployment facts outside the repository."
+    ],
+    "validation_plan": {
+      "local": "Run the app with a limiter and forwarded headers to confirm ByIP uses RemoteAddr when no proxy is trusted.",
+      "deployment": "Owner checks the client IP in a request log on the web service and sets TRUSTED_PROXIES and TRUST_FORWARDED_PROTO accordingly."
+    }
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R01",
+    "title": "Owner email bootstrap race",
+    "description": "A second Google account could claim the owner slot.",
+    "claimed_root_cause": "Singleton owner_identity row",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "app/accounts/social.go",
+        "line": 96,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "app/accounts/social.go",
+        "line": 96,
+        "description": "The row is locked FOR UPDATE, claimed with a conditional UPDATE and then pinned to the Google subject; the tests cover foreign and unverified accounts."
+      }
+    ],
+    "reason": "The row is locked FOR UPDATE, claimed with a conditional UPDATE and then pinned to the Google subject; the tests cover foreign and unverified accounts."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R02",
+    "title": "Live trading reachable through Alpaca adapter",
+    "description": "Live keys could place real orders.",
+    "claimed_root_cause": "Configurable broker host",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "internal/adapters/alpaca.go",
+        "line": 29,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "internal/adapters/alpaca.go",
+        "line": 29,
+        "description": "The paper host is a constant, redirects are not followed, the live gate reads only the process environment and no live adapter exists."
+      }
+    ],
+    "reason": "The paper host is a constant, redirects are not followed, the live gate reads only the process environment and no live adapter exists."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R03",
+    "title": "Unbounded datasets exhaust memory",
+    "description": "Snapshot loads every dataset.",
+    "claimed_root_cause": "No dataset cap",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "app/controllers/terminal/terminal.go",
+        "line": 128,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "app/controllers/terminal/terminal.go",
+        "line": 128,
+        "description": "Only the single authenticated owner can create datasets, so this is self-impact."
+      }
+    ],
+    "reason": "Only the single authenticated owner can create datasets, so this is self-impact."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R04",
+    "title": "set:html in docs site",
+    "description": "Markdown rendered with set:html.",
+    "claimed_root_cause": "Unsanitized HTML",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "site/src/pages/changelog.astro",
+        "line": 10,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "site/src/pages/changelog.astro",
+        "line": 10,
+        "description": "Input is repository markdown rendered at build time; no untrusted principal."
+      }
+    ],
+    "reason": "Input is repository markdown rendered at build time; no untrusted principal."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R05",
+    "title": "Workflow expression injection",
+    "description": "workflow_dispatch inputs reach shell.",
+    "claimed_root_cause": "Inline expressions",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": ".github/workflows/release.yml",
+        "line": 17,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": ".github/workflows/release.yml",
+        "line": 17,
+        "description": "Inputs pass through env variables, never interpolated into run scripts; pr-title does not check out code."
+      }
+    ],
+    "reason": "Inputs pass through env variables, never interpolated into run scripts; pr-title does not check out code."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R06",
+    "title": "Telegram token in error text",
+    "description": "Errors expose the bot token.",
+    "claimed_root_cause": "URL in error",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "internal/adapters/telegram.go",
+        "line": 40,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "internal/adapters/telegram.go",
+        "line": 40,
+        "description": "All errors are replaced by generic messages."
+      }
+    ],
+    "reason": "All errors are replaced by generic messages."
+  },
+  {
+    "verdict": "rejected",
+    "fingerprint": "TR-AUDIT-R07",
+    "title": "Dead PostController is routable",
+    "description": "Scaffold CRUD exposed.",
+    "claimed_root_cause": "Unauthenticated posts routes",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "app/controllers/post_controller.go",
+        "line": 19,
+        "scope": "reviewed code",
+        "description": "Candidate entry point."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "app/controllers/post_controller.go",
+        "line": 19,
+        "description": "No route registers it; TestPrivateRoutesAndGoogleOnly asserts /posts is 404."
+      }
+    ],
+    "reason": "No route registers it; TestPrivateRoutesAndGoogleOnly asserts /posts is 404."
+  }
+]
