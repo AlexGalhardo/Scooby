@@ -1,0 +1,710 @@
+[
+  {
+    "coverage_id": ".github%2Fworkflows%23all%20workflows::.github%2Fworkflows%2Fci.yml%23permissions::.github%2Fworkflows::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": ".github/workflows#all workflows",
+      "boundary": ".github/workflows/ci.yml#permissions",
+      "subsystem": ".github/workflows",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": ".github/workflows#all workflows",
+    "boundary": ".github/workflows/ci.yml#permissions",
+    "subsystem": ".github/workflows",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml",
+      ".github/workflows/pr-title.yml",
+      ".github/workflows/security-audit.yml",
+      ".github/workflows/uptime.yml",
+      ".github/workflows/codeql.yml",
+      ".github/workflows/scorecard.yml",
+      ".github/workflows/vuln.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml",
+      ".github/workflows/pr-title.yml",
+      ".github/workflows/security-audit.yml",
+      ".github/workflows/uptime.yml",
+      ".github/workflows/codeql.yml",
+      ".github/workflows/scorecard.yml",
+      ".github/workflows/vuln.yml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          ".github/workflows/ci.yml",
+          ".github/workflows/release.yml",
+          ".github/workflows/pr-title.yml",
+          ".github/workflows/security-audit.yml",
+          ".github/workflows/uptime.yml",
+          ".github/workflows/codeql.yml",
+          ".github/workflows/scorecard.yml",
+          ".github/workflows/vuln.yml"
+        ],
+        "invariant": "Actions pinned by SHA, least-privilege permissions, inputs reach shell only through env vars",
+        "method": "source",
+        "result": "Actions pinned by SHA, least-privilege permissions, inputs reach shell only through env vars",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "Dockerfile%23production%20image::Dockerfile%23USER%20app::deployment::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "Dockerfile#production image",
+      "boundary": "Dockerfile#USER app",
+      "subsystem": "deployment",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "Dockerfile#production image",
+    "boundary": "Dockerfile#USER app",
+    "subsystem": "deployment",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      "Dockerfile",
+      "compose.yaml",
+      "railway.web.toml",
+      "railway.engine.toml",
+      ".dockerignore",
+      ".env.railway.web.example",
+      ".env.railway.engine.example"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "Dockerfile",
+      "compose.yaml",
+      "railway.web.toml",
+      "railway.engine.toml",
+      ".dockerignore",
+      ".env.railway.web.example",
+      ".env.railway.engine.example"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "Dockerfile",
+          "compose.yaml",
+          "railway.web.toml",
+          "railway.engine.toml",
+          ".dockerignore",
+          ".env.railway.web.example",
+          ".env.railway.engine.example"
+        ],
+        "invariant": "Pinned digests, non-root user, .env excluded from the build context, secrets via runtime env",
+        "method": "source",
+        "result": "Pinned digests, non-root user, .env excluded from the build context, secrets via runtime env",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "app%2Fcontrollers%2Fterminal%2Fmcp.go%23POST%20%2Fmcp::app%2Fcontrollers%2Fterminal%2Fmcp.go%23MCP%20bearer%20check::app%2Fcontrollers%2Fterminal::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "app/controllers/terminal/mcp.go#POST /mcp",
+      "boundary": "app/controllers/terminal/mcp.go#MCP bearer check",
+      "subsystem": "app/controllers/terminal",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "app/controllers/terminal/mcp.go#POST /mcp",
+    "boundary": "app/controllers/terminal/mcp.go#MCP bearer check",
+    "subsystem": "app/controllers/terminal",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "app/controllers/terminal/mcp.go",
+      "routes/web.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "app/controllers/terminal/mcp.go",
+      "routes/web.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "app/controllers/terminal/mcp.go",
+          "routes/web.go"
+        ],
+        "invariant": "Bearer compare is constant time, but there is no throttle and no minimum token strength",
+        "method": "source",
+        "result": "Bearer compare is constant time, but there is no throttle and no minimum token strength",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "TR-AUDIT-002"
+    ],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "app%2Fcontrollers%2Fterminal%2Fmcp.go%23tools%2Fcall::app%2Fcontrollers%2Fterminal%2Fmcp.go%23callTool::app%2Fcontrollers%2Fterminal::ATTACK-CLASSES.md%23Feature%20abuse%20and%20data%20leakage",
+    "canonical_refs": {
+      "surface": "app/controllers/terminal/mcp.go#tools/call",
+      "boundary": "app/controllers/terminal/mcp.go#callTool",
+      "subsystem": "app/controllers/terminal",
+      "attack_class": "ATTACK-CLASSES.md#Feature abuse and data leakage"
+    },
+    "surface": "app/controllers/terminal/mcp.go#tools/call",
+    "boundary": "app/controllers/terminal/mcp.go#callTool",
+    "subsystem": "app/controllers/terminal",
+    "attack_class": "Feature abuse and data leakage",
+    "starting_paths": [
+      "app/controllers/terminal/mcp.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Feature abuse and data leakage",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "app/controllers/terminal/mcp.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "app/controllers/terminal/mcp.go"
+        ],
+        "invariant": "Raw store errors are returned to the token holder",
+        "method": "source",
+        "result": "Raw store errors are returned to the token holder",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "TR-AUDIT-003"
+    ],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "app%2Fcontrollers%2Fterminal%2Fterminal.go%23POST%20%2Fapi%2Faccounts%2F%7Bid%7D%2Fticket::internal%2Ftrading%2Fpreferences.go%23LastPrices::internal%2Ftrading::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "app/controllers/terminal/terminal.go#POST /api/accounts/{id}/ticket",
+      "boundary": "internal/trading/preferences.go#LastPrices",
+      "subsystem": "internal/trading",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "app/controllers/terminal/terminal.go#POST /api/accounts/{id}/ticket",
+    "boundary": "internal/trading/preferences.go#LastPrices",
+    "subsystem": "internal/trading",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "app/controllers/terminal/terminal.go",
+      "internal/trading/preferences.go",
+      "internal/trading/ticket.go",
+      "internal/engine/engine.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "app/controllers/terminal/terminal.go",
+      "internal/trading/preferences.go",
+      "internal/trading/ticket.go",
+      "internal/engine/engine.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "app/controllers/terminal/terminal.go",
+          "internal/trading/preferences.go",
+          "internal/trading/ticket.go",
+          "internal/engine/engine.go"
+        ],
+        "invariant": "Ticket prices from the newest dataset with no age limit while the engine enforces Policy.MaxAgeSeconds",
+        "method": "source",
+        "result": "Ticket prices from the newest dataset with no age limit while the engine enforces Policy.MaxAgeSeconds",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "TR-AUDIT-001"
+    ],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "app%2Fcontrollers%2Fterminal%2Fterminal.go%23POST%20%2Fapi%2Fdatasets%2Fimport::internal%2Ftrading%2Fdata.go%23ImportCSV::internal%2Ftrading::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "app/controllers/terminal/terminal.go#POST /api/datasets/import",
+      "boundary": "internal/trading/data.go#ImportCSV",
+      "subsystem": "internal/trading",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "app/controllers/terminal/terminal.go#POST /api/datasets/import",
+    "boundary": "internal/trading/data.go#ImportCSV",
+    "subsystem": "internal/trading",
+    "attack_class": "Resource and file handling",
+    "starting_paths": [
+      "internal/trading/data.go",
+      "internal/trading/store.go",
+      "app/controllers/terminal/terminal.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "internal/trading/data.go",
+      "internal/trading/store.go",
+      "app/controllers/terminal/terminal.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "internal/trading/data.go",
+          "internal/trading/store.go",
+          "app/controllers/terminal/terminal.go"
+        ],
+        "invariant": "CSV is bounded and atomic; SQL uses bound parameters and a table whitelist",
+        "method": "source",
+        "result": "CSV is bounded and atomic; SQL uses bound parameters and a table whitelist",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "database%2Fmigrations%23owner_identity%20and%20terminal%20tables::database%2Fmigrations%2Fregistry.go%23All::database::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "database/migrations#owner_identity and terminal tables",
+      "boundary": "database/migrations/registry.go#All",
+      "subsystem": "database",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "database/migrations#owner_identity and terminal tables",
+    "boundary": "database/migrations/registry.go#All",
+    "subsystem": "database",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "database/migrations/20261103130844_create_auth_tables.go",
+      "database/migrations/20261103140000_create_terminal.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "database/migrations/20261103130844_create_auth_tables.go",
+      "database/migrations/20261103140000_create_terminal.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "database/migrations/20261103130844_create_auth_tables.go",
+          "database/migrations/20261103140000_create_terminal.go"
+        ],
+        "invariant": "Static schema migrations; no input reaches DDL",
+        "method": "source",
+        "result": "Static schema migrations; no input reaches DDL",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "internal%2Fadapters%2Falpaca.go%23request::internal%2Fadapters%2Falpaca.go%23paper%20host%20constant::internal%2Fadapters::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "internal/adapters/alpaca.go#request",
+      "boundary": "internal/adapters/alpaca.go#paper host constant",
+      "subsystem": "internal/adapters",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "internal/adapters/alpaca.go#request",
+    "boundary": "internal/adapters/alpaca.go#paper host constant",
+    "subsystem": "internal/adapters",
+    "attack_class": "Business logic",
+    "starting_paths": [
+      "internal/adapters/alpaca.go",
+      "internal/trading/live.go",
+      "app/commands/worker.go",
+      "internal/engine/engine.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "internal/adapters/alpaca.go",
+      "internal/trading/live.go",
+      "app/commands/worker.go",
+      "internal/engine/engine.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "internal/adapters/alpaca.go",
+          "internal/trading/live.go",
+          "app/commands/worker.go",
+          "internal/engine/engine.go"
+        ],
+        "invariant": "Broker host is the hardcoded paper endpoint; no live adapter exists; the live gate is informational and fail-closed",
+        "method": "source",
+        "result": "Broker host is the hardcoded paper endpoint; no live adapter exists; the live gate is informational and fail-closed",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "internal%2Fadapters%2Ftelegram.go%23SendAlert::internal%2Fadapters%2Ftelegram.go%23token%20validation::internal%2Fadapters::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "internal/adapters/telegram.go#SendAlert",
+      "boundary": "internal/adapters/telegram.go#token validation",
+      "subsystem": "internal/adapters",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "internal/adapters/telegram.go#SendAlert",
+    "boundary": "internal/adapters/telegram.go#token validation",
+    "subsystem": "internal/adapters",
+    "attack_class": "Cryptography and secrets",
+    "starting_paths": [
+      "internal/adapters/telegram.go",
+      "internal/adapters/binance_testnet.go",
+      "internal/providers/binance.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "internal/adapters/telegram.go",
+      "internal/adapters/binance_testnet.go",
+      "internal/providers/binance.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "internal/adapters/telegram.go",
+          "internal/adapters/binance_testnet.go",
+          "internal/providers/binance.go"
+        ],
+        "invariant": "Errors never carry token or URL; redirects are not followed; testnet host allowlist",
+        "method": "source",
+        "result": "Errors never carry token or URL; redirects are not followed; testnet host allowlist",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "resources%2Fjs%23Inertia%20terminal::resources%2Fjs%2Flib%2Fapi.ts%23api::resources%2Fjs::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "resources/js#Inertia terminal",
+      "boundary": "resources/js/lib/api.ts#api",
+      "subsystem": "resources/js",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "resources/js#Inertia terminal",
+    "boundary": "resources/js/lib/api.ts#api",
+    "subsystem": "resources/js",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "resources/js/lib/api.ts",
+      "resources/js/app.tsx",
+      "resources/js/pages/Terminal.tsx",
+      "resources/js/layouts/AppLayout.tsx"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "resources/js/lib/api.ts",
+      "resources/js/app.tsx",
+      "resources/js/pages/Terminal.tsx",
+      "resources/js/layouts/AppLayout.tsx"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "resources/js/lib/api.ts",
+          "resources/js/app.tsx",
+          "resources/js/pages/Terminal.tsx",
+          "resources/js/layouts/AppLayout.tsx"
+        ],
+        "invariant": "No raw HTML sinks; external links use rel noreferrer; no secrets in bundles",
+        "method": "source",
+        "result": "No raw HTML sinks; external links use rel noreferrer; no secrets in bundles",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "routes%2Fsocial.go%23GET%20%2Fauth%2Fgoogle%2Fcallback::app%2Faccounts%2Fsocial.go%23FindOrCreateFromSocial::app%2Faccounts::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "routes/social.go#GET /auth/google/callback",
+      "boundary": "app/accounts/social.go#FindOrCreateFromSocial",
+      "subsystem": "app/accounts",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "routes/social.go#GET /auth/google/callback",
+    "boundary": "app/accounts/social.go#FindOrCreateFromSocial",
+    "subsystem": "app/accounts",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "routes/social.go",
+      "app/accounts/social.go",
+      "app/accounts/accounts.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "routes/social.go",
+      "app/accounts/social.go",
+      "app/accounts/accounts.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "routes/social.go",
+          "app/accounts/social.go",
+          "app/accounts/accounts.go"
+        ],
+        "invariant": "Owner subject pinning and verified email hold; the limiter key depends on TRUSTED_PROXIES, which the Railway env examples do not set",
+        "method": "source",
+        "result": "Owner subject pinning and verified email hold; the limiter key depends on TRUSTED_PROXIES, which the Railway env examples do not set",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "TR-AUDIT-004"
+    ],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "routes%2Fweb.go%23authenticated%20%2Fapi%20routes::routes%2Fweb.go%23auth.Required::routes::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "routes/web.go#authenticated /api routes",
+      "boundary": "routes/web.go#auth.Required",
+      "subsystem": "routes",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "routes/web.go#authenticated /api routes",
+    "boundary": "routes/web.go#auth.Required",
+    "subsystem": "routes",
+    "attack_class": "Access control",
+    "starting_paths": [
+      "routes/web.go",
+      "app/controllers/terminal/terminal.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "routes/web.go",
+      "app/controllers/terminal/terminal.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "routes/web.go",
+          "app/controllers/terminal/terminal.go"
+        ],
+        "invariant": "Every /api route and page uses auth.Required; only /mcp, /ready, /login and OAuth are public; CSRF by framework Origin and Sec-Fetch-Site checks",
+        "method": "source",
+        "result": "Every /api route and page uses auth.Required; only /mcp, /ready, /login and OAuth are public; CSRF by framework Origin and Sec-Fetch-Site checks",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "site%23Astro%20docs::site%2Fnginx.conf.template%23headers::site::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "site#Astro docs",
+      "boundary": "site/nginx.conf.template#headers",
+      "subsystem": "site",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "site#Astro docs",
+    "boundary": "site/nginx.conf.template#headers",
+    "subsystem": "site",
+    "attack_class": "Injection",
+    "starting_paths": [
+      "site/astro.config.mjs",
+      "site/nginx.conf.template",
+      "site/Dockerfile",
+      "site/scripts/check-last-updated.ts"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#When to use this file",
+        "reason": "No model is in the loop: the MCP surface is a fixed read-only tool list"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "auditor-1",
+    "reviewed_paths": [
+      "site/astro.config.mjs",
+      "site/nginx.conf.template",
+      "site/Dockerfile",
+      "site/scripts/check-last-updated.ts"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "auditor-1",
+        "reviewed_paths": [
+          "site/astro.config.mjs",
+          "site/nginx.conf.template",
+          "site/Dockerfile",
+          "site/scripts/check-last-updated.ts"
+        ],
+        "invariant": "Static output; set:html sources are repository markdown rendered at build time; execFileSync uses argument arrays",
+        "method": "source",
+        "result": "Static output; set:html sources are repository markdown rendered at build time; execFileSync uses argument arrays",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  }
+]
