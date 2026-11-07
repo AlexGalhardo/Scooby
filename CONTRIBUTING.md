@@ -4,7 +4,7 @@ Thanks for helping. This guide covers setup, workflow and the rules every change
 
 ## Setup
 
-1. Install Go (see `go.mod`), Node.js, Docker Compose and the Vukem CLI (`go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.37.0`).
+1. Install Go (see `go.mod`), Node.js, Docker Compose and the Vukem CLI (`go install github.com/AlexGalhardo/vukem/cmd/vukem@v0.38.0`).
 2. Clone, enable the git hooks and start the stack:
 
    ```sh
