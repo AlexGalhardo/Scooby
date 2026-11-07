@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **docs:** Agent rules now cover the shared framework feedback file (`TR-` ids), the Astro docs site and `last-updated`, the security-audit skill in guidance mode, and Railway service, volume and domain rules (`.agents/rules/railway.md`).
 - Vukem 0.38.0.
 - Production boot fails unless `APP_URL` is an https origin without a path (`accounts.ValidateAppURL`); env templates and the deploy checklist target `https://app.trading.vukem.dev`.
 - Dynamic responses carry `Cache-Control: private, no-store`; hashed assets stay immutable.
