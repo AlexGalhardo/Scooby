@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Chart indicators (SMA 20, EMA 50, Bollinger 20, session VWAP, volume, RSI 14) on history charts, with `bun run test:unit` unit tests.
+- Playwright coverage for anonymous access, private API 401s, the session cookie and the indicator toggles (`e2e/access.spec.ts`).
+- Vendored Cloudflare `security-audit` skill and `Security audit` workflow.
 - `GET /api/stream`: Server-Sent Events channel that tells the terminal when data changed (ADR-0022).
 - `adapters.BinanceTestnet`: signed, idempotent testnet-only order adapter, not wired into the engine.
 - `trading.AvellanedaStoikov`: market-making quote math, not connected to any venue.
@@ -40,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Vukem 0.38.0.
+- Production boot fails unless `APP_URL` is an https origin without a path (`accounts.ValidateAppURL`); env templates and the deploy checklist target `https://app.trading.vukem.dev`.
+- Dynamic responses carry `Cache-Control: private, no-store`; hashed assets stay immutable.
 - Container images are pinned by digest in the Dockerfiles, Compose and CI.
 - Backtest partitions are now train (first 60%), test (next 20%) and validation (last 20%); the old test partition was the last 30%.
 - Orders that the open does not reach rest instead of being canceled; a buy never prints above the bar's high.

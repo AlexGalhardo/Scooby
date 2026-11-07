@@ -6,6 +6,62 @@ Status: project provisioned; web, engine and PostgreSQL healthy on 2026-11-03; e
 await real credentials. See the destinations below and confirm health in the CLI.
 Do not paste tokens or client secrets into the conversation or into versioned files.
 
+## Canonical host: app.trading.vukem.dev
+
+The terminal lives at [https://app.trading.vukem.dev](https://app.trading.vukem.dev); the documentation stays at
+[https://trading.vukem.dev](https://trading.vukem.dev) (the `site` service). The two are separate Railway services and
+domains.
+
+Environment variables, names only (set them in the Railway editor; never commit values):
+
+| Variable | Service | Required value or source |
+| --- | --- | --- |
+| `APP_NAME` | web, engine | `vukem-trading` |
+| `APP_ENV` | web, engine | `production` |
+| `APP_DEBUG` | web, engine | `false` |
+| `APP_KEY` | web, engine | Same generated key on both (`vukem key:generate`) |
+| `APP_PREVIOUS_KEYS` | web, engine | Empty, or the former keys after a rotation |
+| `APP_URL` | web, engine | `https://app.trading.vukem.dev` exactly: https, no path. The web refuses to boot in production with any other shape (`accounts.ValidateAppURL`) |
+| `HOST` | web, engine | `0.0.0.0` |
+| `PORT` | web | Provided by Railway; do not set it |
+| `ENGINE_HEALTH_PORT` | engine | Empty, so the engine health check uses `PORT` |
+| `DATABASE_URL` | web, engine | Reference to the PostgreSQL service, private network |
+| `SESSION_DRIVER` | web, engine | `database` |
+| `CACHE_STORE` | web, engine | `database` |
+| `MAIL_MAILER` | web, engine | `log` |
+| `OWNER_GOOGLE_EMAIL` | web | The owner's verified Google address |
+| `SOCIAL_GOOGLE_CLIENT_ID` | web | Google Web OAuth client id |
+| `SOCIAL_GOOGLE_CLIENT_SECRET` | web | Google Web OAuth client secret |
+| `ALPACA_API_KEY`, `ALPACA_API_SECRET` | web (history import), engine | Alpaca Paper keys; optional |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | engine | Optional operational alerts |
+| `MCP_TOKEN` | web | Optional; leave unset to keep `/mcp` off |
+| `LIVE_TRADING_ENABLED`, `LIVE_TRADING_ACK`, `LIVE_MAX_ORDER_VALUE`, `LIVE_MAX_DAILY_LOSS_BPS` | none | Leave unset; there is no live adapter |
+
+Google Cloud console, OAuth client of type Web application:
+
+- Authorized JavaScript origin: `https://app.trading.vukem.dev`.
+- Authorized redirect URI: `https://app.trading.vukem.dev/auth/google/callback` (the app builds it
+  from `APP_URL`; `TestGoogleRedirectUsesTheCanonicalAppURL` pins the exact `redirect_uri`).
+- Remove the old `scooby-web-production.up.railway.app` callback once the custom domain works.
+
+Railway web service, in order:
+
+1. Add the custom domain `app.trading.vukem.dev` to the `web` service and create the DNS records
+   Railway prints (CNAME plus the verification TXT) in the `vukem.dev` zone. Wait for the verified
+   state and a valid certificate.
+2. Set the variables above, then deploy `main`. `railway.web.toml` runs `/app/app migrate` as the
+   pre-deploy command (migrations finish before traffic moves; Vukem serializes them with an
+   advisory lock) and gates traffic on `GET /ready` (120 second timeout, one replica).
+3. Verify: `/` answers 302 to `/login`; `/login` 200; `/ready` 200; `/api/snapshot` with
+   `Accept: application/json` and no session 401; `GET /auth/google/redirect` answers 302 to
+   `accounts.google.com` with `redirect_uri=https://app.trading.vukem.dev/auth/google/callback`.
+4. Sign in with the owner account, then deploy the engine and confirm the heartbeat on the
+   dashboard.
+
+Caching: hashed Vite assets under `/build/assets/` are served `public, max-age=31536000, immutable`
+and gzip-compressed; every dynamic response (pages, `/api/*`, `/ready`) is `private, no-store`
+(`TestPrivateResponsesAreNeverCached`), so no proxy or browser caches financial data.
+
 ## Provisioned destination
 
 | Resource | ID/address |
