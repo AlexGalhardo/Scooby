@@ -25,7 +25,8 @@ func ValidateAppURL(production bool, raw string) error {
 		return nil
 	}
 	u, err := url.Parse(strings.TrimSuffix(raw, "/"))
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil || u.Scheme != "https" || u.Host == "" ||
+		u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
 		return errors.New("APP_URL must be the https origin of the web service, for example https://app.trading.vukem.dev")
 	}
 	switch h := u.Hostname(); {
