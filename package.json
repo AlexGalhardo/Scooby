@@ -11,6 +11,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "lint:md": "markdownlint-cli2",
+    "test:unit": "bun test resources/js",
     "test:e2e": "playwright test"
   },
   "dependencies": {
