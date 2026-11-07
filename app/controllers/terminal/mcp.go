@@ -116,9 +116,16 @@ func (h *Controller) MCP(c *web.Ctx) error {
 		}
 		out, err := h.callTool(c, call.Name, call.Arguments)
 		if err != nil {
+			message := "Internal error"
+			var public *errs.HTTPError
+			if errors.As(err, &public) {
+				message = public.Text()
+			} else {
+				h.App.Log.Error("mcp tool failed", "tool", call.Name, "error", err)
+			}
 			return c.JSON(200, rpcResult(req.ID, map[string]any{
 				"isError": true,
-				"content": []map[string]any{{"type": "text", "text": err.Error()}},
+				"content": []map[string]any{{"type": "text", "text": message}},
 			}))
 		}
 		text, _ := json.Marshal(out)
