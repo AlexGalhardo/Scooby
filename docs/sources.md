@@ -26,14 +26,14 @@ guarantee exactly-once execution. Do not assume B3 support.
 Local code consulted: `bootstrap/app.go`, `routes/web.go`, `go.mod`,
 `package.json`, `Dockerfile`, CI and the upstream Vukem scaffold at `/tmp/vukem`.
 The upstream copy serves for investigation; when implementing, verify the same
-APIs in the 0.37.0 module pinned in `go.mod`, since `main` may evolve.
+APIs in the 0.38.0 module pinned in `go.mod`, since `main` may evolve.
 
 The context text contains cost values, deadlines and regulatory claims.
 They were not adopted as verified quotes or opinions. For SaaS/live,
 record specific research and review of jurisdiction and service before the offer.
 
 Additional verification confirmed social login and middleware also in the Vukem
-0.37.0 module installed in `GOPATH/pkg/mod`, not only in upstream main. Railway
+0.38.0 module installed in `GOPATH/pkg/mod`, not only in upstream main. Railway
 pre-deploy uses a separate container, with network/env available and no mounted volumes;
 a Docker start command replaces ENTRYPOINT. Additional references:
 [Start command](https://docs.railway.com/deployments/start-command) and

@@ -44,7 +44,7 @@ Do not ask for tokens in chat; use secure provider variables. Never print secret
 | Strategies | SMA crossover, Z-score reversion, breakout today; opening range, VWAP, ADX trend, grid and DCA planned |
 | Data | CSV import; IEX through Alpaca; free APIs, broker paper accounts and paid feeds planned behind provider interfaces |
 | Risk, non-negotiable | Mandatory stop on every order; daily-loss kill switch; risk per trade as a percentage of capital; exposure caps per asset and in total |
-| Stack | Go 1.27.3, Vukem 0.37.0, PostgreSQL 18, React 19 and Inertia 3, Tailwind 4, Bun 1.4.4, Biome 2 |
+| Stack | Go 1.27.3, Vukem 0.38.0, PostgreSQL 18, React 19 and Inertia 3, Tailwind 4, Bun 1.4.4, Biome 2 |
 | Infra | Railway: web, engine, PostgreSQL, plus the `site` service |
 | Docs | Next.js site in `site/`, generated from the Markdown in `docs/` |
 
