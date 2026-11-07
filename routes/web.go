@@ -3,11 +3,13 @@ package routes
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/AlexGalhardo/vukem"
 	"github.com/AlexGalhardo/vukem/auth"
 	"github.com/AlexGalhardo/vukem/inertia"
 	"github.com/AlexGalhardo/vukem/middleware"
+	"github.com/AlexGalhardo/vukem/ratelimit"
 	"github.com/AlexGalhardo/vukem/router"
 	"github.com/AlexGalhardo/vukem/web"
 
@@ -60,7 +62,12 @@ func Web(r *router.Router, app *vukem.App) error {
 		r.Get("/"+section, h.Page(section)).Use(required)
 	}
 	r.Get("/dashboard", func(c *web.Ctx) error { return c.Redirect("/") }).Use(required)
-	r.Post("/mcp", h.MCP)
+	limiters, err := app.RateLimiters()
+	if err != nil {
+		return err
+	}
+	// Online guessing of MCP_TOKEN is bounded per client address.
+	r.Post("/mcp", h.MCP).Use(ratelimit.Middleware(limiters("mcp", 60, time.Minute), ratelimit.ByIP))
 	r.Get("/ready", h.Ready)
 	r.Get("/api/snapshot", h.Snapshot).Use(required)
 	r.Get("/api/artifacts/{id}", h.Artifact).Use(required)

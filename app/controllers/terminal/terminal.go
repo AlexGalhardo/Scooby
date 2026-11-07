@@ -27,6 +27,9 @@ type Controller struct {
 }
 
 func New(app *vukem.App) (*Controller, error) {
+	if err := ValidateMCPToken(app.Source.Get("MCP_TOKEN")); err != nil {
+		return nil, err
+	}
 	db, err := app.DB()
 	return &Controller{trading.Store{DB: db}, app}, err
 }
