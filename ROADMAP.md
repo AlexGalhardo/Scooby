@@ -268,6 +268,27 @@ No live adapter is built in this roadmap. Writing an ADR is the only allowed wor
 - [x] First-period limits (order size, daily loss) set deliberately low: ceilings of 100 per order and 25 bps per day in code, enforced by the gate.
 - [ ] Owner sign-off recorded in an ADR: [ADR-0021](docs/adrs/0021-live-readiness-gate.md) is proposed and awaits the owner.
 
+### Phase 18: Delivery for app.trading.vukem.dev (2026-11)
+
+- [x] **18.1 Vukem 0.38.0** (drivers on their latest compatible tags). Assert: `go build ./...`, `go vet ./...`, focused `go test`.
+- [x] **18.2 Security audit skill** vendored in `.agents/skills/security-audit` with the `Security audit` workflow; referenced from [secure-coding.md](.agents/rules/secure-coding.md).
+- [x] **18.3 Chart indicators:** SMA 20, EMA 50, Bollinger 20, session VWAP, volume and RSI 14 on every history chart (`resources/js/lib/indicators.ts`). Assert: `bun run test:unit`; the e2e test `a signed-in owner can chart imported history with indicators`.
+- [x] **18.4 Access e2e:** anonymous page redirects, 401 on every private API (13 writes, 8 reads), HttpOnly session cookie, authenticated API reads. Assert: `bunx playwright test e2e/access.spec.ts`.
+- [x] **18.5 Canonical host:** production boot fails unless `APP_URL` is an https origin (`TestValidateAppURL`); the Google `redirect_uri` is pinned by `TestGoogleRedirectUsesTheCanonicalAppURL`; env templates and the [deploy checklist](docs/deploy-checklist.md) name every variable for `https://app.trading.vukem.dev`.
+- [x] **18.6 Caching:** hashed assets stay immutable and gzip (347.9 kB to 110.7 kB for the React runtime chunk); dynamic responses are `private, no-store` (`TestPrivateResponsesAreNeverCached`). Lookup columns were already indexed.
+- [ ] **18.7 Owner gate:** add the `app.trading.vukem.dev` domain and DNS on Railway, set `APP_URL`, add the Google redirect URI, then run the verification list in the deploy checklist.
+
+#### Owner gates still open (nothing here can be faked in code)
+
+| Gate | Needs |
+| --- | --- |
+| 2.x, 3.x licensed B3 intraday dataset and out-of-sample evaluation | Licensed data |
+| 4.x Alpaca Paper contracts, cancels and fills; 5.x Google, broker and Telegram in production | Real accounts and production secrets |
+| 6.x paper observation and keep-or-disable decisions | Time |
+| 11.3 crypto testnet, 12.5 market making, 13.6 live push channel | Binance testnet account, order-book data, live feed |
+| 7.11 OpenSSF badge; 17 live-readiness sign-off (ADR-0021) | Owner decision |
+| `ANTHROPIC_API_KEY` repository secret for the agent half of the `Security audit` workflow | Owner secret |
+
 ## 6. Contracts and limitations
 
 - Financial persistence uses versioned decimal JSON in a PostgreSQL account with lock and compare-and-swap plus audit in the same commit; do not claim normalized `NUMERIC` tables that do not exist. ADR-0012 explains the trade-offs and the migration path for high volume.

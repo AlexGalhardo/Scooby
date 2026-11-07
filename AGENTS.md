@@ -28,6 +28,7 @@ bun install --frozen-lockfile   # frontend dependencies (Bun 1.4.4)
 bun run typecheck               # bun check
 bun run lint                    # Biome
 bun run lint:md                 # markdownlint-cli2
+bun run test:unit               # indicator unit tests (bun test)
 bun run build                   # Vite assets
 go vet ./...
 go test -race ./...
