@@ -13,7 +13,7 @@ Four services in one Railway project: **web**, **engine**, **PostgreSQL** and **
 | web | Root `Dockerfile`, start `/app/app` | HTTPS domain | Runs migrations in the pre-deploy step; healthcheck `/ready` |
 | engine | Root `Dockerfile`, start `/app/engine` | No domain | Paper execution loop; healthcheck `/ready` on `ENGINE_HEALTH_PORT` |
 | PostgreSQL | Railway database | Private network | Daily backup; see [backups](#backups) |
-| site | `site/Dockerfile`, build context repository root | `trading.vukem.dev` | Next.js documentation, static pages |
+| site | `site/Dockerfile`, build context repository root | `trading.vukem.dev` | Astro documentation, static pages served by nginx |
 
 Keep one replica of the engine and never scale it by changing the replica count: leader election and fencing protect against duplicate execution, not against a deliberate fan-out.
 
